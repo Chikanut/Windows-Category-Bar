@@ -154,19 +154,12 @@ internal static class AppCatalog
     }
 
     /// <summary>
-    /// Copies a shortcut out of Windows' pinned folder so that it keeps working after the user unpins it.
+    /// Shortcuts from Windows' pinned folder are copied so that they keep working after the user unpins them.
     /// </summary>
     internal static Shortcut ToShortcut(CatalogEntry entry, string configPath)
     {
         var shortcut = new Shortcut { Name = entry.Name, Target = entry.Target };
-        if (entry.Target.StartsWith(PinnedFolder + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
-        {
-            var folder = Path.Combine(Path.GetDirectoryName(configPath)!, "ImportedShortcuts");
-            Directory.CreateDirectory(folder);
-            var copy = Path.Combine(folder, shortcut.Id + ".lnk");
-            File.Copy(entry.Target, copy, true);
-            shortcut.Target = copy;
-        }
+        Shortcuts.KeepOwnCopy(shortcut, configPath);
         return shortcut;
     }
 }

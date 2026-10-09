@@ -29,6 +29,22 @@ internal sealed class Session
         Editor = new ConfigurationEditor(config, store.Save);
         Editor.Changed += () => Changed?.Invoke();
         Status = new AppStatus(() => Config.Categories.SelectMany(c => c.Shortcuts));
+        AdoptLinkFiles();
+    }
+
+    /// <summary>Shortcuts added by earlier versions still point at files on the desktop; take a copy of those.</summary>
+    private void AdoptLinkFiles()
+    {
+        var changed = false;
+        foreach (var shortcut in Config.Categories.SelectMany(c => c.Shortcuts))
+        {
+            var target = shortcut.Target;
+            Shortcuts.KeepOwnCopy(shortcut, Store.Path);
+            changed |= shortcut.Target != target;
+        }
+        if (!changed) return;
+        try { Editor.ChangeQuietly(() => { }); }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) { }
     }
 
     internal void Toast(string title, string body = "", ToastKind kind = ToastKind.Success, bool sticky = false, params ToastAction[] actions)
@@ -76,6 +92,7 @@ internal sealed class Session
         var known = category.Shortcuts.Select(Shortcuts.Identity).ToHashSet();
         var fresh = shortcuts.Where(s => known.Add(Shortcuts.Identity(s))).ToList();
         if (fresh.Count == 0) { Toast("Уже в категорії", "Ці ярлики вже є в «" + category.Name + "».", ToastKind.Info); return 0; }
+        foreach (var shortcut in fresh) Shortcuts.KeepOwnCopy(shortcut, Store.Path);
         var title = fresh.Count == 1 ? "Додано «" + fresh[0].Name + "»" : "Додано " + Ui.Plural(fresh.Count, "ярлик", "ярлики", "ярликів");
         Change(() => category.Shortcuts.InsertRange(index < 0 ? category.Shortcuts.Count : Math.Min(index, category.Shortcuts.Count), fresh), title, "До категорії «" + category.Name + "».");
         return fresh.Count;

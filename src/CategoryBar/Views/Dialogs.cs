@@ -136,7 +136,7 @@ internal static class Dialogs
     {
         if (PickFile() is not { } file) return;
         IconCache.Forget(shortcut.Target);
-        session.Change(() => { shortcut.Target = file; shortcut.Arguments = ""; shortcut.WorkingDirectory = ""; }, "Ярлик «" + shortcut.Name + "» виправлено");
+        session.Change(() => { shortcut.Target = file; shortcut.Arguments = ""; shortcut.WorkingDirectory = ""; Shortcuts.KeepOwnCopy(shortcut, session.Store.Path); }, "Ярлик «" + shortcut.Name + "» виправлено");
     }
 
     /// <summary>Asks for a web address or a Steam link.</summary>

@@ -113,6 +113,30 @@ internal static class Shortcuts
             Process.Start(new ProcessStartInfo("explorer.exe", "/select,\"" + path + "\""))?.Dispose();
     }
 
+    /// <summary>
+    /// Copies a .lnk or .url file next to the configuration and points the shortcut at the copy, so that it keeps
+    /// working after the user deletes the original from the desktop or unpins it. Start menu shortcuts stay where
+    /// they are: installers keep them up to date.
+    /// </summary>
+    internal static void KeepOwnCopy(Shortcut shortcut, string configPath)
+    {
+        var source = shortcut.Target;
+        if (!IsLinkFile(source) && !source.EndsWith(".url", StringComparison.OrdinalIgnoreCase)) return;
+        if (LaunchTarget.IsLink(source) || !File.Exists(source)) return;
+        var folder = Path.Combine(Path.GetDirectoryName(configPath)!, "ImportedShortcuts");
+        bool Inside(string root) => root.Length > 0 && Path.GetFullPath(source).StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+        if (Inside(folder) || Inside(Environment.GetFolderPath(Environment.SpecialFolder.StartMenu))
+            || Inside(Environment.GetFolderPath(Environment.SpecialFolder.CommonStartMenu))) return;
+        try
+        {
+            Directory.CreateDirectory(folder);
+            var copy = Path.Combine(folder, shortcut.Id + Path.GetExtension(source).ToLowerInvariant());
+            File.Copy(source, copy, true);
+            shortcut.Target = copy;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { } // The original still works.
+    }
+
     /// <summary>Creates a shortcut model from a file, folder or link dropped or picked by the user.</summary>
     internal static Shortcut? FromPath(string path)
     {
