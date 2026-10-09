@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#E7E5E0;font-family:'Segoe UI Variable Text','Segoe UI','Onest',system-ui,sans-serif;color:#1C1C1F;-webkit-font-smoothing:antialiased}
+a{color:#3D5BD9}a:hover{color:#2A43A8}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</helmet>
+
+<div style="padding:64px 72px 120px;display:flex;flex-direction:column;gap:72px;min-width:1400px">
+
+<header style="display:flex;flex-direction:column;gap:12px;max-width:900px">
+  <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#76736C">Дизайн-специфікація · v0.1 · 09.10.2026</div>
+  <h1 style="margin:0;font-family:'Onest',sans-serif;font-size:48px;font-weight:600;letter-spacing:-.02em;line-height:1.05">Панель категорій над панеллю Windows</h1>
+  <p style="margin:0;font-size:17px;line-height:1.55;color:#55524C;text-wrap:pretty">Основна взаємодія, кількість ярликів і категорій, екрани різних пропорцій, стани панелі Windows, сповіщення, редагування та налаштування. Іконки застосунків — заглушки з першою літерою.</p>
+</header>
+
+<!-- A · interactive -->
+<section data-screen-label="A Основна взаємодія" style="display:flex;flex-direction:column;gap:20px">
+  <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#76736C">A</span><h2 style="margin:0;font-family:'Onest',sans-serif;font-size:28px;font-weight:600;letter-spacing:-.01em">Основна взаємодія — живий прототип</h2></div>
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <div style="position:relative;width:1280px;height:620px;border-radius:10px;overflow:hidden;background:linear-gradient(165deg,#41536A 0%,#252E3B 55%,#171B22 100%);box-shadow:0 1px 0 rgba(0,0,0,.05),0 20px 50px rgba(30,25,15,.18)">
+      <div style="position:absolute;bottom:48px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:2px;height:34px;padding:3px;box-sizing:border-box;background:rgba(38,38,44,.95);border:1px solid rgba(255,255,255,.08);border-bottom:none;border-radius:9px 9px 0 0">
+        <sc-for list="{{ live }}" as="t" hint-placeholder-count="5">
+          <div onMouseEnter="{{ t.onEnter }}" onMouseLeave="{{ t.onLeave }}" style="position:relative">
+            <div onClick="{{ t.onClick }}" style="height:28px;padding:0 12px;display:flex;align-items:center;gap:6px;border-radius:6px;background:{{ t.bg }};font-size:13px;color:#ECECEF;position:relative;white-space:nowrap;cursor:default">
+              <span>{{ t.name }}</span>
+              <sc-if value="{{ showCounts }}" hint-placeholder-val="{{ true }}"><span style="font-size:11px;color:#8E8E98">{{ t.count }}</span></sc-if>
+              <div style="position:absolute;left:12px;right:12px;bottom:1px;height:2px;border-radius:1px;background:{{ t.line }}"></div>
+            </div>
+            <sc-if value="{{ t.open }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;bottom:100%;left:50%;transform:translateX(-50%);padding-bottom:8px;z-index:5">
+                <div style="width:240px;padding:6px;box-sizing:border-box;background:rgba(36,36,42,.97);border:1px solid rgba(255,255,255,.09);border-radius:10px;box-shadow:0 18px 44px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:1px">
+                  <div style="display:flex;justify-content:space-between;padding:6px 10px 8px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#8E8E98"><span>{{ t.name }}</span><span>{{ t.count }}</span></div>
+                  <sc-for list="{{ t.apps }}" as="a" hint-placeholder-count="6">
+                    <div onClick="{{ a.onClick }}" style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:6px;cursor:default" style-hover="background:rgba(255,255,255,.07)">
+                      <div style="width:24px;height:24px;flex:none;border-radius:6px;background:{{ a.color }};opacity:{{ a.op }};display:grid;place-items:center;font-size:12px;font-weight:600;color:#fff">{{ a.letter }}</div>
+                      <div style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;color:{{ a.fg }}">{{ a.name }}</div>
+                      <sc-if value="{{ a.broken }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 16 16"><path d="M8 2 15 14H1z" fill="none" stroke="#F2A541" stroke-width="1.4" stroke-linejoin="round"></path><path d="M8 6.5v3.2M8 11.6v.3" stroke="#F2A541" stroke-width="1.4" stroke-linecap="round"></path></svg></sc-if>
+                      <sc-if value="{{ a.admin }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 16 16"><path d="M8 1.5 13.5 3.5v4c0 3.2-2.3 5.6-5.5 7-3.2-1.4-5.5-3.8-5.5-7v-4z" fill="none" stroke="#8EA8FF" stroke-width="1.3" stroke-linejoin="round"></path></svg></sc-if>
+                    </div>
+                  </sc-for>
+                  <div style="height:1px;background:rgba(255,255,255,.07);margin:4px 4px"></div>
+                  <div style="display:flex;align-items:center;gap:10px;height:32px;padding:0 10px;border-radius:6px;font-size:12.5px;color:#A6A6B0" style-hover="background:rgba(255,255,255,.05)"><svg width="14" height="14" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg>Додати застосунок</div>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;right:16px;bottom:96px;width:340px;padding:12px 14px;box-sizing:border-box;background:rgba(40,40,46,.98);border:1px solid rgba(255,255,255,.09);border-radius:10px;box-shadow:0 14px 36px rgba(0,0,0,.4);display:flex;gap:12px;align-items:flex-start">
+          <div style="width:28px;height:28px;flex:none;border-radius:14px;background:{{ toast.toneBg }};color:{{ toast.tone }};display:grid;place-items:center;font-size:14px;font-weight:700">{{ toast.glyph }}</div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0">
+            <div style="font-size:14px;font-weight:600;color:#F2F2F4">{{ toast.title }}</div>
+            <div style="font-size:12.5px;line-height:1.45;color:#A6A6B0;text-wrap:pretty">{{ toast.body }}</div>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <sc-for list="{{ toast.actions }}" as="act" hint-placeholder-count="0"><div onClick="{{ dismiss }}" style="height:26px;padding:0 10px;display:flex;align-items:center;border-radius:5px;background:rgba(255,255,255,.08);font-size:12px;color:#ECECEF;cursor:default" style-hover="background:rgba(255,255,255,.14)">{{ act }}</div></sc-for>
+            </div>
+          </div>
+          <div onClick="{{ dismiss }}" style="color:#8E8E98;font-size:14px;line-height:1;cursor:default">✕</div>
+        </div>
+      </sc-if>
+      <div style="position:absolute;left:0;right:0;bottom:0;height:48px;background:rgba(28,28,32,.95);border-top:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center">
+        <div style="display:flex;gap:4px;align-items:center">
+          <div style="width:40px;height:40px;display:grid;place-items:center"><div style="display:grid;grid-template-columns:8px 8px;gap:2px"><div style="width:8px;height:8px;background:#8EA8FF;border-radius:1px"></div><div style="width:8px;height:8px;background:#8EA8FF;border-radius:1px"></div><div style="width:8px;height:8px;background:#8EA8FF;border-radius:1px"></div><div style="width:8px;height:8px;background:#8EA8FF;border-radius:1px"></div></div></div>
+          <div style="width:40px;height:40px;display:grid;place-items:center"><div style="width:22px;height:22px;border-radius:5px;background:rgba(255,255,255,.16)"></div></div>
+          <div style="width:40px;height:40px;display:grid;place-items:center"><div style="width:22px;height:22px;border-radius:5px;background:rgba(255,255,255,.16)"></div></div>
+          <div style="width:40px;height:40px;display:grid;place-items:center"><div style="width:22px;height:22px;border-radius:5px;background:rgba(255,255,255,.16)"></div></div>
+          <div style="width:40px;height:40px;display:grid;place-items:center"><div style="width:22px;height:22px;border-radius:5px;background:rgba(255,255,255,.16)"></div></div>
+        </div>
+        <div style="position:absolute;right:14px;top:0;bottom:0;display:flex;align-items:center;gap:14px;font-size:12px;color:#E6E6EA"><span>УКР</span><div style="text-align:right;line-height:1.3">14:32<br>09.10.2026</div></div>
+      </div>
+    </div>
+    <div style="width:300px;display:flex;flex-direction:column;gap:18px;padding-top:8px">
+      <div style="font-size:14px;line-height:1.5;color:#55524C">Наведіть на категорію. Клікніть застосунок. У «Ігри» є зламаний ярлик Battle.net, у «Розробка» — Docker з правами адміністратора.</div>
+      <div style="display:flex;flex-direction:column;gap:14px;border-top:1px solid #D2CFC8;padding-top:16px">
+        <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#3D5BD9">{{ openDelayLabel }}</span><span style="font-size:13.5px;color:#3A3833">Затримка відкриття — випадковий проліт курсора не відкриває меню.</span></div>
+        <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#3D5BD9">0 мс</span><span style="font-size:13.5px;color:#3A3833">Перемикання між категоріями, коли меню вже відкрите.</span></div>
+        <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#3D5BD9">8 px</span><span style="font-size:13.5px;color:#3A3833">Невидимий місток між вкладкою й меню — меню не зникає під час переходу.</span></div>
+        <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#3D5BD9">{{ closeDelayLabel }}</span><span style="font-size:13.5px;color:#3A3833">Затримка закриття після виходу курсора.</span></div>
+        <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#3D5BD9">Esc · клік</span><span style="font-size:13.5px;color:#3A3833">Esc закриває меню. Клік по вкладці відкриває/закриває без затримки.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- B · shortcuts count -->
+<section data-screen-label="B Кількість ярликів" style="display:flex;flex-direction:column;gap:20px">
+  <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#76736C">B</span><h2 style="margin:0;font-family:'Onest',sans-serif;font-size:28px;font-weight:600;letter-spacing:-.01em">Кількість ярликів у меню</h2></div>
+  <div style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-end">
+    <sc-for list="{{ menuCases }}" as="c" hint-placeholder-count="8">
+      <div style="display:flex;flex-direction:column;gap:10px;width:300px">
+        <div style="display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:8px;padding:28px 0 0;height:560px;box-sizing:border-box;border-radius:10px;overflow:hidden;background:linear-gradient(165deg,#41536A 0%,#252E3B 55%,#171B22 100%)">
+          <div style="width:{{ c.mw }}px;padding:6px;box-sizing:border-box;background:rgba(36,36,42,.97);border:1px solid rgba(255,255,255,.09);border-radius:10px;box-shadow:0 18px 44px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:1px;position:relative">
+            <div style="display:flex;justify-content:space-between;padding:6px 10px 8px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#8E8E98"><span>{{ c.cat }}</span><span>{{ c.count }}</span></div>
+            <sc-if value="{{ c.search }}" hint-placeholder-val="{{ false }}">
+              <div style="margin:0 4px 6px;height:30px;padding:0 10px;display:flex;align-items:center;gap:8px;border-radius:6px;background:rgba(255,255,255,.06);border:1px solid {{ c.searchBorder }};font-size:12.5px;color:{{ c.queryFg }}"><svg width="13" height="13" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5" fill="none" stroke="#8E8E98" stroke-width="1.5"></circle><path d="M10.5 10.5 14 14" stroke="#8E8E98" stroke-width="1.5" stroke-linecap="round"></path></svg><span>{{ c.query }}</span></div>
+            </sc-if>
+            <sc-if value="{{ c.empty }}" hint-placeholder-val="{{ false }}">
+              <div style="margin:2px 4px 6px;padding:22px 14px;border:1px dashed rgba(255,255,255,.16);border-radius:8px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center">
+                <div style="font-size:13px;color:#ECECEF">Тут поки порожньо</div>
+                <div style="font-size:12px;line-height:1.45;color:#8E8E98">Перетягніть сюди ярлик, .exe або папку</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ c.noRes }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:18px 10px;font-size:12.5px;line-height:1.5;color:#8E8E98;text-align:center">Нічого не знайдено за «{{ c.query }}»</div>
+            </sc-if>
+            <sc-if value="{{ c.list }}" hint-placeholder-val="{{ true }}">
+              <div style="position:relative;max-height:360px;overflow:hidden;display:flex;flex-direction:column;gap:1px">
+                <sc-for list="{{ c.apps }}" as="a" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:10px;height:36px;flex:none;padding:0 10px;border-radius:6px;background:{{ a.bg }}">
+                    <div style="width:24px;height:24px;flex:none;border-radius:6px;background:{{ a.color }};opacity:{{ a.op }};display:grid;place-items:center;font-size:12px;font-weight:600;color:#fff">{{ a.letter }}</div>
+                    <div style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;color:{{ a.fg }}">{{ a.name }}</div>
+                    <sc-if value="{{ a.broken }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 16 16"><path d="M8 2 15 14H1z" fill="none" stroke="#F2A541" stroke-width="1.4" stroke-linejoin="round"></path><path d="M8 6.5v3.2M8 11.6v.3" stroke="#F2A541" stroke-width="1.4" stroke-linecap="round"></path></svg></sc-if>
+                    <sc-if value="{{ a.admin }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 16 16"><path d="M8 1.5 13.5 3.5v4c0 3.2-2.3 5.6-5.5 7-3.2-1.4-5.5-3.8-5.5-7v-4z" fill="none" stroke="#8EA8FF" stroke-width="1.3" stroke-linejoin="round"></path></svg></sc-if>
+                    <sc-if value="{{ a.launching }}" hint-placeholder-val="{{ false }}"><div style="width:12px;height:12px;border-radius:6px;border:1.5px solid rgba(255,255,255,.2);border-top-color:#8EA8FF;animation:spin .8s linear infinite"></div></sc-if>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ c.scroll }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute;left:0;right:0;bottom:0;height:44px;background:linear-gradient(rgba(36,36,42,0),rgba(36,36,42,1));pointer-events:none"></div>
+                  <div style="position:absolute;right:1px;top:4px;width:3px;height:{{ c.thumb }}px;border-radius:2px;background:rgba(255,255,255,.28)"></div>
+                </sc-if>
+              </div>
+            </sc-if>
+            <sc-if value="{{ c.grid }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:2px;padding:0 2px">
+                <sc-for list="{{ c.apps }}" as="a" hint-placeholder-count="10">
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 2px 6px;border-radius:6px;background:{{ a.bg }}">
+                    <div style="width:28px;height:28px;border-radius:7px;background:{{ a.color }};display:grid;place-items:center;font-size:13px;font-weight:600;color:#fff">{{ a.letter }}</div>
+                    <div style="width:100%;font-size:10px;color:#B8B8C0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ a.name }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ c.tip }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;left:24px;top:{{ c.tipTop }}px;padding:6px 9px;background:#F2F2F4;color:#1C1C1F;font-size:12px;border-radius:5px;box-shadow:0 6px 16px rgba(0,0,0,.35);max-width:250px;line-height:1.35">{{ c.tip }}</div>
+            </sc-if>
+            <div style="height:1px;background:rgba(255,255,255,.07);margin:4px 4px"></div>
+            <div style="display:flex;align-items:center;gap:10px;height:32px;padding:0 10px;font-size:12.5px;color:#A6A6B0"><svg width="14" height="14" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg>Додати застосунок</div>
+          </div>
+          <div style="height:34px;padding:3px;box-sizing:border-box;background:rgba(38,38,44,.95);border:1px solid rgba(255,255,255,.08);border-bottom:none;border-radius:9px 9px 0 0;display:flex;gap:2px">
+            <div style="height:28px;padding:0 12px;display:flex;align-items:center;gap:6px;border-radius:6px;background:rgba(255,255,255,.09);font-size:13px;color:#ECECEF;position:relative"><span>{{ c.cat }}</span><span style="font-size:11px;color:#8E8E98">{{ c.count }}</span><div style="position:absolute;left:12px;right:12px;bottom:1px;height:2px;border-radius:1px;background:#8EA8FF"></div></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px"><div style="font-size:14px;font-weight:600">{{ c.title }}</div><div style="font-size:13px;line-height:1.45;color:#66635C;text-wrap:pretty">{{ c.note }}</div></div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<!-- C · categories count -->
+<section data-screen-label="C Кількість категорій" style="display:flex;flex-direction:column;gap:20px">
+  <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#76736C">C</span><h2 style="margin:0;font-family:'Onest',sans-serif;font-size:28px;font-weight:600;letter-spacing:-.01em">Кількість і довжина категорій</h2></div>
+  <div style="display:grid;grid-template-columns:repeat(2,1000px);gap:28px 32px">
+    <sc-for list="{{ strips }}" as="b" hint-placeholder-count="6">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="position:relative;height:{{ b.h }}px;border-radius:10px;overflow:hidden;background:linear-gradient(165deg,#41536A 0%,#252E3B 55%,#171B22 100%)">
+          <div style="position:absolute;bottom:48px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:2px;height:34px;padding:3px;box-sizing:border-box;background:rgba(38,38,44,.95);border:1px solid rgba(255,255,255,.08);border-bottom:none;border-radius:9px 9px 0 0">
+            <sc-if value="{{ b.first }}" hint-placeholder-val="{{ false }}">
+              <div style="height:28px;padding:0 14px;display:flex;align-items:center;gap:8px;border-radius:6px;border:1px dashed rgba(142,168,255,.55);box-sizing:border-box;font-size:13px;color:#C9D4FF"><svg width="14" height="14" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg>Створити першу категорію</div>
+            </sc-if>
+            <sc-for list="{{ b.cats }}" as="t" hint-placeholder-count="4">
+              <div style="height:28px;padding:0 12px;display:flex;align-items:center;gap:6px;border-radius:6px;background:{{ t.bg }};font-size:13px;color:#ECECEF;position:relative;white-space:nowrap"><span style="max-width:150px;overflow:hidden;text-overflow:ellipsis">{{ t.name }}</span><span style="font-size:11px;color:#8E8E98">{{ t.count }}</span><div style="position:absolute;left:12px;right:12px;bottom:1px;height:2px;border-radius:1px;background:{{ t.line }}"></div></div>
+            </sc-for>
+            <sc-if value="{{ b.overflow }}" hint-placeholder-val="{{ false }}">
+              <div style="position:relative">
+                <div style="height:28px;padding:0 10px 0 12px;display:flex;align-items:center;gap:6px;border-radius:6px;background:{{ b.ovBg }};font-size:13px;color:#C8C8D0;white-space:nowrap">Ще {{ b.overflow }}<svg width="12" height="12" viewBox="0 0 16 16"><path d="M4 10l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
+                <sc-if value="{{ b.ovOpen }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute;bottom:100%;right:0;padding-bottom:8px">
+                    <div style="width:200px;padding:6px;box-sizing:border-box;background:rgba(36,36,42,.97);border:1px solid rgba(255,255,255,.09);border-radius:10px;box-shadow:0 18px 44px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:1px">
+                      <sc-for list="{{ b.hidden }}" as="hc" hint-placeholder-count="4">
+                        <div style="display:flex;justify-content:space-between;align-items:center;height:32px;padding:0 10px;border-radius:6px;background:{{ hc.bg }};font-size:13px;color:#ECECEF"><span>{{ hc.name }}</span><span style="display:flex;align-items:center;gap:6px;font-size:11px;color:#8E8E98">{{ hc.count }}<svg width="10" height="10" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg></span></div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:48px;background:rgba(28,28,32,.95);border-top:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;gap:4px">
+            <div style="width:40px;height:40px;display:grid;place-items:center"><div style="display:grid;grid-template-columns:8px 8px;gap:2px"><div style="width:8px;height:8px;background:#8EA8FF;border-radius:1px"></div><div style="width:8px;height:8px;background:#8EA8FF;border-radius:1px"></div><div style="width:8px;height:8px;background:#8EA8FF;border-radius:1px"></div><div style="width:8px;height:8px;background:#8EA8FF;border-radius:1px"></div></div></div>
+            <div style="width:40px;height:40px;display:grid;place-items:center"><div style="width:22px;height:22px;border-radius:5px;background:rgba(255,255,255,.16)"></div></div>
+            <div style="width:40px;height:40px;display:grid;place-items:center"><div style="width:22px;height:22px;border-radius:5px;background:rgba(255,255,255,.16)"></div></div>
+            <div style="width:40px;height:40px;display:grid;place-items:center"><div style="width:22px;height:22px;border-radius:5px;background:rgba(255,255,255,.16)"></div></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px"><div style="font-size:14px;font-weight:600">{{ b.title }}</div><div style="font-size:13px;line-height:1.45;color:#66635C;text-wrap:pretty">{{ b.note }}</div></div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<!-- D/E · screens & taskbar states -->
+<sc-for list="{{ screenGroups }}" as="g" hint-placeholder-count="2">
+  <section data-screen-label="{{ g.label }}" style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#76736C">{{ g.letter }}</span><h2 style="margin:0;font-family:'Onest',sans-serif;font-size:28px;font-weight:600;letter-spacing:-.01em">{{ g.title }}</h2></div>
+      <p style="margin:0 0 0 28px;max-width:820px;font-size:14px;line-height:1.5;color:#66635C;text-wrap:pretty">{{ g.desc }}</p>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:36px 32px;align-items:flex-end">
+      <sc-for list="{{ g.items }}" as="s" hint-placeholder-count="6">
+        <div style="display:flex;flex-direction:column;gap:10px;max-width:{{ s.maxW }}px">
+          <div style="display:flex;gap:6px;align-items:flex-end">
+            <sc-for list="{{ s.mons }}" as="m" hint-placeholder-count="1">
+              <div style="display:flex;flex-direction:column;gap:6px;align-items:center">
+                <div style="width:{{ m.bw }}px;height:{{ m.bh }}px;border-radius:6px;overflow:hidden;background:#111;box-shadow:0 0 0 5px #1A1A1D,0 16px 36px rgba(30,25,15,.22);position:relative">
+                  <div style="position:absolute;left:0;top:0;width:{{ m.W }}px;height:{{ m.H }}px;transform:scale({{ m.k }});transform-origin:0 0;overflow:hidden;background:linear-gradient(165deg,#41536A 0%,#252E3B 55%,#171B22 100%)">
+                    <sc-if value="{{ m.win }}" hint-placeholder-val="{{ false }}">
+                      <div style="position:absolute;left:0;right:0;top:0;bottom:{{ m.winBottom }}px;background:#1F1F23;display:flex;flex-direction:column">
+                        <div style="height:40px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 0 0 18px;background:#2A2A2F;font-size:14px;color:#BDBDC4"><span>Звіт за квартал — Редактор</span><span style="display:flex;gap:28px;padding-right:20px;color:#8E8E98">— ▢ ✕</span></div>
+                        <div style="flex:1;padding:48px 64px;display:flex;flex-direction:column;gap:18px;justify-content:flex-end">
+                          <div style="height:22px;width:42%;background:rgba(255,255,255,.12);border-radius:4px"></div>
+                          <div style="height:12px;width:78%;background:rgba(255,255,255,.07);border-radius:3px"></div>
+                          <div style="height:12px;width:70%;background:rgba(255,255,255,.07);border-radius:3px"></div>
+                          <div style="height:12px;width:74%;background:rgba(255,255,255,.07);border-radius:3px"></div>
+                          <div style="height:30px;width:220px;background:#3D5BD9;border-radius:5px;opacity:.85"></div>
+                        </div>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ m.game }}" hint-placeholder-val="{{ false }}">
+                      <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,#3B2C55 0%,#120E1C 70%);display:grid;place-items:center;font-family:'Onest',sans-serif;font-size:72px;font-weight:600;color:rgba(255,255,255,.2);letter-spacing:-.02em">Повноекранна гра</div>
+                    </sc-if>
+                    <sc-if value="{{ m.bar }}" hint-placeholder-val="{{ true }}">
+                      <div style="position:absolute;bottom:48px;left:{{ m.barLeft }};transform:{{ m.barTx }};display:flex;align-items:center;gap:2px;height:34px;padding:3px;box-sizing:border-box;background:rgba(38,38,44,.95);border:1px solid rgba(255,255,255,.08);border-bottom:none;border-radius:9px 9px 0 0">
+                        <sc-for list="{{ m.cats }}" as="t" hint-placeholder-count="5">
+                          <div style="position:relative">
+                            <div style="height:28px;padding:0 12px;display:flex;align-items:center;gap:6px;border-radius:6px;background:{{ t.bg }};font-size:13px;color:#ECECEF;position:relative;white-space:nowrap"><span>{{ t.name }}</span><span style="font-size:11px;color:#8E8E98">{{ t.count }}</span><div style="position:absolute;left:12px;right:12px;bottom:1px;height:2px;border-radius:1px;background:{{ t.line }}"></div></div>
+                            <sc-if value="{{ t.open }}" hint-placeholder-val="{{ false }}">
+                              <div style="position:absolute;bottom:100%;left:50%;transform:translateX(-50%);padding-bottom:8px">
+                                <div style="width:240px;padding:6px;box-sizing:border-box;background:rgba(36,36,42,.97);border:1px solid rgba(255,255,255,.09);border-radius:10px;box-shadow:0 18px 44px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:1px">
+                                  <div style="display:flex;justify-content:space-between;padding:6px 10px 8px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#8E8E98"><span>{{ t.name }}</span><span>{{ t.count }}</span></div>
+                                  <sc-for list="{{ t.apps }}" as="a" hint-placeholder-count="5">
+                                    <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:6px;background:{{ a.bg }}"><div style="width:24px;height:24px;flex:none;border-radius:6px;background:{{ a.color }};display:grid;place-items:center;font-size:12px;font-weight:600;color:#fff">{{ a.letter }}</div><div style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;color:#ECECEF">{{ a.name }}</div></div>
+                                  </sc-for>
+                                </div>
+                              </div>
+                            </sc-if>
+                          </div>
+                        </sc-for>
+                        <sc-if value="{{ m.overflow }}" hint-placeholder-val="{{ false }}"><div style="height:28px;padding:0 10px 0 12px;display:flex;align-items:center;gap:6px;border-radius:6px;font-size:13px;color:#C8C8D0;white-space:nowrap">Ще {{ m.overflow }}<svg width="12" height="12" viewBox="0 0 16 16"><path d="M4 10l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg></div></sc-if>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ m.chip }}" hint-placeholder-val="{{ false }}">
+                      <div style="position:absolute;right:16px;bottom:96px;height:40px;padding:0 16px;display:flex;align-items:center;gap:10px;background:rgba(40,40,46,.98);border:1px solid rgba(255,255,255,.09);border-radius:10px;font-size:14px;color:#ECECEF"><div style="width:8px;height:8px;border-radius:4px;background:#5CC98A"></div>{{ m.chip }}</div>
+                    </sc-if>
+                    <sc-if value="{{ m.taskbar }}" hint-placeholder-val="{{ true }}">
+                      <div style="position:absolute;left:0;right:0;bottom:0;height:48px;background:rgba(28,28,32,.95);border-top:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:{{ m.tbJustify }};padding:0 8px">
+                        <div style="display:flex;gap:4px;align-items:center">
+                          <div style="width:40px;height:40px;display:grid;place-items:center"><div style="display:grid;grid-template-columns:8px 8px;gap:2px"><div style="width:8px;height:8px;background:#8EA8FF;border-radius:1px"></div><div style="width:8px;height:8px;background:#8EA8FF;border-radius:1px"></div><div style="width:8px;height:8px;background:#8EA8FF;border-radius:1px"></div><div style="width:8px;height:8px;background:#8EA8FF;border-radius:1px"></div></div></div>
+                          <div style="width:40px;height:40px;display:grid;place-items:center"><div style="width:22px;height:22px;border-radius:5px;background:rgba(255,255,255,.16)"></div></div>
+                          <div style="width:40px;height:40px;display:grid;place-items:center"><div style="width:22px;height:22px;border-radius:5px;background:rgba(255,255,255,.16)"></div></div>
+                          <div style="width:40px;height:40px;display:grid;place-items:center"><div style="width:22px;height:22px;border-radius:5px;background:rgba(255,255,255,.16)"></div></div>
+                          <div style="width:40px;height:40px;display:grid;place-items:center"><div style="width:22px;height:22px;border-radius:5px;background:rgba(255,255,255,.16)"></div></div>
+                        </div>
+                        <div style="position:absolute;right:14px;top:0;bottom:0;display:flex;align-items:center;gap:14px;font-size:12px;color:#E6E6EA"><span>УКР</span><div style="text-align:right;line-height:1.3">14:32<br>09.10.2026</div></div>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ m.peek }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(142,168,255,.6)"></div></sc-if>
+                  </div>
+                </div>
+                <sc-if value="{{ m.tag }}" hint-placeholder-val="{{ false }}"><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#76736C">{{ m.tag }}</div></sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap"><span style="font-size:14px;font-weight:600">{{ s.title }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#76736C">{{ s.spec }}</span></div>
+            <div style="font-size:13px;line-height:1.45;color:#66635C;text-wrap:pretty">{{ s.note }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</sc-for>
+
+<!-- F · notifications -->
+<section data-screen-label="F Сповіщення" style="display:flex;flex-direction:column;gap:20px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#76736C">F</span><h2 style="margin:0;font-family:'Onest',sans-serif;font-size:28px;font-weight:600;letter-spacing:-.01em">Сповіщення та помилки</h2></div>
+    <p style="margin:0 0 0 28px;max-width:820px;font-size:14px;line-height:1.5;color:#66635C;text-wrap:pretty">Власні тости з’являються над правим краєм панелі категорій і зникають через 4–6 с; помилки висять, доки їх не закриють. Системні сповіщення Windows — лише коли панель схована (повний екран, автоприховування).</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,380px);gap:24px">
+    <sc-for list="{{ toasts }}" as="n" hint-placeholder-count="10">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="padding:20px;border-radius:10px;background:linear-gradient(165deg,#41536A 0%,#252E3B 55%,#171B22 100%)">
+          <div style="width:340px;padding:12px 14px;box-sizing:border-box;background:rgba(40,40,46,.98);border:1px solid rgba(255,255,255,.09);border-radius:10px;box-shadow:0 14px 36px rgba(0,0,0,.4);display:flex;gap:12px;align-items:flex-start;position:relative;overflow:hidden">
+            <div style="width:28px;height:28px;flex:none;border-radius:14px;background:{{ n.toneBg }};color:{{ n.tone }};display:grid;place-items:center;font-size:14px;font-weight:700">{{ n.glyph }}</div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0">
+              <div style="font-size:14px;font-weight:600;color:#F2F2F4">{{ n.title }}</div>
+              <div style="font-size:12.5px;line-height:1.45;color:#A6A6B0;text-wrap:pretty">{{ n.body }}</div>
+              <sc-if value="{{ n.hasActions }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;gap:8px;margin-top:8px">
+                  <sc-for list="{{ n.actions }}" as="act" hint-placeholder-count="1"><div style="height:26px;padding:0 10px;display:flex;align-items:center;border-radius:5px;background:{{ act.bg }};font-size:12px;color:{{ act.fg }}">{{ act.label }}</div></sc-for>
+                </div>
+              </sc-if>
+            </div>
+            <div style="color:#8E8E98;font-size:14px;line-height:1">✕</div>
+            <sc-if value="{{ n.timer }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:0;bottom:0;height:2px;width:62%;background:#8EA8FF"></div></sc-if>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px"><div style="display:flex;gap:8px;align-items:baseline"><span style="font-size:14px;font-weight:600">{{ n.case }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#76736C">{{ n.life }}</span></div><div style="font-size:13px;line-height:1.45;color:#66635C;text-wrap:pretty">{{ n.note }}</div></div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<!-- G · editing -->
+<section data-screen-label="G Редагування" style="display:flex;flex-direction:column;gap:20px">
+  <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#76736C">G</span><h2 style="margin:0;font-family:'Onest',sans-serif;font-size:28px;font-weight:600;letter-spacing:-.01em">Редагування категорій і ярликів</h2></div>
+  <div style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start">
+
+    <div style="display:flex;flex-direction:column;gap:10px;width:320px">
+      <div style="height:500px;padding:24px 0 0;box-sizing:border-box;border-radius:10px;overflow:hidden;background:linear-gradient(165deg,#41536A 0%,#252E3B 55%,#171B22 100%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:8px">
+        <div style="width:260px;padding:6px;box-sizing:border-box;background:rgba(36,36,42,.97);border:1px solid rgba(142,168,255,.35);border-radius:10px;box-shadow:0 18px 44px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:1px">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 4px 8px 10px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#8E8E98"><span>Розробка · редагування</span><div style="height:24px;padding:0 10px;display:flex;align-items:center;border-radius:5px;background:#8EA8FF;color:#141826;font-size:12px;letter-spacing:0;text-transform:none;font-weight:600">Готово</div></div>
+          <sc-for list="{{ editRows }}" as="r" hint-placeholder-count="6">
+            <sc-if value="{{ r.drop }}" hint-placeholder-val="{{ false }}"><div style="height:2px;margin:0 8px;border-radius:1px;background:#8EA8FF"></div></sc-if>
+            <div style="display:flex;align-items:center;gap:8px;height:36px;padding:0 6px 0 4px;border-radius:6px;background:{{ r.bg }};box-shadow:{{ r.shadow }};transform:{{ r.tx }};opacity:{{ r.op }}">
+              <svg width="12" height="14" viewBox="0 0 12 16"><circle cx="4" cy="4" r="1.2" fill="#6E6E78"></circle><circle cx="8" cy="4" r="1.2" fill="#6E6E78"></circle><circle cx="4" cy="8" r="1.2" fill="#6E6E78"></circle><circle cx="8" cy="8" r="1.2" fill="#6E6E78"></circle><circle cx="4" cy="12" r="1.2" fill="#6E6E78"></circle><circle cx="8" cy="12" r="1.2" fill="#6E6E78"></circle></svg>
+              <div style="width:24px;height:24px;flex:none;border-radius:6px;background:{{ r.color }};display:grid;place-items:center;font-size:12px;font-weight:600;color:#fff">{{ r.letter }}</div>
+              <div style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;color:#ECECEF">{{ r.name }}</div>
+              <div style="width:22px;height:22px;display:grid;place-items:center;border-radius:4px;color:#8E8E98;font-size:12px">✕</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="height:34px;padding:3px;box-sizing:border-box;background:rgba(38,38,44,.95);border:1px solid rgba(255,255,255,.08);border-bottom:none;border-radius:9px 9px 0 0;display:flex"><div style="height:28px;padding:0 12px;display:flex;align-items:center;border-radius:6px;background:rgba(255,255,255,.09);font-size:13px;color:#ECECEF">Розробка</div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px"><div style="font-size:14px;font-weight:600">Режим редагування меню</div><div style="font-size:13px;line-height:1.45;color:#66635C">Перетягування за ручку, лінія показує місце вставки. ✕ прибирає ярлик, програма лишається. Меню не закривається від виходу курсора.</div></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;width:440px">
+      <div style="height:500px;position:relative;border-radius:10px;overflow:hidden;background:linear-gradient(165deg,#41536A 0%,#252E3B 55%,#171B22 100%)">
+        <div style="position:absolute;left:30px;bottom:42px;width:240px;padding:6px;box-sizing:border-box;background:rgba(36,36,42,.97);border:1px solid rgba(255,255,255,.09);border-radius:10px;display:flex;flex-direction:column;gap:1px">
+          <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:6px"><div style="width:24px;height:24px;border-radius:6px;background:#2fb2c4;display:grid;place-items:center;font-size:12px;font-weight:600;color:#fff">V</div><span style="font-size:13px;color:#ECECEF">Visual Studio Code</span></div>
+          <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:6px;background:rgba(255,255,255,.09)"><div style="width:24px;height:24px;border-radius:6px;background:#7d72ff;display:grid;place-items:center;font-size:12px;font-weight:600;color:#fff">W</div><span style="font-size:13px;color:#ECECEF">Windows Terminal</span></div>
+          <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:6px"><div style="width:24px;height:24px;border-radius:6px;background:#e8833a;display:grid;place-items:center;font-size:12px;font-weight:600;color:#fff">G</div><span style="font-size:13px;color:#ECECEF">Git Bash</span></div>
+          <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:6px"><div style="width:24px;height:24px;border-radius:6px;background:#4f8cff;display:grid;place-items:center;font-size:12px;font-weight:600;color:#fff">D</div><span style="font-size:13px;color:#ECECEF">Docker Desktop</span></div>
+        </div>
+        <div style="position:absolute;left:200px;bottom:120px;width:220px;padding:4px;box-sizing:border-box;background:rgba(44,44,50,.99);border:1px solid rgba(255,255,255,.1);border-radius:8px;box-shadow:0 14px 36px rgba(0,0,0,.5);display:flex;flex-direction:column;font-size:13px;color:#ECECEF">
+          <div style="height:32px;padding:0 12px;display:flex;align-items:center;border-radius:5px;background:rgba(255,255,255,.08);font-weight:600">Запустити</div>
+          <div style="height:32px;padding:0 12px;display:flex;align-items:center;gap:8px;border-radius:5px"><svg width="13" height="13" viewBox="0 0 16 16"><path d="M8 1.5 13.5 3.5v4c0 3.2-2.3 5.6-5.5 7-3.2-1.4-5.5-3.8-5.5-7v-4z" fill="none" stroke="#8EA8FF" stroke-width="1.3"></path></svg>Від імені адміністратора</div>
+          <div style="height:32px;padding:0 12px;display:flex;align-items:center;border-radius:5px">Відкрити розташування файлу</div>
+          <div style="height:1px;margin:4px 6px;background:rgba(255,255,255,.08)"></div>
+          <div style="height:32px;padding:0 12px;display:flex;align-items:center;border-radius:5px">Перейменувати</div>
+          <div style="height:32px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;border-radius:5px">Перемістити до<span style="color:#8E8E98">›</span></div>
+          <div style="height:32px;padding:0 12px;display:flex;align-items:center;border-radius:5px">Властивості ярлика…</div>
+          <div style="height:1px;margin:4px 6px;background:rgba(255,255,255,.08)"></div>
+          <div style="height:32px;padding:0 12px;display:flex;align-items:center;border-radius:5px;color:#FF9A92">Прибрати з категорії</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px"><div style="font-size:14px;font-weight:600">Контекстне меню ярлика (ПКМ)</div><div style="font-size:13px;line-height:1.45;color:#66635C">«Прибрати з категорії» не видаляє програму — це видно з формулювання.</div></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;width:520px">
+      <div style="height:500px;position:relative;border-radius:10px;overflow:hidden;background:linear-gradient(165deg,#41536A 0%,#252E3B 55%,#171B22 100%)">
+        <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:80px;display:flex;align-items:center;gap:2px;height:34px;padding:3px;box-sizing:border-box;background:rgba(38,38,44,.95);border:1px solid rgba(255,255,255,.08);border-bottom:none;border-radius:9px 9px 0 0">
+          <div style="height:28px;padding:0 12px;display:flex;align-items:center;font-size:13px;color:#ECECEF">Відео</div>
+          <div style="height:28px;padding:0 8px;display:flex;align-items:center;border-radius:6px;background:rgba(0,0,0,.35);border:1.5px solid #8EA8FF;box-sizing:border-box;font-size:13px;color:#fff;width:132px">Розробка й CI<span style="width:1px;height:15px;background:#fff;margin-left:1px"></span></div>
+          <div style="height:28px;padding:0 12px;display:flex;align-items:center;font-size:13px;color:#ECECEF">Ігри</div>
+          <div style="height:28px;padding:0 12px;display:flex;align-items:center;font-size:13px;color:#ECECEF">Тулзи</div>
+        </div>
+        <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:122px;font-size:12px;color:#C9D4FF">Enter — зберегти · Esc — скасувати</div>
+        <div style="position:absolute;left:40px;top:40px;width:200px;padding:4px;box-sizing:border-box;background:rgba(44,44,50,.99);border:1px solid rgba(255,255,255,.1);border-radius:8px;box-shadow:0 14px 36px rgba(0,0,0,.5);display:flex;flex-direction:column;font-size:13px;color:#ECECEF">
+          <div style="padding:6px 12px 4px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#8E8E98">Категорія «Ігри»</div>
+          <div style="height:32px;padding:0 12px;display:flex;align-items:center;border-radius:5px;background:rgba(255,255,255,.08)">Перейменувати</div>
+          <div style="height:32px;padding:0 12px;display:flex;align-items:center;border-radius:5px">Редагувати ярлики</div>
+          <div style="height:32px;padding:0 12px;display:flex;align-items:center;border-radius:5px">Нова категорія</div>
+          <div style="height:32px;padding:0 12px;display:flex;align-items:center;border-radius:5px">Перемістити ліворуч</div>
+          <div style="height:1px;margin:4px 6px;background:rgba(255,255,255,.08)"></div>
+          <div style="height:32px;padding:0 12px;display:flex;align-items:center;border-radius:5px;color:#FF9A92">Видалити категорію…</div>
+        </div>
+        <div style="position:absolute;right:30px;top:40px;width:220px;display:flex;flex-direction:column;gap:6px;font-size:12.5px;line-height:1.45;color:#C8C8D0">Перестановка категорій — перетягуванням вкладки в межах панелі.</div>
+        <div style="position:absolute;left:0;right:0;bottom:0;height:48px;background:rgba(28,28,32,.95);border-top:1px solid rgba(255,255,255,.07)"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px"><div style="font-size:14px;font-weight:600">Перейменування на місці й меню категорії</div><div style="font-size:13px;line-height:1.45;color:#66635C">Подвійний клік або «Перейменувати». Порожня назва не зберігається.</div></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;width:440px">
+      <div style="height:500px;border-radius:10px;overflow:hidden;background:linear-gradient(165deg,#41536A 0%,#252E3B 55%,#171B22 100%);display:grid;place-items:center">
+        <div style="width:380px;box-sizing:border-box;background:#2A2A30;border:1px solid rgba(255,255,255,.1);border-radius:10px;box-shadow:0 24px 60px rgba(0,0,0,.5);overflow:hidden">
+          <div style="padding:22px 22px 18px;display:flex;flex-direction:column;gap:10px">
+            <div style="font-family:'Onest',sans-serif;font-size:18px;font-weight:600;color:#F2F2F4">Видалити категорію «Ігри»?</div>
+            <div style="font-size:13px;line-height:1.5;color:#B4B4BC;text-wrap:pretty">6 ярликів буде прибрано з панелі. Самі ігри та їхні файли залишаться на комп’ютері.</div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:4px;font-size:13px;color:#ECECEF"><div style="width:16px;height:16px;border-radius:4px;border:1.5px solid #6E6E78;box-sizing:border-box"></div>Перенести ярлики до «Тулзи»</div>
+          </div>
+          <div style="padding:14px 22px;background:#232328;display:flex;gap:10px;justify-content:flex-end">
+            <div style="height:32px;padding:0 16px;display:flex;align-items:center;border-radius:6px;background:rgba(255,255,255,.08);font-size:13px;color:#ECECEF">Скасувати</div>
+            <div style="height:32px;padding:0 16px;display:flex;align-items:center;border-radius:6px;background:#E5544A;font-size:13px;font-weight:600;color:#fff">Видалити</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px"><div style="font-size:14px;font-weight:600">Підтвердження видалення</div><div style="font-size:13px;line-height:1.45;color:#66635C">Порожня категорія видаляється без діалогу, з тостом «Скасувати».</div></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;width:440px">
+      <div style="height:500px;position:relative;border-radius:10px;overflow:hidden;background:linear-gradient(165deg,#41536A 0%,#252E3B 55%,#171B22 100%)">
+        <div style="position:absolute;left:24px;top:24px;width:250px;background:#202024;border:1px solid rgba(255,255,255,.08);border-radius:8px;overflow:hidden">
+          <div style="height:30px;padding:0 12px;display:flex;align-items:center;background:#2A2A2F;font-size:12px;color:#A6A6B0">Провідник — Ігри</div>
+          <div style="padding:8px;display:flex;flex-direction:column;gap:2px;font-size:12.5px;color:#D0D0D6">
+            <div style="height:26px;display:flex;align-items:center;padding:0 8px;border-radius:4px;background:rgba(142,168,255,.18)">Hades II.lnk</div>
+            <div style="height:26px;display:flex;align-items:center;padding:0 8px;border-radius:4px;background:rgba(142,168,255,.18)">Balatro.lnk</div>
+            <div style="height:26px;display:flex;align-items:center;padding:0 8px">readme.txt</div>
+          </div>
+        </div>
+        <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:48px;display:flex;align-items:center;gap:2px;height:34px;padding:3px;box-sizing:border-box;background:rgba(38,38,44,.95);border:1px solid rgba(255,255,255,.08);border-bottom:none;border-radius:9px 9px 0 0">
+          <div style="height:28px;padding:0 12px;display:flex;align-items:center;font-size:13px;color:#ECECEF">Відео</div>
+          <div style="height:28px;padding:0 12px;display:flex;align-items:center;border-radius:6px;background:rgba(142,168,255,.22);outline:1.5px dashed #8EA8FF;outline-offset:-1.5px;font-size:13px;color:#fff">Ігри</div>
+          <div style="height:28px;padding:0 12px;display:flex;align-items:center;font-size:13px;color:#ECECEF">Тулзи</div>
+        </div>
+        <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:94px;padding:7px 12px;border-radius:6px;background:#F2F2F4;color:#1C1C1F;font-size:12.5px;white-space:nowrap;box-shadow:0 8px 20px rgba(0,0,0,.35)">Відпустіть, щоб додати 2 ярлики до «Ігри»</div>
+        <div style="position:absolute;left:236px;bottom:62px;display:flex"><div style="width:30px;height:30px;border-radius:7px;background:#e05a5a;box-shadow:0 8px 18px rgba(0,0,0,.45);display:grid;place-items:center;color:#fff;font-weight:600;font-size:13px;transform:rotate(-6deg)">H</div><div style="width:18px;height:18px;border-radius:9px;background:#8EA8FF;color:#141826;font-size:11px;font-weight:700;display:grid;place-items:center;margin:-8px 0 0 -8px">2</div></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;height:48px;background:rgba(28,28,32,.95);border-top:1px solid rgba(255,255,255,.07)"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px"><div style="font-size:14px;font-weight:600">Перетягування з Провідника</div><div style="font-size:13px;line-height:1.45;color:#66635C">Вкладка під курсором підсвічується. Затримка 600 мс над вкладкою відкриває її меню для точного місця вставки. readme.txt — непідтримуваний файл.</div></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;width:540px">
+      <div style="height:500px;border-radius:10px;overflow:hidden;background:linear-gradient(165deg,#41536A 0%,#252E3B 55%,#171B22 100%);display:grid;place-items:center">
+        <div style="width:480px;box-sizing:border-box;background:#2A2A30;border:1px solid rgba(255,255,255,.1);border-radius:10px;box-shadow:0 24px 60px rgba(0,0,0,.5);overflow:hidden;display:flex;flex-direction:column">
+          <div style="padding:18px 20px 12px;display:flex;flex-direction:column;gap:12px">
+            <div style="font-family:'Onest',sans-serif;font-size:17px;font-weight:600;color:#F2F2F4">Додати до «Тулзи»</div>
+            <div style="display:flex;gap:2px;padding:2px;border-radius:7px;background:rgba(255,255,255,.05);font-size:12.5px;width:fit-content"><div style="height:26px;padding:0 12px;display:flex;align-items:center;border-radius:5px;background:rgba(255,255,255,.1);color:#fff">Меню «Пуск»</div><div style="height:26px;padding:0 12px;display:flex;align-items:center;color:#A6A6B0">Файл або папка…</div><div style="height:26px;padding:0 12px;display:flex;align-items:center;color:#A6A6B0">Вебпосилання</div></div>
+            <div style="height:32px;padding:0 10px;display:flex;align-items:center;gap:8px;border-radius:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);font-size:13px;color:#ECECEF"><svg width="13" height="13" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5" fill="none" stroke="#8E8E98" stroke-width="1.5"></circle><path d="M10.5 10.5 14 14" stroke="#8E8E98" stroke-width="1.5" stroke-linecap="round"></path></svg>po</div>
+          </div>
+          <div style="padding:0 12px 8px;display:flex;flex-direction:column;gap:1px">
+            <sc-for list="{{ pickRows }}" as="p" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 8px;border-radius:6px;background:{{ p.bg }}">
+                <div style="width:16px;height:16px;flex:none;border-radius:4px;box-sizing:border-box;border:{{ p.box }};background:{{ p.fill }};display:grid;place-items:center;color:#141826;font-size:11px;font-weight:700">{{ p.check }}</div>
+                <div style="width:24px;height:24px;flex:none;border-radius:6px;background:{{ p.color }};display:grid;place-items:center;font-size:12px;font-weight:600;color:#fff">{{ p.letter }}</div>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column"><span style="font-size:13px;color:#ECECEF">{{ p.name }}</span><span style="font-size:11px;color:#8E8E98;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.sub }}</span></div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="padding:12px 20px;background:#232328;display:flex;gap:10px;justify-content:space-between;align-items:center"><span style="font-size:12.5px;color:#A6A6B0">Вибрано 2</span><div style="display:flex;gap:10px"><div style="height:32px;padding:0 16px;display:flex;align-items:center;border-radius:6px;background:rgba(255,255,255,.08);font-size:13px;color:#ECECEF">Скасувати</div><div style="height:32px;padding:0 16px;display:flex;align-items:center;border-radius:6px;background:#8EA8FF;font-size:13px;font-weight:600;color:#141826">Додати 2</div></div></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px"><div style="font-size:14px;font-weight:600">Вибір застосунків</div><div style="font-size:13px;line-height:1.45;color:#66635C">Вже додані позначені й неактивні — захист від дублікатів.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- H · settings -->
+<section data-screen-label="H Налаштування" style="display:flex;flex-direction:column;gap:20px">
+  <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#76736C">H</span><h2 style="margin:0;font-family:'Onest',sans-serif;font-size:28px;font-weight:600;letter-spacing:-.01em">Налаштування й трей</h2></div>
+  <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap">
+    <div style="width:820px;background:#202024;border:1px solid rgba(0,0,0,.2);border-radius:10px;overflow:hidden;box-shadow:0 20px 50px rgba(30,25,15,.2);display:flex;flex-direction:column">
+      <div style="height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 0 0 16px;background:#202024;font-size:12.5px;color:#BDBDC4;border-bottom:1px solid rgba(255,255,255,.05)"><span>Панель категорій — Налаштування</span><span style="display:flex;gap:28px;padding-right:18px;color:#8E8E98">— ✕</span></div>
+      <div style="display:flex;min-height:560px">
+        <div style="width:200px;padding:12px 8px;display:flex;flex-direction:column;gap:2px;font-size:13.5px;color:#D0D0D6">
+          <div style="height:36px;padding:0 12px;display:flex;align-items:center;border-radius:6px">Загальне</div>
+          <div style="height:36px;padding:0 12px;display:flex;align-items:center;border-radius:6px;background:rgba(255,255,255,.07);color:#fff;position:relative"><div style="position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:2px;background:#8EA8FF"></div>Панель і меню</div>
+          <div style="height:36px;padding:0 12px;display:flex;align-items:center;border-radius:6px">Категорії</div>
+          <div style="height:36px;padding:0 12px;display:flex;align-items:center;border-radius:6px">Про програму</div>
+        </div>
+        <div style="flex:1;padding:20px 28px 28px;display:flex;flex-direction:column;gap:10px;background:#1B1B1E">
+          <div style="font-family:'Onest',sans-serif;font-size:22px;font-weight:600;color:#F2F2F4;margin-bottom:8px">Панель і меню</div>
+          <sc-for list="{{ settings }}" as="st" hint-placeholder-count="7">
+            <div style="padding:14px 16px;border-radius:8px;background:#26262B;display:flex;align-items:center;justify-content:space-between;gap:20px">
+              <div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:13.5px;color:#ECECEF">{{ st.label }}</span><span style="font-size:12px;color:#8E8E98;text-wrap:pretty">{{ st.hint }}</span></div>
+              <sc-if value="{{ st.seg }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;gap:2px;padding:2px;border-radius:6px;background:rgba(255,255,255,.06);flex:none">
+                  <sc-for list="{{ st.opts }}" as="o" hint-placeholder-count="2"><div style="height:26px;padding:0 10px;display:flex;align-items:center;border-radius:4px;background:{{ o.bg }};font-size:12px;color:{{ o.fg }};white-space:nowrap">{{ o.label }}</div></sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ st.slider }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;align-items:center;gap:12px;flex:none"><div style="width:160px;height:4px;border-radius:2px;background:rgba(255,255,255,.12);position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:{{ st.pct }}%;border-radius:2px;background:#8EA8FF"></div><div style="position:absolute;top:-6px;left:{{ st.pct }}%;width:16px;height:16px;margin-left:-8px;border-radius:8px;background:#fff;box-shadow:0 0 0 4px #26262B inset,0 0 0 1px #8EA8FF"></div></div><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#ECECEF;width:52px;text-align:right">{{ st.val }}</span></div>
+              </sc-if>
+              <sc-if value="{{ st.toggle }}" hint-placeholder-val="{{ false }}">
+                <div style="width:40px;height:20px;flex:none;border-radius:10px;background:{{ st.tbg }};position:relative"><div style="position:absolute;top:3px;left:{{ st.tx }}px;width:14px;height:14px;border-radius:7px;background:{{ st.knob }}"></div></div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;width:360px">
+      <div style="height:340px;position:relative;border-radius:10px;overflow:hidden;background:linear-gradient(165deg,#41536A 0%,#252E3B 55%,#171B22 100%)">
+        <div style="position:absolute;right:16px;bottom:56px;width:250px;padding:4px;box-sizing:border-box;background:rgba(44,44,50,.99);border:1px solid rgba(255,255,255,.1);border-radius:8px;box-shadow:0 14px 36px rgba(0,0,0,.5);display:flex;flex-direction:column;font-size:13px;color:#ECECEF">
+          <div style="padding:8px 12px 6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#8E8E98">Панель категорій</div>
+          <div style="height:32px;padding:0 12px;display:flex;align-items:center;border-radius:5px;background:rgba(255,255,255,.08)">Налаштування…</div>
+          <div style="height:32px;padding:0 12px;display:flex;align-items:center;border-radius:5px">Редагувати категорії</div>
+          <div style="height:32px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;border-radius:5px">Сховати панель<span style="color:#8E8E98;font-size:12px">до перезапуску</span></div>
+          <div style="height:32px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;border-radius:5px">Запускати з Windows<span style="color:#8EA8FF">✓</span></div>
+          <div style="height:1px;margin:4px 6px;background:rgba(255,255,255,.08)"></div>
+          <div style="height:32px;padding:0 12px;display:flex;align-items:center;border-radius:5px">Вийти</div>
+        </div>
+        <div style="position:absolute;left:0;right:0;bottom:0;height:48px;background:rgba(28,28,32,.95);border-top:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:flex-end;gap:14px;padding:0 14px;font-size:12px;color:#E6E6EA"><div style="width:22px;height:22px;border-radius:5px;background:rgba(142,168,255,.3);outline:1px solid #8EA8FF"></div><span>УКР</span><div style="text-align:right;line-height:1.3">14:32<br>09.10.2026</div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px"><div style="font-size:14px;font-weight:600">Меню в системному треї</div><div style="font-size:13px;line-height:1.45;color:#66635C">Явна команда «Вийти». При виході зарезервована область екрана звільняється.</div></div>
+    </div>
+  </div>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;openDelay&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:150,&quot;min&quot;:0,&quot;max&quot;:600,&quot;step&quot;:25,&quot;unit&quot;:&quot;мс&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Прототип&quot;},&quot;closeDelay&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:300,&quot;min&quot;:0,&quot;max&quot;:1000,&quot;step&quot;:50,&quot;unit&quot;:&quot;мс&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Прототип&quot;},&quot;showCounts&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Прототип&quot;}}">
+class Component extends DCLogic {
+  state = { open: null, toast: null };
+  componentDidMount() {
+    this.kd = e => { if (e.key === 'Escape') this.closeNow(); };
+    window.addEventListener('keydown', this.kd);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('keydown', this.kd);
+    [this.ot, this.ct, this.tt].forEach(clearTimeout);
+  }
+  closeNow() { clearTimeout(this.ot); clearTimeout(this.ct); this.setState({ open: null }); }
+  enter(n) {
+    clearTimeout(this.ct); clearTimeout(this.ot);
+    if (this.state.open === n) return;
+    const d = this.state.open ? 0 : (this.props.openDelay ?? 150);
+    this.ot = setTimeout(() => this.setState({ open: n }), d);
+  }
+  leave() { clearTimeout(this.ot); this.ct = setTimeout(() => this.setState({ open: null }), this.props.closeDelay ?? 300); }
+  showToast(t, ms) { clearTimeout(this.tt); this.setState({ toast: t }); if (ms) this.tt = setTimeout(() => this.setState({ toast: null }), ms); }
+  launch(a) {
+    const T = this.D().T;
+    this.closeNow();
+    if (a.broken) this.showToast({ ...T.error, title: 'Ярлик не знайдено', body: a.name + '.lnk переміщено або видалено. Програму могли деінсталювати.', actions: ['Знайти файл', 'Прибрати з категорії'] });
+    else if (a.admin) this.showToast({ ...T.warn, title: 'Потрібні права адміністратора', body: a.name + ' запитує підвищення прав. Підтвердіть у вікні контролю облікових записів.', actions: [] }, 5000);
+    else this.showToast({ ...T.info, title: 'Запуск ' + a.name, body: 'Вікно з’явиться за мить.', actions: [] }, 2200);
+  }
+
+  D() {
+    if (this._d) return this._d;
+    const PAL = ['#4f8cff', '#e8833a', '#3fb27f', '#b45ad6', '#d9a92e', '#2fb2c4', '#e05a5a', '#7d72ff', '#5fae3a', '#d06a9a'];
+    const mk = (n, x = {}) => { let h = 7; for (const c of n) h = (h * 31 + c.charCodeAt(0)) >>> 0; const L = (n.match(/[A-Za-zА-Яа-яІіЇїЄєҐґ0-9]/) || ['?'])[0].toUpperCase(); return { name: n, letter: L, color: PAL[h % PAL.length], op: 1, fg: '#ECECEF', bg: 'transparent', broken: false, admin: false, launching: false, ...x }; };
+    const CATS = {
+      'Відео': ['VLC media player', 'DaVinci Resolve', 'OBS Studio', 'HandBrake', 'Shotcut', 'Audacity'],
+      'Розробка': ['Visual Studio Code', 'Visual Studio 2022', 'Windows Terminal', 'Git Bash', 'Docker Desktop', 'Postman', 'JetBrains Rider', 'DBeaver'],
+      'Ігри': ['Steam', 'Epic Games Launcher', 'GOG Galaxy', 'Battle.net', 'Cyberpunk 2077', 'Factorio'],
+      'Тулзи': ['7-Zip', 'Everything', 'PowerToys', 'ShareX', 'Notepad++', 'KeePassXC', 'Process Explorer'],
+      'Графіка': ['Figma', 'GIMP', 'Inkscape', 'Blender', 'Krita'],
+    };
+    const flags = { 'Battle.net': { broken: true, op: .45, fg: '#8E8E98' }, 'Docker Desktop': { admin: true } };
+    const apps = n => CATS[n].map(a => mk(a, flags[a] || {}));
+    const T = {
+      error: { tone: '#FF7A70', toneBg: 'rgba(255,122,112,.16)', glyph: '!' },
+      warn: { tone: '#F2A541', toneBg: 'rgba(242,165,65,.16)', glyph: '!' },
+      ok: { tone: '#5CC98A', toneBg: 'rgba(92,201,138,.16)', glyph: '✓' },
+      info: { tone: '#8EA8FF', toneBg: 'rgba(142,168,255,.16)', glyph: 'i' },
+    };
+    const tab = (name, count, open = false, extra = {}) => ({ name, count, open, bg: open ? 'rgba(255,255,255,.09)' : 'transparent', line: open ? '#8EA8FF' : 'transparent', apps: [], ...extra });
+    const five = (openName) => Object.keys(CATS).map(n => tab(n, CATS[n].length, n === openName, n === openName ? { apps: apps(n).slice(0, 5).map(a => ({ ...a, bg: 'transparent' })) } : {}));
+
+    // B
+    const devApps = apps('Розробка');
+    const many = ['Android Studio','Arduino IDE','Azure Data Studio','Bruno','CMake GUI','Cursor','DataGrip','DBeaver','Docker Desktop','Fiddler','Fork','GitHub Desktop','Git Bash','GoLand','HeidiSQL','Insomnia','IntelliJ IDEA','JetBrains Rider','Lens','MongoDB Compass','Node.js','Notepad++','Postman','PowerShell 7','PyCharm','Qt Creator','Redis Insight','Rider','SourceTree','SQL Server Management Studio','Sublime Text','TablePlus','Unity Hub','Visual Studio 2022','Visual Studio Code','VS Code Insiders','WebStorm','Windows Terminal','WinMerge','Zed'];
+    const menuCases = [
+      { title: 'Порожня категорія', note: 'Підказка про перетягування замість порожнечі.', cat: 'Графіка', count: 0, apps: [], empty: true, list: false },
+      { title: '1 ярлик', note: 'Меню не розтягується — ширина фіксована, висота за вмістом.', cat: 'Музика', count: 1, apps: [mk('Spotify')] },
+      { title: '6 ярликів · типово', note: 'Зламаний ярлик — приглушений, з попередженням. Щит — запуск з правами адміністратора. Індикатор — запуск триває.', cat: 'Розробка', count: 6, apps: [mk('Visual Studio Code', { launching: true, bg: 'rgba(255,255,255,.07)' }), devApps[1], devApps[2], devApps[3], devApps[4], mk('Old Toolkit', { broken: true, op: .45, fg: '#8E8E98' })] },
+      { title: '14 ярликів · прокрутка', note: 'Максимум 10 рядків (≈ 420 px). Далі — прокрутка колесом, згасання знизу.', cat: 'Розробка', count: 14, apps: many.slice(0, 14).map(n => mk(n)), scroll: true, thumb: 240 },
+      { title: '40 ярликів · пошук', note: 'Від 15 ярликів з’являється пошук. Друк одразу фільтрує, ↑↓ + Enter запускають.', cat: 'Розробка', count: 40, apps: many.map(n => mk(n)), scroll: true, thumb: 82, search: true, query: 'Пошук у «Розробка»', queryFg: '#8E8E98', searchBorder: 'rgba(255,255,255,.1)' },
+      { title: 'Пошук без результатів', note: 'Esc спершу очищає запит, другий Esc — закриває меню.', cat: 'Розробка', count: 40, apps: [], list: false, search: true, query: 'figma', queryFg: '#ECECEF', searchBorder: '#8EA8FF', noRes: true },
+      { title: 'Довгі назви', note: 'Обрізання трьома крапками, повна назва — у підказці через 500 мс.', cat: 'Офіс', count: 4, apps: ['Microsoft Visual Studio Installer — Preview', 'Адміністрування комп’ютера (локальний)', 'LibreOffice Calc', 'Довідник податкового законодавства 2026'].map((n, i) => mk(n, i === 1 ? { bg: 'rgba(255,255,255,.07)' } : {})), tip: 'Адміністрування комп’ютера (локальний)', tipTop: 118 },
+      { title: 'Сітка · опція для 20+', note: 'Альтернативний вигляд для великих категорій: 5 у ряд, без прокрутки до 30.', cat: 'Ігри', count: 20, mw: 300, list: false, grid: true, apps: ['Steam','Epic Games','GOG Galaxy','Battle.net','EA app','Ubisoft','Xbox','Factorio','Hades II','Balatro','Celeste','Dota 2','Hollow Knight','Stardew Valley','Terraria','Rimworld','Valheim','Portal 2','Doom','Minecraft'].map((n, i) => mk(n, i === 7 ? { bg: 'rgba(255,255,255,.08)' } : {})) },
+    ].map(c => ({ mw: 240, list: true, empty: false, scroll: false, search: false, noRes: false, grid: false, tip: '', thumb: 0, ...c, apps: c.apps.slice(0, c.grid ? 20 : 11) }));
+
+    // C
+    const names15 = ['Відео', 'Розробка', 'Ігри', 'Тулзи', 'Графіка', 'Офіс', 'Музика', 'Зв’язок', 'Браузери', 'Емулятори', 'Система', 'Навчання', '3D', 'Фінанси', 'Архів'];
+    const tc = (n, i, act) => tab(n, [6, 8, 6, 7, 5, 4, 3, 5, 3, 2, 9, 4, 3, 2, 6][i % 15], act);
+    const strips = [
+      { title: 'Перший запуск · немає категорій', note: 'Панель не ховається — інакше її не знайти. Одна дія: створити категорію.', cats: [], first: true },
+      { title: '1 категорія', note: 'Мінімальна ширина панелі — за вмістом.', cats: [tc('Тулзи', 3)] },
+      { title: '4 категорії · типово', note: 'Активна вкладка — підкладка й лінія акцентного кольору.', cats: names15.slice(0, 4).map((n, i) => tc(n, i, i === 1)) },
+      { title: '9 категорій', note: 'Усе ще вміщується на 1920 px при 100%.', cats: names15.slice(0, 9).map((n, i) => tc(n, i)) },
+      { title: '15 категорій · переповнення', note: 'Коли панель ширша за доступне місце (≤ 60% ширини екрана), зайві йдуть у «Ще N».', cats: names15.slice(0, 9).map((n, i) => tc(n, i)), overflow: 6, h: 280, ovOpen: true, ovBg: 'rgba(255,255,255,.09)', hidden: names15.slice(9).map((n, i) => ({ name: n, count: [2, 9, 4, 3, 2, 6][i], bg: i === 1 ? 'rgba(255,255,255,.08)' : 'transparent' })) },
+      { title: 'Довгі назви категорій', note: 'Ліміт 150 px на вкладку; повна назва в підказці.', cats: ['Монтаж і обробка відео', 'Розробка', 'Ігри для вечора з друзями', 'Тулзи'].map((n, i) => tc(n, i)) },
+    ].map(b => ({ h: 160, first: false, overflow: 0, ovOpen: false, ovBg: 'transparent', hidden: [], ...b }));
+
+    // D/E
+    const mon = (W, H, k, o = {}) => ({ W, H, k, bw: Math.round(W * k), bh: Math.round(H * k), taskbar: true, bar: true, peek: false, win: false, winBottom: 48, game: false, cats: five(), overflow: 0, barLeft: '50%', barTx: 'translateX(-50%)', tbJustify: 'center', chip: '', tag: '', ...o });
+    const item = (title, spec, note, mons) => ({ title, spec, note, mons, maxW: Math.max(320, mons.reduce((s, m) => s + m.bw + 6, 0)) });
+    const H = 260;
+    const narrowCats = ['Відео', 'Розробка', 'Ігри', 'Тулзи'].map(n => tab(n, CATS[n].length));
+    const screenGroups = [
+      { letter: 'D', label: 'D Екрани', title: 'Екрани, пропорції та масштабування', desc: 'Розміри панелі задані в логічних пікселях і множаться на масштаб Windows. Панель вирівнюється так само, як значки панелі Windows. Мініатюри — у реальних пропорціях.', items: [
+        item('16:9 · Full HD', '1920×1080 · 100%', 'Базовий випадок.', [mon(1920, 1080, H / 1080)]),
+        item('16:9 · QHD', '2560×1440 · 125% → 2048×1152', 'Розмір панелі зростає разом із масштабом.', [mon(2048, 1152, H / 1152)]),
+        item('21:9 · ультраширокий', '3440×1440 · 100%', 'Панель лишається по центру, не розтягується.', [mon(3440, 1440, H / 1440)]),
+        item('16:10 · ноутбук', '2880×1800 · 200% → 1440×900', '', [mon(1440, 900, H / 900)]),
+        item('Малий ноутбук', '1280×800 · 150% → 853×533', 'Місця мало: 4 категорії + «Ще 5».', [mon(853, 533, H / 533, { cats: narrowCats, overflow: 5 })]),
+        item('5:4 · старий монітор', '1280×1024 · 100%', '', [mon(1280, 1024, H / 1024)]),
+        item('Портрет 9:16', '1080×1920 · 100%', 'Меню відкривається вгору, як завжди; висота меню не проблема.', [mon(1080, 1920, 420 / 1920, { cats: five('Розробка') })]),
+        item('Панель Windows ліворуч', '1920×1080 · вирівнювання зліва', 'Категорії йдуть за налаштуванням Windows: від лівого краю.', [mon(1920, 1080, H / 1080, { barLeft: '8px', barTx: 'none', tbJustify: 'flex-start' })]),
+        item('Два монітори · лише основний', '2048×1152 + 1920×1080', 'Типове налаштування: панель на моніторі з «Пуск».', [mon(2048, 1152, 220 / 1152, { tag: 'основний' }), mon(1920, 1080, 220 / 1152, { bar: false, tag: 'другий' })]),
+        item('Два монітори · на кожному', '2048×1152 + 1920×1080', 'Якщо панель Windows є на другому моніторі — категорії теж; спільна конфігурація.', [mon(2048, 1152, 220 / 1152, { tag: 'основний' }), mon(1920, 1080, 220 / 1152, { tag: 'другий' })]),
+      ] },
+      { letter: 'E', label: 'E Стани панелі Windows', title: 'Видимість разом із панеллю Windows', desc: 'Панель категорій ніколи не з’являється без панелі Windows і не ховається, поки та видима. Екран 1920×1080 при 150% (1280×720 логічних).', items: [
+        item('Робочий стіл', 'панель Windows видима', 'Обидві панелі видимі.', [mon(1280, 720, .4)]),
+        item('Розгорнуте вікно · перекриття', 'режим за замовчуванням', 'Вікно не зменшується; категорії перекривають 34 px його низу.', [mon(1280, 720, .4, { win: true, winBottom: 48 })]),
+        item('Розгорнуте вікно · резерв місця', 'AppBar · налаштування', 'Вікно закінчується над категоріями. Після виходу з програми місце повертається.', [mon(1280, 720, .4, { win: true, winBottom: 82 })]),
+        item('Автоприховування · сховано', 'обидві панелі сховані', 'Від категорій не лишається нічого, крім системної смуги дотику.', [mon(1280, 720, .4, { win: true, winBottom: 0, taskbar: false, bar: false, peek: true })]),
+        item('Автоприховування · викликано', 'курсор біля нижнього краю', 'Категорії виїжджають разом із панеллю Windows, одним рухом.', [mon(1280, 720, .4, { win: true, winBottom: 0 })]),
+        item('Автоприховування · меню відкрите', 'потрібна перевірка прототипом', 'Поки курсор у меню, панель Windows має лишатися видимою. Якщо система її сховає — меню закривається разом із нею.', [mon(1280, 720, .4, { win: true, winBottom: 0, cats: five('Розробка') })]),
+        item('Повноекранна гра', 'панель Windows схована', 'Категорії сховані й не перехоплюють курсор.', [mon(1280, 720, .4, { game: true, taskbar: false, bar: false })]),
+        item('Гра · виклик панелі (Win)', 'панель Windows поверх гри', 'Категорії з’являються, коли з’являється панель Windows.', [mon(1280, 720, .4, { game: true })]),
+        item('Після перезапуску Explorer', 'панель Windows відновилась', 'Положення перераховано; коротке підтвердження.', [mon(1280, 720, .4, { chip: 'Панель відновлено' })]),
+      ] },
+    ];
+
+    // F
+    const A = (label, primary) => ({ label, bg: primary ? '#8EA8FF' : 'rgba(255,255,255,.08)', fg: primary ? '#141826' : '#ECECEF' });
+    const toasts = [
+      { ...T.error, case: 'Ярлик не знайдено', life: 'до закриття', title: 'Ярлик не знайдено', body: 'Battle.net.lnk переміщено або видалено. Програму могли деінсталювати.', actions: [A('Знайти файл', 1), A('Прибрати')], note: 'Ярлик у меню позначається попередженням до виправлення.' },
+      { ...T.error, case: 'Помилка запуску', life: 'до закриття', title: 'Не вдалося запустити DaVinci Resolve', body: 'Програма завершилась із кодом 0xC0000135.', actions: [A('Повторити', 1), A('Розташування')], note: 'Панель не падає; помилка лише описується.' },
+      { ...T.warn, case: 'Права адміністратора', life: '5 с', title: 'Потрібні права адміністратора', body: 'Docker Desktop чекає підтвердження у вікні контролю облікових записів.', actions: [], note: 'Якщо UAC відхилено — без помилки, тихо.' },
+      { ...T.ok, case: 'Додано застосунки', life: '5 с', title: 'Додано 2 застосунки', body: 'Hades II і Balatro — у «Ігри».', actions: [A('Скасувати')], timer: true, note: 'Смужка внизу — час до зникнення.' },
+      { ...T.info, case: 'Ярлик прибрано', life: '6 с', title: 'Прибрано з «Тулзи»', body: 'ShareX залишився на комп’ютері.', actions: [A('Скасувати', 1)], timer: true, note: 'Скасування замість діалогу підтвердження.' },
+      { ...T.warn, case: 'Дублікат', life: 'до вибору', title: 'Steam уже є в «Ігри»', body: 'Додати ще один ярлик на ту саму програму?', actions: [A('Ні', 1), A('Додати')], note: 'Між різними категоріями дублікати дозволені без питань.' },
+      { ...T.error, case: 'Непідтримуваний файл', life: '5 с', title: 'readme.txt не можна додати', body: 'Підтримуються .exe, .lnk, .url, ярлики Steam і папки.', actions: [], note: 'Інші файли з того ж перетягування додаються.' },
+      { ...T.warn, case: 'Пошкоджена конфігурація', life: 'до закриття', title: 'Налаштування відновлено з копії', body: 'Файл конфігурації пошкоджено. Відновлено стан від 08.10.2026, 21:14.', actions: [A('Гаразд', 1), A('Показати файл')], note: 'Копія зберігається при кожній зміні, останні 5.' },
+      { ...T.info, case: 'Перший запуск', life: 'до закриття', title: 'Панель категорій працює', body: 'Категорії — над панеллю Windows. Налаштування та вихід — у значку в треї.', actions: [A('Створити категорію', 1)], note: 'Показується один раз.' },
+      { ...T.info, case: 'Змінився масштаб', life: '3 с', title: 'Масштаб змінено: 125% → 150%', body: 'Панель перебудовано під новий розмір.', actions: [], note: 'Також при зміні роздільності та підключенні монітора.' },
+      { ...T.error, case: 'Монітор відключено', life: 'до закриття', title: 'Другий монітор відключено', body: 'Панель перенесено на основний монітор.', actions: [A('Гаразд', 1)], note: 'Лише в режимі «на кожному моніторі».' },
+    ].map(n => ({ timer: false, ...n, hasActions: n.actions.length > 0 }));
+
+    // G
+    const editRows = [
+      mk('Visual Studio Code'), mk('Windows Terminal', { drop: true }), mk('Git Bash'), mk('Postman', { bg: 'rgba(60,60,70,1)', shadow: '0 10px 24px rgba(0,0,0,.5)', tx: 'translate(10px,-46px)' }), mk('Docker Desktop'), mk('DBeaver'),
+    ].map(r => ({ drop: false, shadow: 'none', tx: 'none', ...r }));
+    editRows.forEach(r => { if (r.name === 'Postman') r.op = .97; });
+    const pickRows = [
+      ['PowerToys', 'Вже в категорії', 'added'], ['Postman', 'C:\\Users\\…\\Postman\\Postman.exe', 'on'], ['PowerShell 7', 'C:\\Program Files\\PowerShell\\7\\pwsh.exe', 'on'], ['Power BI Desktop', 'Microsoft Store', ''], ['Process Explorer', 'D:\\Tools\\Sysinternals\\procexp64.exe', ''],
+    ].map(([n, sub, st]) => ({ ...mk(n), sub, bg: st === 'on' ? 'rgba(142,168,255,.1)' : 'transparent', box: st ? 'none' : '1.5px solid #6E6E78', fill: st === 'on' ? '#8EA8FF' : (st === 'added' ? 'rgba(255,255,255,.18)' : 'transparent'), check: st ? '✓' : '', op: st === 'added' ? .5 : 1 }));
+
+    // H
+    const seg = (label, hint, opts, sel) => ({ label, hint, seg: true, opts: opts.map((o, i) => ({ label: o, bg: i === sel ? 'rgba(255,255,255,.12)' : 'transparent', fg: i === sel ? '#fff' : '#A6A6B0' })) });
+    const sl = (label, hint, val, pct) => ({ label, hint, slider: true, val, pct });
+    const tg = (label, hint, on) => ({ label, hint, toggle: true, tbg: on ? '#8EA8FF' : 'transparent', knob: on ? '#141826' : '#A6A6B0', tx: on ? 23 : 3 });
+    const settings = [
+      seg('Монітори', 'Де показувати панель категорій', ['Лише основний', 'Усі з панеллю Windows'], 0),
+      seg('Розгорнуті вікна', 'Резерв зменшує вікна на висоту панелі', ['Перекривати', 'Резервувати місце'], 0),
+      seg('Вирівнювання', '', ['Як у Windows', 'Ліворуч', 'По центру'], 0),
+      sl('Затримка відкриття', 'Захист від випадкових наведень', '150 мс', 30),
+      sl('Затримка закриття', 'Час на перехід курсора до меню', '300 мс', 45),
+      tg('Показувати кількість ярликів', 'Число біля назви категорії', true),
+      seg('Пошук у меню', 'Поле пошуку в довгих категоріях', ['Від 15', 'Завжди', 'Ніколи'], 0),
+    ].map(s => ({ seg: false, slider: false, toggle: false, opts: [], ...s, tbg: s.tbg || 'transparent', tx: s.tx || 0, pct: s.pct || 0, val: s.val || '' }));
+    settings.forEach(s => { if (s.toggle) s.tbg = s.tbg === 'transparent' ? 'rgba(255,255,255,.12)' : s.tbg; });
+
+    this._d = { T, CATS, apps, menuCases, strips, screenGroups, toasts, editRows, pickRows, settings };
+    return this._d;
+  }
+
+  renderVals() {
+    const d = this.D();
+    const live = Object.keys(d.CATS).map(n => {
+      const open = this.state.open === n;
+      return {
+        name: n, count: d.CATS[n].length, open,
+        bg: open ? 'rgba(255,255,255,.09)' : 'transparent', line: open ? '#8EA8FF' : 'transparent',
+        onEnter: () => this.enter(n), onLeave: () => this.leave(),
+        onClick: () => { clearTimeout(this.ot); this.setState({ open: open ? null : n }); },
+        apps: d.apps(n).map(a => ({ ...a, onClick: () => this.launch(a) })),
+      };
+    });
+    return {
+      live, toast: this.state.toast, dismiss: () => this.setState({ toast: null }),
+      showCounts: this.props.showCounts ?? true,
+      openDelayLabel: (this.props.openDelay ?? 150) + ' мс', closeDelayLabel: (this.props.closeDelay ?? 300) + ' мс',
+      menuCases: d.menuCases, strips: d.strips, screenGroups: d.screenGroups, toasts: d.toasts,
+      editRows: d.editRows, pickRows: d.pickRows, settings: d.settings,
+    };
+  }
+}
+</script>
+</body>
+</html>
