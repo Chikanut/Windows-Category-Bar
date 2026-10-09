@@ -54,4 +54,18 @@ finally
     // This uniquely created temporary directory is owned by this test run.
     Directory.Delete(folder, recursive: true);
 }
+var editable = new Configuration { Categories = [new Category { Name = "Початкова" }, new Category { Name = "Інша" }] };
+var persisted = "";
+var editor = new ConfigurationEditor(editable, c => persisted = JsonSerializer.Serialize(c));
+editor.Change(() => editable.Categories[0].Shortcuts.Add(new Shortcut { Name = "Сайт", Target = "https://example.com", RunAsAdministrator = true }));
+Check("Add is persisted and undoable", editor.CanUndo && persisted.Contains("example.com"));
+editor.Undo(); Check("Undo restores additions", editable.Categories[0].Shortcuts.Count == 0 && !editor.CanUndo);
+editor.Change(() => ConfigurationEditor.Move(editable.Categories, editable.Categories[0], 1));
+Check("Category drag order persisted", editable.Categories[1].Name == "Початкова");
+editor.Undo(); Check("Undo restores ordering", editable.Categories[0].Name == "Початкова");
+var failingEditor = new ConfigurationEditor(editable, _ => throw new IOException("disk full"));
+try { failingEditor.Change(() => editable.Categories.RemoveAt(0)); } catch (IOException) { }
+Check("Failed save rolls back deletion", editable.Categories.Count == 2 && editable.Categories[0].Name == "Початкова");
+Check("Web, Steam and Store launch targets", LaunchTarget.Exists("https://example.com") && LaunchTarget.Exists("steam://rungameid/1") && LaunchTarget.Exists(@"shell:AppsFolder\Package!App"));
+Check("Reject arbitrary URL schemes", !LaunchTarget.IsLink("javascript:alert(1)") && !LaunchTarget.IsLink("file:///C:/example"));
 Console.WriteLine($"{passed} checks passed.");

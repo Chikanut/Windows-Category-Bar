@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -34,12 +35,25 @@ public sealed class BarWindow : Window
     private TaskbarObservation? lastObservation;
     private readonly string logPath;
     private SettingsWindow? settingsWindow;
+    private readonly IntPtr attachedTaskbar;
+    private readonly BarWindow? primary;
+    private readonly ConfigurationEditor editor;
+    private readonly Dictionary<IntPtr, BarWindow> secondaryBars = [];
+    private readonly Dictionary<Guid, Border> accentLines = [];
+    private DateTime nextMonitorCheck;
+    private AppBarReservation? reservation;
+    private ToastWindow? toast;
+    private Button? overflowButton;
+    private bool renaming;
     internal System.Collections.Generic.IEnumerable<Category> Categories => config.Categories;
 
-    public BarWindow(Configuration config, ConfigurationStore store)
+    public BarWindow(Configuration config, ConfigurationStore store) : this(config, store, IntPtr.Zero, null) { }
+    private BarWindow(Configuration config, ConfigurationStore store, IntPtr taskbar, BarWindow? primary)
     {
         this.config = config;
         this.store = store;
+        attachedTaskbar = taskbar; this.primary = primary;
+        editor = primary?.editor ?? new ConfigurationEditor(config, store.Save);
         logPath = Path.Combine(Path.GetDirectoryName(store.Path)!, "taskbar.log");
         Title = "Панель категорій";
         WindowStyle = WindowStyle.None;
@@ -57,10 +71,11 @@ public sealed class BarWindow : Window
             BorderThickness = new Thickness(1, 1, 1, 0), CornerRadius = new CornerRadius(9, 9, 0, 0),
             Padding = new Thickness(3, 2, 3, 3), Child = tabs
         };
-        tray = new Forms.NotifyIcon { Icon = System.Drawing.SystemIcons.Application, Text = "Панель категорій", Visible = true };
+        tray = new Forms.NotifyIcon { Icon = System.Drawing.SystemIcons.Application, Text = "Панель категорій", Visible = primary is null };
         var trayMenu = new Forms.ContextMenuStrip();
         trayMenu.Items.Add("Налаштування…", null, (_, _) => Dispatcher.Invoke(ShowSettings));
         trayMenu.Items.Add("Створити категорію", null, (_, _) => Dispatcher.Invoke(CreateCategory));
+        trayMenu.Items.Add("Скасувати останню зміну", null, (_, _) => Dispatcher.Invoke(Undo));
         trayMenu.Items.Add("Сховати / показати панель", null, (_, _) => Dispatcher.Invoke(() => { temporarilyHidden = !temporarilyHidden; UpdatePosition(); }));
         var startupItem = new Forms.ToolStripMenuItem("Запускати з Windows");
         startupItem.Click += (_, _) => Dispatcher.Invoke(() =>
@@ -97,7 +112,18 @@ public sealed class BarWindow : Window
         closeTimer.Tick += (_, _) => { closeTimer.Stop(); if (!IsMouseOver && menu?.IsMouseOver != true && menu?.ContextOpen != true) CloseMenu(); };
         MouseEnter += (_, _) => closeTimer.Stop();
         MouseLeave += (_, _) => ScheduleClose();
-        Closed += (_, _) => { tracker.Stop(); openTimer.Stop(); closeTimer.Stop(); CloseMenu(); tray.Dispose(); };
+        Closed += (_, _) =>
+        {
+            tracker.Stop(); openTimer.Stop(); closeTimer.Stop(); CloseMenu(); toast?.Close(); reservation?.Dispose(); tray.Dispose();
+            foreach (var secondary in secondaryBars.Values.ToArray()) secondary.Close();
+        };
+        Loaded += (_, _) =>
+        {
+            if (primary is not null || config.Settings.HasSeenWelcome) return;
+            config.Settings.HasSeenWelcome = true;
+            try { store.Save(config); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+            Notify("Панель категорій працює", "Категорії — над панеллю Windows. Налаштування та вихід доступні в треї.", "Створити категорію", CreateCategory);
+        };
         RebuildTabs();
     }
 
@@ -105,6 +131,7 @@ public sealed class BarWindow : Window
 
     private IntPtr WindowMessage(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
+        if (message == taskbarCreated) { reservation?.Dispose(); reservation = null; nextMonitorCheck = DateTime.MinValue; }
         if (message == taskbarCreated || message is 0x007E or 0x02E0 or 0x001A)
             Dispatcher.BeginInvoke(UpdatePosition);
         return IntPtr.Zero;
@@ -113,7 +140,12 @@ public sealed class BarWindow : Window
     private void UpdatePosition()
     {
         if (handle == IntPtr.Zero) return;
-        var observation = NativeMethods.Observe();
+        if (primary is null && DateTime.UtcNow >= nextMonitorCheck)
+        {
+            nextMonitorCheck = DateTime.UtcNow.AddSeconds(1);
+            SyncMonitors();
+        }
+        var observation = NativeMethods.Observe(attachedTaskbar);
         if (lastObservation != observation)
         {
             try
@@ -127,14 +159,16 @@ public sealed class BarWindow : Window
         }
         var bottomTaskbar = observation.Taskbar.Width > observation.Taskbar.Height
             && observation.Taskbar.Bottom >= observation.Monitor.Bottom - 2;
-        if (temporarilyHidden || !bottomTaskbar || !VisibilityPolicy.ShouldShow(observation))
+        if (temporarilyHidden || primary?.temporarilyHidden == true || !bottomTaskbar || !VisibilityPolicy.ShouldShow(observation))
         {
             CloseMenu();
+            toast?.Close(); toast = null;
+            reservation?.Dispose(); reservation = null;
             if (IsVisible) Hide();
             return;
         }
         monitor = observation.Monitor;
-        var dpi = NativeMethods.GetDpiForWindow(NativeMethods.FindWindow("Shell_TrayWnd", null));
+        var dpi = NativeMethods.GetDpiForWindow(attachedTaskbar == IntPtr.Zero ? NativeMethods.FindWindow("Shell_TrayWnd", null) : attachedTaskbar);
         var scale = (dpi == 0 ? 96 : dpi) / 96.0;
         var newMax = Math.Max(140, monitor.Width * .6 / scale);
         if (Math.Abs(MaxWidth - newMax) > 1 || double.IsPositiveInfinity(MaxWidth))
@@ -145,6 +179,12 @@ public sealed class BarWindow : Window
         UpdateLayout();
         var width = (int)Math.Ceiling(ActualWidth * scale);
         var height = (int)Math.Ceiling(34 * scale);
+        if (config.Settings.ReserveSpace && !observation.AutoHide)
+        {
+            reservation ??= new AppBarReservation();
+            reservation.Update(monitor, height, observation.Taskbar.Top);
+        }
+        else { reservation?.Dispose(); reservation = null; }
         var leftAligned = config.Settings.Alignment == "Left";
         if (config.Settings.Alignment == "Windows")
         {
@@ -163,6 +203,7 @@ public sealed class BarWindow : Window
     {
         CloseMenu();
         tabs.Children.Clear();
+        accentLines.Clear(); overflowButton = null;
         if (config.Categories.Count == 0) { AddTabAction("＋ Створити першу категорію", CreateCategory); return; }
         var budget = double.IsFinite(MaxWidth) ? MaxWidth - 90 : 800;
         var used = 0.0;
@@ -179,6 +220,7 @@ public sealed class BarWindow : Window
         if (visible < config.Categories.Count)
         {
             var more = new Button { Content = $"Ще {config.Categories.Count - visible} ⌃" };
+            overflowButton = more;
             more.Click += (_, _) =>
             {
                 var context = new ContextMenu();
@@ -205,34 +247,74 @@ public sealed class BarWindow : Window
         var label = new StackPanel { Orientation = Orientation.Horizontal };
         label.Children.Add(new TextBlock { Text = category.Name, MaxWidth = 150, TextTrimming = TextTrimming.CharacterEllipsis });
         if (config.Settings.ShowCounts) label.Children.Add(new TextBlock { Text = category.Shortcuts.Count.ToString(), Foreground = Brush("#8E8E98"), FontSize = 11, Margin = new Thickness(6, 1, 0, 0) });
-        var button = new Button { Content = label, ToolTip = category.Name, AllowDrop = true };
+        var content = new Grid(); content.Children.Add(label);
+        var line = new Border { Height = 2, Background = Brush("#8EA8FF"), CornerRadius = new CornerRadius(1), VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 0, -6), Visibility = Visibility.Collapsed };
+        content.Children.Add(line); accentLines[category.Id] = line;
+        var button = new Button { Content = content, Tag = category.Id, ToolTip = category.Name, AllowDrop = true };
+        var dragOrigin = new Point();
+        button.PreviewMouseLeftButtonDown += (_, e) => dragOrigin = e.GetPosition(button);
+        button.PreviewMouseMove += (_, e) =>
+        {
+            if (renaming || e.LeftButton != MouseButtonState.Pressed) return;
+            var point = e.GetPosition(button);
+            if (Math.Abs(point.X - dragOrigin.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(point.Y - dragOrigin.Y) < SystemParameters.MinimumVerticalDragDistance) return;
+            CloseMenu(); DragDrop.DoDragDrop(button, new DataObject("CategoryBar.Category", category.Id), DragDropEffects.Move);
+        };
+        button.MouseDoubleClick += (_, e) => { e.Handled = true; RenameInline(category, button); };
         button.MouseEnter += (_, _) =>
         {
             closeTimer.Stop();
-            if (menu?.Category == category) return;
+            if (renaming || menu?.ContextOpen == true || menu?.Editing == true || menu?.Category == category) return;
             if (menu is not null) { OpenMenu(category, button); return; }
             pending = category; anchor = button;
             openTimer.Stop(); openTimer.Interval = TimeSpan.FromMilliseconds(Math.Max(1, config.Settings.OpenDelayMs)); openTimer.Start();
         };
         button.MouseLeave += (_, _) => { openTimer.Stop(); ScheduleClose(); };
-        button.Click += (_, _) => { openTimer.Stop(); if (menu?.Category == category) CloseMenu(); else OpenMenu(category, button); };
+        button.Click += (_, _) => { if (renaming) return; openTimer.Stop(); if (menu?.Category == category) CloseMenu(); else OpenMenu(category, button); };
         var context = new ContextMenu();
         AddItem(context, "Додати застосунок…", () => PickFiles(category));
         AddItem(context, "Перейменувати…", () =>
         {
-            var name = TextDialog.Ask("Назва категорії", category.Name);
-            if (name is not null) { category.Name = name; SaveAndRefresh(); }
+            RenameInline(category, button);
         });
+        AddItem(context, "Редагувати ярлики", () => OpenMenu(category, button, true));
+        AddItem(context, "Нова категорія", CreateCategory);
         AddItem(context, "Перемістити ліворуч", () => MoveCategory(category, -1));
         AddItem(context, "Перемістити праворуч", () => MoveCategory(category, 1));
         AddItem(context, "Видалити категорію…", () =>
         {
-            if (category.Shortcuts.Count > 0 && MessageBox.Show($"Прибрати категорію «{category.Name}» та {category.Shortcuts.Count} ярликів? Програми залишаться на комп’ютері.", "Видалення категорії", MessageBoxButton.OKCancel) != MessageBoxResult.OK) return;
-            config.Categories.Remove(category); SaveAndRefresh();
+            var dialog = new DeleteCategoryWindow(category, config.Categories);
+            if (category.Shortcuts.Count > 0 && dialog.ShowDialog() != true) return;
+            Change(() =>
+            {
+                if (dialog.Destination is { } destination) destination.Shortcuts.AddRange(category.Shortcuts);
+                config.Categories.Remove(category);
+            }, "Категорію прибрано", $"«{category.Name}». Програми залишилися на комп’ютері.");
         });
         button.ContextMenu = context;
-        button.Drop += (_, e) => { if (e.Data.GetData(DataFormats.FileDrop) is string[] paths) AddFiles(category, paths); e.Handled = true; };
-        button.DragOver += (_, e) => { e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None; e.Handled = true; };
+        button.Drop += (_, e) =>
+        {
+            openTimer.Stop();
+            if (e.Data.GetData("CategoryBar.Category") is Guid id && config.Categories.FirstOrDefault(c => c.Id == id) is { } moving)
+                Change(() => ConfigurationEditor.Move(config.Categories, moving, config.Categories.IndexOf(category)), "Порядок категорій змінено", "Перетягування збережено.");
+            else if (e.Data.GetData("CategoryBar.Shortcut") is Guid shortcutId && config.Categories.FirstOrDefault(c => c.Shortcuts.Any(s => s.Id == shortcutId)) is { } source)
+            {
+                var shortcut = source.Shortcuts.First(s => s.Id == shortcutId);
+                Change(() => { source.Shortcuts.Remove(shortcut); category.Shortcuts.Add(shortcut); }, "Ярлик переміщено", category.Name);
+            }
+            else if (e.Data.GetData(DataFormats.FileDrop) is string[] paths) AddFiles(category, paths);
+            e.Handled = true;
+        };
+        button.DragEnter += (_, e) =>
+        {
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
+            pending = category; anchor = button; openTimer.Stop(); openTimer.Interval = TimeSpan.FromMilliseconds(600); openTimer.Start();
+        };
+        button.DragOver += (_, e) =>
+        {
+            e.Effects = (e.Data.GetDataPresent("CategoryBar.Category") || e.Data.GetDataPresent("CategoryBar.Shortcut")) ? DragDropEffects.Move : e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+            e.Handled = true;
+        };
         return button;
     }
 
@@ -248,7 +330,7 @@ public sealed class BarWindow : Window
         var index = config.Categories.IndexOf(category);
         var target = index + delta;
         if (target < 0 || target >= config.Categories.Count) return;
-        config.Categories.RemoveAt(index); config.Categories.Insert(target, category); SaveAndRefresh();
+        Change(() => ConfigurationEditor.Move(config.Categories, category, target), "Порядок категорій змінено", category.Name);
     }
 
     private void CreateCategory()
@@ -256,20 +338,23 @@ public sealed class BarWindow : Window
         CloseMenu();
         var name = TextDialog.Ask("Створити категорію", "");
         if (name is null) return;
-        config.Categories.Add(new Category { Name = name }); SaveAndRefresh();
+        Change(() => config.Categories.Add(new Category { Name = name }), "Категорію створено", name);
     }
 
-    private void OpenMenu(Category category, Button target)
+    private void OpenMenu(Category category, Button target, bool editing = false)
     {
         CloseMenu();
         anchor = target;
         target.Background = Brush("#18FFFFFF");
+        if (accentLines.TryGetValue(category.Id, out var line)) line.Visibility = Visibility.Visible;
         menu = new MenuWindow(category, config.Settings, target, this);
+        menu.SetEditing(editing);
         menu.Show(); menu.Position(monitor);
     }
 
     internal void ScheduleClose()
     {
+        if (renaming || menu?.Editing == true) return;
         openTimer.Stop();
         closeTimer.Stop(); closeTimer.Interval = TimeSpan.FromMilliseconds(Math.Max(1, config.Settings.CloseDelayMs)); closeTimer.Start();
     }
@@ -278,29 +363,32 @@ public sealed class BarWindow : Window
     {
         openTimer.Stop(); closeTimer.Stop();
         if (anchor is not null) anchor.Background = Brushes.Transparent;
+        foreach (var line in accentLines.Values) line.Visibility = Visibility.Collapsed;
         menu?.Close(); menu = null;
     }
 
     internal void PickFiles(Category category)
     {
         CloseMenu();
-        var picker = new OpenFileDialog { Title = "Додати застосунки", Multiselect = true, Filter = "Програми та ярлики|*.exe;*.lnk;*.url" };
-        if (picker.ShowDialog() == true) AddFiles(category, picker.FileNames);
+        var picker = new AppPickerWindow(category);
+        if (picker.ShowDialog() == true)
+            Change(() => category.Shortcuts.AddRange(picker.Selected), $"Додано {picker.Selected.Count} застосунків", $"До «{category.Name}».");
     }
 
-    internal void AddFiles(Category category, string[] paths)
+    internal void AddFiles(Category category, string[] paths, int? insertionIndex = null)
     {
-        CloseMenu();
+        var shortcuts = new List<Shortcut>();
         foreach (var path in paths)
         {
-            var extension = Path.GetExtension(path).ToLowerInvariant();
-            if (!Directory.Exists(path) && (extension is not (".exe" or ".lnk" or ".url") || !File.Exists(path)))
+            if (!LaunchTarget.IsSupportedFile(path))
             { Notify("Непідтримуваний файл", Path.GetFileName(path)); continue; }
             if (category.Shortcuts.Any(s => string.Equals(s.Target, path, StringComparison.OrdinalIgnoreCase)))
-            { Notify("Ярлик уже додано", Path.GetFileName(path)); continue; }
-            category.Shortcuts.Add(new Shortcut { Name = Directory.Exists(path) ? new DirectoryInfo(path).Name : Path.GetFileNameWithoutExtension(path), Target = path });
+            {
+                if (MessageBox.Show($"{Path.GetFileName(path)} уже є в «{category.Name}». Додати ще один ярлик?", "Повторний ярлик", MessageBoxButton.YesNo) != MessageBoxResult.Yes) continue;
+            }
+            shortcuts.Add(new Shortcut { Name = Directory.Exists(path) ? new DirectoryInfo(path).Name : Path.GetFileNameWithoutExtension(path), Target = path });
         }
-        SaveAndRefresh();
+        if (shortcuts.Count > 0) Change(() => category.Shortcuts.InsertRange(Math.Clamp(insertionIndex ?? category.Shortcuts.Count, 0, category.Shortcuts.Count), shortcuts), $"Додано {shortcuts.Count} застосунків", $"До «{category.Name}».");
     }
 
     internal void Launch(Shortcut shortcut, bool admin = false)
@@ -308,40 +396,131 @@ public sealed class BarWindow : Window
         CloseMenu();
         try
         {
-            if (!File.Exists(shortcut.Target) && !Directory.Exists(shortcut.Target)) throw new FileNotFoundException("Ярлик переміщено або видалено.", shortcut.Target);
+            if (!LaunchTarget.Exists(shortcut.Target)) throw new FileNotFoundException("Ярлик переміщено або видалено.", shortcut.Target);
             // Launch the original .lnk through ShellExecute, preserving its parameters and working directory.
-            var start = new ProcessStartInfo(shortcut.Target, shortcut.Arguments) { UseShellExecute = true };
-            if (shortcut.WorkingDirectory.Length > 0) start.WorkingDirectory = shortcut.WorkingDirectory;
-            if (admin) start.Verb = "runas";
+            admin |= shortcut.RunAsAdministrator;
+            var resolved = (admin || shortcut.Arguments.Length > 0 || shortcut.WorkingDirectory.Length > 0) ? ShortcutCatalog.Resolve(shortcut) : (shortcut.Target, shortcut.Arguments, shortcut.WorkingDirectory);
+            var start = LaunchTarget.IsShellApplication(shortcut.Target)
+                ? new ProcessStartInfo("explorer.exe", "\"" + shortcut.Target + "\"") { UseShellExecute = true }
+                : new ProcessStartInfo(resolved.Item1, resolved.Item2) { UseShellExecute = true };
+            if (resolved.Item3.Length > 0) start.WorkingDirectory = resolved.Item3;
+            if (admin && !LaunchTarget.IsShellApplication(shortcut.Target)) start.Verb = "runas";
             Process.Start(start)?.Dispose();
         }
         catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223) { }
-        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or IOException or InvalidOperationException)
-        { Notify("Не вдалося запустити «" + shortcut.Name + "»", ex.Message); }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or IOException or UnauthorizedAccessException or InvalidOperationException)
+        { Notify("Не вдалося запустити «" + shortcut.Name + "»", ex.Message, "Знайти файл", () => RepairShortcut(shortcut), true); }
     }
 
     internal void SaveAndRefresh()
     {
         try { store.Save(config); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Notify("Не вдалося зберегти", ex.Message); }
-        RebuildTabs(); UpdatePosition();
+        RefreshAll();
     }
 
-    internal void Notify(string title, string message)
+    internal void Notify(string title, string message, string? actionLabel = null, Action? action = null, bool error = false)
     {
-        tray.ShowBalloonTip(6000, title, message, Forms.ToolTipIcon.Info);
+        if (primary is not null && !IsVisible) { primary.Notify(title, message, actionLabel, action, error); return; }
+        if (!IsVisible) { (primary?.tray ?? tray).ShowBalloonTip(6000, title, message, error ? Forms.ToolTipIcon.Error : Forms.ToolTipIcon.Info); return; }
+        toast?.Close(); toast = new ToastWindow(title, message, actionLabel, action, error);
+        toast.Show(); toast.UpdateLayout();
+        var point = PointToScreen(new Point(ActualWidth, 0));
+        var toastHandle = new WindowInteropHelper(toast).Handle;
+        var dpi = NativeMethods.GetDpiForWindow(toastHandle) / 96.0;
+        var x = (int)Math.Clamp(point.X - toast.ActualWidth * dpi, monitor.Left, Math.Max(monitor.Left, monitor.Right - toast.ActualWidth * dpi));
+        var y = Math.Max(monitor.Top, (int)(point.Y - toast.ActualHeight * dpi - 12 * dpi));
+        NativeMethods.SetWindowPos(toastHandle, new IntPtr(-1), x, y, (int)(toast.ActualWidth * dpi), (int)(toast.ActualHeight * dpi), 0x0010);
     }
 
     private void ShowSettings()
     {
+        if (primary is not null) { primary.ShowSettings(); return; }
         CloseMenu();
         if (settingsWindow is not null) { settingsWindow.Activate(); return; }
         settingsWindow = new SettingsWindow(config, store.Path, () =>
         {
             store.Save(config);
-            RebuildTabs(); UpdatePosition();
+            RefreshAll();
         });
         settingsWindow.Closed += (_, _) => settingsWindow = null;
         settingsWindow.Show();
+    }
+
+    private void SyncMonitors()
+    {
+        var handles = config.Settings.AllMonitors ? NativeMethods.Taskbars().Where(h => h != NativeMethods.FindWindow("Shell_TrayWnd", null)).ToArray() : [];
+        foreach (var stale in secondaryBars.Keys.Except(handles).ToArray()) { secondaryBars[stale].Close(); secondaryBars.Remove(stale); }
+        foreach (var taskbar in handles.Where(h => !secondaryBars.ContainsKey(h)))
+        {
+            var secondary = new BarWindow(config, store, taskbar, this); secondaryBars.Add(taskbar, secondary); secondary.Show();
+        }
+    }
+
+    private void RefreshAll()
+    {
+        if (primary is not null) { primary.RefreshAll(); return; }
+        RebuildTabs(); SyncMonitors(); UpdatePosition();
+        foreach (var secondary in secondaryBars.Values) { secondary.RebuildTabs(); secondary.UpdatePosition(); }
+    }
+
+    internal void Change(Action change, string title, string message)
+    {
+        var pinned = menu?.Editing == true ? menu.Category.Id : (Guid?)null;
+        try { editor.Change(change); RefreshAll(); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException or InvalidOperationException)
+        { RefreshAll(); Notify("Не вдалося зберегти", ex.Message, error: true); return; }
+        if (pinned is Guid id && config.Categories.FirstOrDefault(c => c.Id == id) is { } category)
+        {
+            var target = tabs.Children.OfType<Button>().FirstOrDefault(b => Equals(b.Tag, id)) ?? overflowButton;
+            if (target is not null) OpenMenu(category, target, true);
+        }
+        Notify(title, message, "Скасувати", Undo);
+    }
+
+    private void Undo()
+    {
+        try { editor.Undo(); RefreshAll(); Notify("Зміну скасовано", "Попередній стан відновлено."); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { RefreshAll(); Notify("Не вдалося скасувати", ex.Message, error: true); }
+    }
+
+    private void RenameInline(Category category, Button button)
+    {
+        CloseMenu(); renaming = true;
+        var input = new TextBox { Text = category.Name, MinWidth = 70, MaxWidth = 150, MaxLength = 100 };
+        button.Content = input; var finished = false;
+        void Finish(bool save)
+        {
+            if (finished) return; finished = true; renaming = false;
+            var name = input.Text.Trim();
+            if (save && name.Length > 0 && name != category.Name) Change(() => category.Name = name, "Назву змінено", name);
+            else RebuildTabs();
+        }
+        input.PreviewKeyDown += (_, e) => { if (e.Key is Key.Enter or Key.Escape) { e.Handled = true; Finish(e.Key == Key.Enter); } };
+        input.LostKeyboardFocus += (_, _) => Finish(true);
+        input.Focus(); input.SelectAll();
+    }
+
+    internal void RepairShortcut(Shortcut shortcut)
+    {
+        var picker = new OpenFileDialog { Title = "Знайти файл для «" + shortcut.Name + "»", Filter = "Програми та ярлики|*.exe;*.lnk;*.url" };
+        if (picker.ShowDialog() == true) Change(() => shortcut.Target = picker.FileName, "Ярлик виправлено", shortcut.Name);
+    }
+
+    internal void OpenLocation(Shortcut shortcut)
+    {
+        try
+        {
+            var target = ShortcutCatalog.Resolve(shortcut).Target;
+            var arguments = LaunchTarget.IsShellApplication(target) ? "shell:AppsFolder" : File.Exists(target) ? "/select,\"" + target + "\"" : Directory.Exists(target) ? "\"" + target + "\"" : throw new FileNotFoundException("Розташування файлу недоступне.");
+            Process.Start(new ProcessStartInfo("explorer.exe", arguments) { UseShellExecute = true })?.Dispose();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception) { Notify("Не вдалося відкрити розташування", ex.Message, error: true); }
+    }
+
+    internal void EditProperties(Shortcut shortcut)
+    {
+        CloseMenu(); var dialog = new ShortcutPropertiesWindow(shortcut);
+        if (dialog.ShowDialog() == true) Change(() => dialog.Apply(shortcut), "Властивості збережено", shortcut.Name);
     }
 }

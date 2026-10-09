@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Collections.Generic;
 using CategoryBar.Core;
 
 namespace CategoryBar;
@@ -37,6 +38,21 @@ internal static class NativeMethods
     [DllImport("user32.dll")] internal static extern short GetAsyncKeyState(int key);
     [DllImport("shell32.dll")] internal static extern UIntPtr SHAppBarMessage(uint message, ref AppBarData data);
     [DllImport("dwmapi.dll")] internal static extern int DwmGetWindowAttribute(IntPtr window, int attribute, out int value, int size);
+    private delegate bool EnumWindowCallback(IntPtr window, IntPtr parameter);
+    [DllImport("user32.dll")] private static extern bool EnumWindows(EnumWindowCallback callback, IntPtr parameter);
+    [DllImport("user32.dll")] internal static extern bool IsWindow(IntPtr window);
+
+    internal static List<IntPtr> Taskbars()
+    {
+        var result = new List<IntPtr>();
+        EnumWindows((window, _) =>
+        {
+            var name = new StringBuilder(256); GetClassName(window, name, name.Capacity);
+            if (name.ToString() is "Shell_TrayWnd" or "Shell_SecondaryTrayWnd") result.Add(window);
+            return true;
+        }, IntPtr.Zero);
+        return result;
+    }
 
     internal static bool IsAbove(IntPtr first, IntPtr second)
     {
@@ -49,10 +65,10 @@ internal static class NativeMethods
         return false;
     }
 
-    internal static TaskbarObservation Observe()
+    internal static TaskbarObservation Observe(IntPtr taskbar = default)
     {
-        var taskbar = FindWindow("Shell_TrayWnd", null);
-        if (taskbar == IntPtr.Zero || !GetWindowRect(taskbar, out var bar)) return default;
+        if (taskbar == IntPtr.Zero) taskbar = FindWindow("Shell_TrayWnd", null);
+        if (!IsWindow(taskbar) || !GetWindowRect(taskbar, out var bar)) return default;
         var monitor = MonitorFromWindow(taskbar, 2);
         var info = new MonitorInfo { Size = Marshal.SizeOf<MonitorInfo>() };
         if (!GetMonitorInfo(monitor, ref info)) return default;
@@ -62,7 +78,7 @@ internal static class NativeMethods
         var foreground = GetForegroundWindow();
         var className = new StringBuilder(256);
         _ = GetClassName(foreground, className, className.Capacity);
-        var desktop = className.ToString() is "Progman" or "WorkerW" or "Shell_TrayWnd";
+        var desktop = className.ToString() is "Progman" or "WorkerW" or "Shell_TrayWnd" or "Shell_SecondaryTrayWnd";
         var fullscreen = !desktop && foreground != IntPtr.Zero && MonitorFromWindow(foreground, 2) == monitor
             && GetWindowRect(foreground, out var fg) && fg.Left <= info.Monitor.Left && fg.Top <= info.Monitor.Top
             && fg.Right >= info.Monitor.Right && fg.Bottom >= info.Monitor.Bottom;

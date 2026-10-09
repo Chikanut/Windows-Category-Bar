@@ -1,4 +1,4 @@
-param([switch]$Publish, [switch]$VisualCheck)
+param([switch]$Publish, [switch]$VisualCheck, [switch]$SelfContained)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 Push-Location $projectRoot
@@ -14,13 +14,20 @@ try {
     if ($VisualCheck) {
         $reviewFolder = Join-Path $projectRoot '.local\settings-review'
         $executable = Join-Path $projectRoot 'src\CategoryBar\bin\Release\net10.0-windows\CategoryBar.exe'
-        $renderProcess = Start-Process -FilePath $executable -ArgumentList @('--render-settings', ('"' + $reviewFolder + '"')) -WindowStyle Hidden -PassThru
-        if (-not $renderProcess.WaitForExit(20000)) { Stop-Process -Id $renderProcess.Id; throw 'Settings render timed out.' }
-        if ($renderProcess.ExitCode -ne 0) { throw "Settings checks failed. See $reviewFolder\failure.txt" }
+        foreach ($settingsPage in @('Panel', 'General', 'Categories', 'About')) {
+            $renderProcess = Start-Process -FilePath $executable -ArgumentList @('--render-settings', ('"' + $reviewFolder + '"'), $settingsPage) -WindowStyle Hidden -PassThru
+            if (-not $renderProcess.WaitForExit(20000)) { Stop-Process -Id $renderProcess.Id; throw 'Settings render timed out.' }
+            if ($renderProcess.ExitCode -ne 0) { throw "Settings checks failed. See $reviewFolder\failure.txt" }
+        }
+        Write-Output 'PASS: Four settings pages rendered.'
         Get-Content -LiteralPath (Join-Path $reviewFolder 'checks.txt')
     }
-    if ($Publish) {
-        dotnet publish src\CategoryBar -c Release --no-restore --self-contained false -o artifacts\portable -p:UseSharedCompilation=false --disable-build-servers
+    if ($Publish -or $SelfContained) {
+        if ($SelfContained) {
+            dotnet publish src\CategoryBar -c Release -r win-x64 --self-contained true -o artifacts\portable -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:UseSharedCompilation=false --disable-build-servers
+        } else {
+            dotnet publish src\CategoryBar -c Release --no-restore --self-contained false -o artifacts\portable -p:UseSharedCompilation=false --disable-build-servers
+        }
         if ($LASTEXITCODE -ne 0) { throw 'Publish failed.' }
     }
 } finally { Pop-Location }

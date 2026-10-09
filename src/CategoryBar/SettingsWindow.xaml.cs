@@ -31,7 +31,9 @@ public partial class SettingsWindow : Window
         var settings = config.Settings;
         Opening.Value = settings.OpenDelayMs; ClosingDelay.Value = settings.CloseDelayMs;
         OpeningLabel.Text = settings.OpenDelayMs + " мс"; ClosingLabel.Text = settings.CloseDelayMs + " мс";
-        Counts.IsChecked = settings.ShowCounts;
+        Counts.IsChecked = settings.ShowCounts; GridMode.IsChecked = settings.GridForLargeCategories;
+        (settings.AllMonitors ? AllMonitors : PrimaryMonitor).IsChecked = true;
+        (settings.ReserveSpace ? ReserveMode : OverlayMode).IsChecked = true;
         (settings.Alignment == "Left" ? LeftAlignment : settings.Alignment == "Center" ? CenterAlignment : WindowsAlignment).IsChecked = true;
         (settings.SearchThreshold == 0 ? AlwaysSearch : settings.SearchThreshold == int.MaxValue ? NeverSearch : ThresholdSearch).IsChecked = true;
         Startup.IsChecked = allowSystemChanges && StartupRegistration.IsEnabled;
@@ -77,6 +79,14 @@ public partial class SettingsWindow : Window
     {
         if (!ready) return;
         config.Settings.Alignment = (string)((RadioButton)sender).Tag;
+        SaveNow();
+    }
+    private void GridChanged(object sender, RoutedEventArgs e) { if (!ready) return; config.Settings.GridForLargeCategories = GridMode.IsChecked == true; SaveNow(); }
+    private void BehaviorChanged(object sender, RoutedEventArgs e)
+    {
+        if (!ready) return;
+        config.Settings.AllMonitors = AllMonitors.IsChecked == true;
+        config.Settings.ReserveSpace = ReserveMode.IsChecked == true;
         SaveNow();
     }
     private void SearchChanged(object sender, RoutedEventArgs e)

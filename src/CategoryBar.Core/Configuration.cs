@@ -41,6 +41,7 @@ public sealed class Shortcut
     public string Target { get; set; } = "";
     public string Arguments { get; set; } = "";
     public string WorkingDirectory { get; set; } = "";
+    public bool RunAsAdministrator { get; set; }
 }
 
 public sealed class Settings
@@ -50,6 +51,10 @@ public sealed class Settings
     public bool ShowCounts { get; set; } = true;
     public int SearchThreshold { get; set; } = 15;
     public string Alignment { get; set; } = "Windows";
+    public bool AllMonitors { get; set; }
+    public bool ReserveSpace { get; set; }
+    public bool GridForLargeCategories { get; set; }
+    public bool HasSeenWelcome { get; set; }
 }
 
 public sealed class ConfigurationStore(string path)

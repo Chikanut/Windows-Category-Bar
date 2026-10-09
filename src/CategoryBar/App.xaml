@@ -7,8 +7,8 @@
       <Setter Property="Foreground" Value="#ECECEF"/><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/>
       <Setter Property="Padding" Value="12,0"/><Setter Property="Height" Value="28"/><Setter Property="HorizontalContentAlignment" Value="Left"/>
       <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
-        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
-          <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center"/>
+        <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+          <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center"/>
         </Border>
         <ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="border" Property="Background" Value="#18FFFFFF"/></Trigger>
           <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="border" Property="BorderBrush" Value="#8EA8FF"/><Setter TargetName="border" Property="BorderThickness" Value="1"/></Trigger>

@@ -17,14 +17,29 @@ public partial class App : Application
         base.OnStartup(e);
         if (e.Args.Contains("--render-settings"))
         {
+            System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
             var index = Array.IndexOf(e.Args, "--render-settings");
             if (index + 1 >= e.Args.Length) { Shutdown(2); return; }
-            try { SettingsPreview.RenderAndCheck(e.Args[index + 1]); Shutdown(); }
+            var page = index + 2 < e.Args.Length ? e.Args[index + 2] : "Panel";
+            if (page is not ("Panel" or "General" or "Categories" or "About")) { Shutdown(2); return; }
+            try { SettingsPreview.RenderAndCheck(e.Args[index + 1], page); Shutdown(); }
             catch (Exception ex)
             {
                 File.WriteAllText(Path.Combine(e.Args[index + 1], "failure.txt"), ex.ToString());
                 Shutdown(1);
             }
+            return;
+        }
+        if (e.Args.Contains("--self-test"))
+        {
+            var index = Array.IndexOf(e.Args, "--self-test");
+            if (index + 1 >= e.Args.Length) { Shutdown(2); return; }
+            var folder = Path.GetFullPath(e.Args[index + 1]);
+            Dispatcher.BeginInvoke(async () =>
+            {
+                try { await FunctionalChecks.Run(folder); Shutdown(); }
+                catch (Exception ex) { Directory.CreateDirectory(folder); File.WriteAllText(Path.Combine(folder, "failure.txt"), ex.ToString()); Shutdown(1); }
+            });
             return;
         }
         if (e.Args.Contains("--probe"))
