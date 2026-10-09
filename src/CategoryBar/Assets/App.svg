@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="256" height="256">
+  <!-- Панель категорій: три вкладки на панелі та відкрита колонка застосунків над середньою. -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#343A52"/>
+      <stop offset="1" stop-color="#1B1C24"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#tile)"/>
+  <rect x="22" y="11" width="20" height="27" rx="4" fill="#8EA8FF"/>
+  <rect x="26" y="16" width="12" height="3.4" rx="1.6" fill="#22263A"/>
+  <rect x="26" y="23" width="12" height="3.4" rx="1.6" fill="#22263A"/>
+  <rect x="26" y="30" width="12" height="3.4" rx="1.6" fill="#22263A"/>
+  <rect x="9" y="43" width="11" height="9" rx="3" fill="#ECECEF" fill-opacity=".59"/>
+  <rect x="22" y="43" width="20" height="9" rx="3" fill="#8EA8FF"/>
+  <rect x="44" y="43" width="11" height="9" rx="3" fill="#ECECEF" fill-opacity=".59"/>
+</svg>

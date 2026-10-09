@@ -7,10 +7,19 @@ public sealed class ConfigurationEditor(Configuration config, Action<Configurati
 {
     private string? previous;
     public bool CanUndo => previous is not null;
+    public event Action? Changed;
     public void Change(Action change)
     {
         var before = JsonSerializer.Serialize(config);
         try { change(); config.Validate(); persist(config); previous = before; }
+        catch { Restore(before); throw; }
+        Changed?.Invoke();
+    }
+    /// <summary>Persists a change that should not replace the undo step (settings tweaks).</summary>
+    public void ChangeQuietly(Action change)
+    {
+        var before = JsonSerializer.Serialize(config);
+        try { change(); config.Validate(); persist(config); }
         catch { Restore(before); throw; }
     }
     public void Undo()
@@ -20,6 +29,7 @@ public sealed class ConfigurationEditor(Configuration config, Action<Configurati
         var undo = previous;
         try { Restore(undo); persist(config); previous = null; }
         catch { Restore(current); throw; }
+        Changed?.Invoke();
     }
     private void Restore(string json)
     {
@@ -34,6 +44,15 @@ public sealed class ConfigurationEditor(Configuration config, Action<Configurati
         destination = Math.Clamp(destination, 0, items.Count - 1);
         if (from == destination) return;
         items.RemoveAt(from); items.Insert(destination, item);
+    }
+
+    public static void MoveShortcut(Category source, Category destination, Shortcut shortcut, int index)
+    {
+        var from = source.Shortcuts.IndexOf(shortcut);
+        if (from < 0) throw new InvalidOperationException("Ярлик більше не існує.");
+        if (source == destination && from < index) index--;
+        source.Shortcuts.RemoveAt(from);
+        destination.Shortcuts.Insert(Math.Clamp(index, 0, destination.Shortcuts.Count), shortcut);
     }
 }
 

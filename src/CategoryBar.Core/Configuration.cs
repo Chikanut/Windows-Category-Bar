@@ -22,8 +22,7 @@ public sealed class Configuration
         if (Categories.SelectMany(c => c.Shortcuts).Select(s => s.Id).Distinct().Count()
             != Categories.Sum(c => c.Shortcuts.Count))
             throw new InvalidDataException("Повторювані ідентифікатори ярликів.");
-        Settings.OpenDelayMs = Math.Clamp(Settings.OpenDelayMs, 0, 600);
-        Settings.CloseDelayMs = Math.Clamp(Settings.CloseDelayMs, 0, 1000);
+        Settings.Normalize();
     }
 }
 
@@ -46,15 +45,51 @@ public sealed class Shortcut
 
 public sealed class Settings
 {
+    // First run
+    public bool OnboardingCompleted { get; set; }
+
+    // Appearance
+    public string ThemeMode { get; set; } = "System";      // System | Dark | Light
+    public string AccentMode { get; set; } = "System";     // System | Custom
+    public string AccentColor { get; set; } = "#8EA8FF";
+    public bool TintSurfaces { get; set; }
+    public string FontName { get; set; } = DefaultFont;
+    public double InterfaceScale { get; set; } = 1;
+    public double SurfaceOpacity { get; set; } = .96;
+    public int CornerRadius { get; set; } = 10;
+
+    // Bar and menus
+    public bool MiniatureMode { get; set; }
     public int OpenDelayMs { get; set; } = 150;
     public int CloseDelayMs { get; set; } = 300;
     public bool ShowCounts { get; set; } = true;
-    public int SearchThreshold { get; set; } = 15;
-    public string Alignment { get; set; } = "Windows";
+    public bool ShowRunningIndicators { get; set; } = true;
+    public bool ActivateRunning { get; set; } = true;
+    public int SearchThreshold { get; set; } = 12;
+    public string Alignment { get; set; } = "Windows";     // Windows | Left | Center | Right
     public bool AllMonitors { get; set; }
     public bool ReserveSpace { get; set; }
     public bool GridForLargeCategories { get; set; }
-    public bool HasSeenWelcome { get; set; }
+
+    public const string DefaultFont = "Segoe UI Variable Text";
+
+    public void Normalize()
+    {
+        OpenDelayMs = Math.Clamp(OpenDelayMs, 0, 600);
+        CloseDelayMs = Math.Clamp(CloseDelayMs, 0, 1000);
+        SearchThreshold = Math.Clamp(SearchThreshold, 0, 100);
+        CornerRadius = Math.Clamp(CornerRadius, 0, 16);
+        InterfaceScale = double.IsFinite(InterfaceScale) ? Math.Clamp(InterfaceScale, .8, 1.5) : 1;
+        SurfaceOpacity = double.IsFinite(SurfaceOpacity) ? Math.Clamp(SurfaceOpacity, .5, 1) : .96;
+        if (ThemeMode is not ("System" or "Dark" or "Light")) ThemeMode = "System";
+        if (AccentMode is not ("System" or "Custom")) AccentMode = "System";
+        if (Alignment is not ("Windows" or "Left" or "Center" or "Right")) Alignment = "Windows";
+        if (!IsHexColor(AccentColor)) AccentColor = "#8EA8FF";
+        if (string.IsNullOrWhiteSpace(FontName)) FontName = DefaultFont;
+    }
+
+    public static bool IsHexColor(string? value) => value is { Length: 7 } && value[0] == '#'
+        && value.Skip(1).All(Uri.IsHexDigit);
 }
 
 public sealed class ConfigurationStore(string path)
