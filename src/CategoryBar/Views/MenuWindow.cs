@@ -17,7 +17,7 @@ internal sealed class MenuWindow : OverlayWindow
     private readonly StackPanel body = new();
     private readonly ScrollViewer scroller = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
     private readonly Border listHost = new();
-    private readonly TextBox search = new() { Tag = "Пошук", Margin = new Thickness(4, 0, 4, 6), Padding = new Thickness(28, 0, 8, 0) };
+    private readonly TextBox search = new() { Tag = L.T("Пошук"), Margin = new Thickness(4, 0, 4, 6), Padding = new Thickness(28, 0, 8, 0) };
     private readonly Grid searchHost = new();
     private Panel rows = new StackPanel();
     private IReadOnlyList<Category>? overflow;
@@ -149,10 +149,10 @@ internal sealed class MenuWindow : OverlayWindow
         var header = new Grid { Margin = new Thickness(10, 4, 4, 6), Height = 24 };
         header.ColumnDefinitions.Add(new ColumnDefinition());
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        header.Children.Add(Ui.Text(category.Name.ToUpper() + (editing ? "  ·  РЕДАГУВАННЯ" : ""), 11, editing ? "Accent" : "Text.Faint", bold: true));
+        header.Children.Add(Ui.Text(category.Name.ToUpper() + (editing ? "  ·  " + L.T("РЕДАГУВАННЯ") : ""), 11, editing ? "Accent" : "Text.Faint", bold: true));
         if (editing)
         {
-            var done = Ui.Button("Готово", () => { editing = false; ReleaseFocus(); Rebuild(); Reposition(); }, "Button.Primary");
+            var done = Ui.Button(L.T("Готово"), () => { editing = false; ReleaseFocus(); Rebuild(); Reposition(); }, "Button.Primary");
             done.MinHeight = 22; done.Height = 22; done.FontSize = 11.5; done.Padding = new Thickness(9, 0, 9, 0); done.Focusable = false;
             header.Children.Add(done.At(1));
         }
@@ -161,7 +161,7 @@ internal sealed class MenuWindow : OverlayWindow
             var tools = new StackPanel { Orientation = Orientation.Horizontal };
             var count = Ui.Text(category.Shortcuts.Count.ToString(), 11, "Text.Faint"); count.Margin = new Thickness(0, 0, 4, 0);
             tools.Children.Add(count);
-            var edit = Ui.IconButton(Icons.Pencil, "Редагувати ярлики", () => { editing = true; TakeFocus(); Rebuild(); Reposition(); }, "Text.Faint");
+            var edit = Ui.IconButton(Icons.Pencil, L.T("Редагувати ярлики"), () => { editing = true; TakeFocus(); Rebuild(); Reposition(); }, "Text.Faint");
             edit.Width = edit.Height = edit.MinHeight = 22;
             ((FrameworkElement)edit.Content).LayoutTransform = new ScaleTransform(.8, .8);
             tools.Children.Add(edit);
@@ -181,8 +181,9 @@ internal sealed class MenuWindow : OverlayWindow
         RenderRows();
 
         body.Children.Add(new Border { Height = 1, Margin = new Thickness(4) }.Res(Border.BackgroundProperty, "Divider"));
-        var add = ActionRow(Icons.Plus, "Додати застосунок", () => { var target = category; bar.CloseMenu(); AppPickerWindow.Open(session, target); });
+        var add = ActionRow(Icons.Plus, L.T("Додати застосунок"), () => { var target = category; bar.CloseMenu(); AppPickerWindow.Open(session, target); });
         body.Children.Add(add);
+        body.Children.Add(ActionRow(Icons.Apps, L.T("Створити набір"), () => { var target = category; bar.CloseMenu(); SetWindow.Open(session, target); }));
     }
 
     private Border ActionRow(string icon, string text, Action click)
@@ -200,7 +201,7 @@ internal sealed class MenuWindow : OverlayWindow
 
     private void BuildOverflow()
     {
-        var header = Ui.Text("ІНШІ КАТЕГОРІЇ", 11, "Text.Faint", bold: true); header.Margin = new Thickness(10, 8, 10, 10);
+        var header = Ui.Text(L.T("ІНШІ КАТЕГОРІЇ"), 11, "Text.Faint", bold: true); header.Margin = new Thickness(10, 8, 10, 10);
         body.Children.Add(header);
         foreach (var category in overflow!)
         {
@@ -236,8 +237,8 @@ internal sealed class MenuWindow : OverlayWindow
         if (Category.Shortcuts.Count == 0)
         {
             var empty = new StackPanel { Margin = new Thickness(14, 20, 14, 20) };
-            var title = Ui.Text("Тут поки порожньо", 13); title.HorizontalAlignment = HorizontalAlignment.Center;
-            var hint = Ui.Text("Перетягніть сюди ярлик, .exe або папку", 12, "Text.Faint", wrap: true); hint.TextAlignment = TextAlignment.Center; hint.Margin = new Thickness(0, 6, 0, 0);
+            var title = Ui.Text(L.T("Тут поки порожньо"), 13); title.HorizontalAlignment = HorizontalAlignment.Center;
+            var hint = Ui.Text(L.T("Перетягніть сюди ярлик, .exe або папку"), 12, "Text.Faint", wrap: true); hint.TextAlignment = TextAlignment.Center; hint.Margin = new Thickness(0, 6, 0, 0);
             empty.Children.Add(title); empty.Children.Add(hint);
             var dashed = new Rectangle { StrokeDashArray = [4, 3], StrokeThickness = 1, RadiusX = 8, RadiusY = 8 }.Res(Shape.StrokeProperty, "Text.Faint");
             dashed.Opacity = .6;
@@ -246,7 +247,7 @@ internal sealed class MenuWindow : OverlayWindow
         }
         if (items.Count == 0)
         {
-            var none = Ui.Text("Нічого не знайдено за «" + search.Text.Trim() + "»", 12.5, "Text.Faint", wrap: true);
+            var none = Ui.Text(L.F("Нічого не знайдено за «{0}»", search.Text.Trim()), 12.5, "Text.Faint", wrap: true);
             none.TextAlignment = TextAlignment.Center; none.Margin = new Thickness(10, 18, 10, 18);
             listHost.Child = none;
             return;
@@ -273,7 +274,7 @@ internal sealed class MenuWindow : OverlayWindow
     private Grid IconWithStatus(Shortcut shortcut, double size)
     {
         var host = new Grid { Width = size, Height = size + 10 };
-        var icon = Ui.AppIcon(shortcut.Name, shortcut.Target, size);
+        var icon = Ui.ShortcutIcon(shortcut, size);
         if (session.Status.IsBroken(shortcut)) icon.Opacity = .4;
         host.Children.Add(icon);
         if (session.Settings.ShowRunningIndicators && session.Status.IsRunning(shortcut))
@@ -281,8 +282,10 @@ internal sealed class MenuWindow : OverlayWindow
         return host;
     }
 
-    private string Tip(Shortcut shortcut) => session.Status.IsBroken(shortcut) ? shortcut.Name + "\nФайл не знайдено"
-        : session.Status.IsRunning(shortcut) ? shortcut.Name + "\nЗапущено — клацніть, щоб перейти до вікна" : shortcut.Name;
+    private string Tip(Shortcut shortcut) => shortcut.IsSet ? shortcut.Name + "\n" + L.F("Набір: {0}", string.Join(", ", shortcut.Steps.Select(s => s.Name)))
+            + (shortcut.Steps.Any(s => s.Placement is not null) ? "\n" + L.T("Вікна стануть на запам’ятані місця") : "")
+        : session.Status.IsBroken(shortcut) ? shortcut.Name + "\n" + L.T("Файл не знайдено")
+        : session.Status.IsRunning(shortcut) ? shortcut.Name + "\n" + L.T("Запущено — клацніть, щоб перейти до вікна") : shortcut.Name;
 
     private Border Row(Shortcut shortcut, bool highlighted)
     {
@@ -306,7 +309,7 @@ internal sealed class MenuWindow : OverlayWindow
         line.Children.Add(StatusIcon(shortcut).At(3));
         if (editing)
         {
-            var remove = Ui.IconButton(Icons.Close, "Прибрати з категорії", () => session.RemoveShortcut(Category!, shortcut), "Text.Faint");
+            var remove = Ui.IconButton(Icons.Close, L.T("Прибрати з категорії"), () => session.RemoveShortcut(Category!, shortcut), "Text.Faint");
             remove.Width = remove.Height = remove.MinHeight = 24; remove.Margin = new Thickness(6, 0, -4, 0);
             line.Children.Add(remove.At(4));
         }
@@ -369,39 +372,49 @@ internal sealed class MenuWindow : OverlayWindow
     {
         var category = Category!;
         var running = session.Status.IsRunning(shortcut);
-        var isFile = !LaunchTarget.IsShellApplication(shortcut.Target) && !LaunchTarget.IsLink(shortcut.Target);
+        var isFile = !shortcut.IsSet && !LaunchTarget.IsShellApplication(shortcut.Target) && !LaunchTarget.IsLink(shortcut.Target);
         var menu = new ContextMenu();
-        if (running)
+        if (shortcut.IsSet)
         {
-            menu.Items.Add(Ui.Item("Перейти до вікна", () => { session.Launch(shortcut); bar.CloseMenu(); }, Icons.External));
-            menu.Items.Add(Ui.Item("Відкрити ще одне вікно", () => { session.Launch(shortcut, newInstance: true); bar.CloseMenu(); }, Icons.Play, gesture: "Shift+клік"));
+            menu.Items.Add(Ui.Item(L.T("Запустити набір"), () => { session.Launch(shortcut); bar.CloseMenu(); }, Icons.Play));
+            menu.Items.Add(Ui.Item(L.T("Запустити все заново"), () => { session.Launch(shortcut, newInstance: true); bar.CloseMenu(); }, Icons.External, gesture: L.T("Shift+клік")));
+            menu.Items.Add(Ui.Item(L.T("Запам’ятати розташування вікон"), () => { bar.CloseMenu(); session.CaptureLayout(shortcut); }, Icons.Layout));
         }
-        else menu.Items.Add(Ui.Item("Запустити", () => { session.Launch(shortcut); bar.CloseMenu(); }, Icons.Play));
-        menu.Items.Add(Ui.Item("Від імені адміністратора", () => { session.Launch(shortcut, asAdministrator: true); bar.CloseMenu(); }, Icons.Shield, enabled: isFile));
-        menu.Items.Add(Ui.Item("Відкрити розташування файлу", () => { Shortcuts.RevealInExplorer(shortcut); bar.CloseMenu(); }, Icons.Folder, enabled: isFile));
+        else if (running)
+        {
+            menu.Items.Add(Ui.Item(L.T("Перейти до вікна"), () => { session.Launch(shortcut); bar.CloseMenu(); }, Icons.External));
+            menu.Items.Add(Ui.Item(L.T("Відкрити ще одне вікно"), () => { session.Launch(shortcut, newInstance: true); bar.CloseMenu(); }, Icons.Play, gesture: L.T("Shift+клік")));
+        }
+        else menu.Items.Add(Ui.Item(L.T("Запустити"), () => { session.Launch(shortcut); bar.CloseMenu(); }, Icons.Play));
+        if (!shortcut.IsSet)
+        {
+            menu.Items.Add(Ui.Item(L.T("Від імені адміністратора"), () => { session.Launch(shortcut, asAdministrator: true); bar.CloseMenu(); }, Icons.Shield, enabled: isFile));
+            menu.Items.Add(Ui.Item(L.T("Відкрити розташування файлу"), () => { Shortcuts.RevealInExplorer(shortcut); bar.CloseMenu(); }, Icons.Folder, enabled: isFile));
+        }
         menu.Items.Add(new Separator());
-        menu.Items.Add(Ui.Item("Перейменувати", () => BeginRename(shortcut), Icons.Pencil, gesture: "F2"));
-        var move = new MenuItem { Header = "Перемістити до", Icon = Ui.Icon(Icons.Move) };
+        menu.Items.Add(Ui.Item(L.T("Перейменувати"), () => BeginRename(shortcut), Icons.Pencil, gesture: "F2"));
+        var move = new MenuItem { Header = L.T("Перемістити до"), Icon = Ui.Icon(Icons.Move) };
         foreach (var other in session.Config.Categories.Where(c => c != category))
             move.Items.Add(Ui.Item(other.Name, () => MoveTo(shortcut, category, other)));
         if (move.Items.Count > 0) move.Items.Add(new Separator());
-        move.Items.Add(Ui.Item("Нова категорія", () =>
+        move.Items.Add(Ui.Item(L.T("Нова категорія"), () =>
         {
             var created = new Category { Name = Ui.FreshCategoryName(session.Config.Categories), Shortcuts = [] };
             session.Change(() => { category.Shortcuts.Remove(shortcut); created.Shortcuts.Add(shortcut); session.Config.Categories.Add(created); },
-                "Переміщено «" + shortcut.Name + "»", "До нової категорії «" + created.Name + "».");
+                L.F("Переміщено «{0}»", shortcut.Name), L.F("До нової категорії «{0}».", created.Name));
         }, Icons.Plus));
         menu.Items.Add(move);
-        menu.Items.Add(Ui.Item("Властивості ярлика…", () => { bar.CloseMenu(); Dialogs.Properties(session, shortcut); }, Icons.Sliders));
+        if (shortcut.IsSet) menu.Items.Add(Ui.Item(L.T("Розібрати набір"), () => session.Ungroup(category, shortcut), Icons.Apps));
+        else menu.Items.Add(Ui.Item(L.T("Властивості ярлика…"), () => { bar.CloseMenu(); Dialogs.Properties(session, shortcut); }, Icons.Sliders));
         menu.Items.Add(new Separator());
-        menu.Items.Add(Ui.Item("Прибрати з категорії", () => session.RemoveShortcut(category, shortcut), Icons.Trash, danger: true));
+        menu.Items.Add(Ui.Item(L.T("Прибрати з категорії"), () => session.RemoveShortcut(category, shortcut), Icons.Trash, danger: true));
         busy++;
         menu.Closed += (_, _) => busy = Math.Max(0, busy - 1);
         OpenMenu(menu, row);
     }
 
     private void MoveTo(Shortcut shortcut, Category from, Category to) =>
-        session.Change(() => { from.Shortcuts.Remove(shortcut); to.Shortcuts.Add(shortcut); }, "Переміщено «" + shortcut.Name + "»", "До категорії «" + to.Name + "».");
+        session.Change(() => { from.Shortcuts.Remove(shortcut); to.Shortcuts.Add(shortcut); }, L.F("Переміщено «{0}»", shortcut.Name), L.F("До категорії «{0}».", to.Name));
 
     private void BeginRename(Shortcut shortcut)
     {
@@ -547,7 +560,7 @@ internal sealed class MenuWindow : OverlayWindow
             {
                 origin.Shortcuts.Remove(item);
                 destination.Shortcuts.Insert(Math.Min(index, destination.Shortcuts.Count), item);
-            }, destination != origin ? "Переміщено «" + item.Name + "»" : null, destination != origin ? "До категорії «" + destination.Name + "»." : "");
+            }, destination != origin ? L.F("Переміщено «{0}»", item.Name) : null, destination != origin ? L.F("До категорії «{0}».", destination.Name) : "");
             if (done) return;
         }
         Rebuild();

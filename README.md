@@ -21,7 +21,7 @@
 
 Once the taskbar fills up with pinned icons, the one you need gets hard to find. Category Bar sorts your shortcuts into tabs — "Development", "Browsers", "Games" — and places them directly above the Windows taskbar. The taskbar itself keeps working as before.
 
-> The app's interface is currently in Ukrainian, so the screenshots below are too.
+> The interface is available in English, Ukrainian, German, Spanish, French, Portuguese, Simplified Chinese and Japanese. The screenshots below show the Ukrainian one.
 
 <p align="center">
   <img src="Documentation/screenshots/onboarding-appearance.png" width="760" alt="First-run wizard with a live preview of the bar and a category menu">
@@ -33,6 +33,7 @@ Once the taskbar fills up with pinned icons, the one you need gets hard to find.
 - **Set up in a minute.** The wizard imports the apps pinned to your taskbar and sorts them by type.
 - **Behaves like part of Windows.** The bar shows and hides together with the taskbar and follows the system theme and accent colour.
 - **Nothing gets lost.** Every change can be undone, and settings are saved with five backup copies.
+- **Eight languages.** The app follows the Windows language, or you pick one in Settings → General.
 - **No installer.** A single `.exe`; .NET does not need to be installed.
 
 ## Install
@@ -47,7 +48,7 @@ To uninstall, exit from the tray icon, delete the folder with `CategoryBar.exe` 
 
 ## First run
 
-A three-step wizard opens on first launch. Nothing is saved until you press "Готово" (Done).
+A three-step wizard opens on first launch. Nothing is saved until you press "Done".
 
 | Step | What happens |
 | --- | --- |
@@ -76,6 +77,17 @@ The wizard can be reopened from Settings → General. Settings and Exit are in t
 - Web links and Steam games (`steam://…`) are added like any other shortcut.
 - Every change comes with an "Undo" button in its notification.
 
+### App sets
+
+A set is one icon that starts several apps together. The icon shows up to four of its apps.
+
+- **From running windows.** Open the apps you need, arrange their windows, choose "Create set" and tick them under "Running now". The set remembers the size and position of each window — maximized and snapped ones too — and restores them on launch.
+- **From the app list.** Apps picked under "All apps" start the usual way, with no window arrangement.
+- A click starts only the apps that are not open yet and moves the open ones back into place. `Shift` + click starts everything again.
+- In the set's right-click menu: "Save the window layout" updates the positions from the current windows, "Split up the set" turns the set back into separate shortcuts.
+
+"Create set" is at the bottom of a category menu and in a tab's right-click menu. Limits: a minimized window has no position to remember; an app running as administrator cannot be moved; when an app has several windows, one is used.
+
 ### App status
 
 <img align="right" src="Documentation/screenshots/menu-states.png" width="250" alt="Category menu: running apps, a broken shortcut and a run-as-administrator shortcut">
@@ -88,7 +100,7 @@ The wizard can be reopened from Settings → General. Settings and Exit are in t
 | Action | Result |
 | --- | --- |
 | Click | Start the app or switch to its window |
-| `Shift` + click | Open a new window |
+| `Shift` + click | Open a new window; for a set, start everything again |
 | `Ctrl` + `Shift` + click | Run as administrator |
 | Right-click | Properties, move, open file location |
 
@@ -103,6 +115,12 @@ The wizard can be reopened from Settings → General. Settings and Exit are in t
 <p align="center">
   <img src="Documentation/screenshots/settings-appearance-light.png" width="760" alt="Appearance settings in the light theme">
 </p>
+
+### Languages
+
+English, Ukrainian, German, Spanish, French, Portuguese, Simplified Chinese and Japanese. A new installation follows the Windows display language and falls back to English; change it in Settings → General → Interface language. The app restarts to apply the change.
+
+Translations live in `src/CategoryBar.Core/Languages/<code>.json` as a table from the Ukrainian source text to the translation. Corrections are welcome.
 
 ### Placement
 

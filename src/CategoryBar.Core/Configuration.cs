@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace CategoryBar.Core;
 
@@ -11,19 +12,23 @@ public sealed class Configuration
     public void Validate()
     {
         if (Version != 1 || Categories is null || Settings is null)
-            throw new InvalidDataException("Непідтримувана або пошкоджена конфігурація.");
+            throw new InvalidDataException(L.T("Непідтримувана або пошкоджена конфігурація."));
         if (Categories.Count > 100 || Categories.Any(c => c is null || string.IsNullOrWhiteSpace(c.Name)
-            || c.Name.Length > 100 || c.Shortcuts is null || c.Shortcuts.Any(s => s is null
-                || string.IsNullOrWhiteSpace(s.Name) || string.IsNullOrWhiteSpace(s.Target)
-                || s.Arguments is null || s.WorkingDirectory is null)))
-            throw new InvalidDataException("Некоректні категорії або ярлики.");
+            || c.Name.Length > 100 || c.Shortcuts is null || c.Shortcuts.Any(s => !IsValid(s, nested: false))))
+            throw new InvalidDataException(L.T("Некоректні категорії або ярлики."));
         if (Categories.Select(c => c.Id).Distinct().Count() != Categories.Count)
-            throw new InvalidDataException("Повторювані ідентифікатори категорій.");
-        if (Categories.SelectMany(c => c.Shortcuts).Select(s => s.Id).Distinct().Count()
-            != Categories.Sum(c => c.Shortcuts.Count))
-            throw new InvalidDataException("Повторювані ідентифікатори ярликів.");
+            throw new InvalidDataException(L.T("Повторювані ідентифікатори категорій."));
+        var ids = Categories.SelectMany(c => c.Shortcuts).SelectMany(s => s.Steps.Prepend(s)).Select(s => s.Id).ToList();
+        if (ids.Distinct().Count() != ids.Count)
+            throw new InvalidDataException(L.T("Повторювані ідентифікатори ярликів."));
         Settings.Normalize();
     }
+
+    /// <summary>A set has steps instead of a target; its steps are plain shortcuts.</summary>
+    private static bool IsValid(Shortcut? s, bool nested) => s is not null && !string.IsNullOrWhiteSpace(s.Name)
+        && s.Target is not null && s.Arguments is not null && s.WorkingDirectory is not null && s.Steps is not null
+        && (s.Steps.Count == 0 ? !string.IsNullOrWhiteSpace(s.Target) : !nested && s.Steps.Count <= 30 && s.Steps.All(step => IsValid(step, nested: true)))
+        && (s.Placement is null || s.Placement.Width > 0 && s.Placement.Height > 0);
 }
 
 public sealed class Category
@@ -41,12 +46,29 @@ public sealed class Shortcut
     public string Arguments { get; set; } = "";
     public string WorkingDirectory { get; set; } = "";
     public bool RunAsAdministrator { get; set; }
+
+    /// <summary>A set starts several applications at once. Its own target stays empty.</summary>
+    public List<Shortcut> Steps { get; set; } = [];
+    /// <summary>Where a set puts this application's window after starting it.</summary>
+    public WindowPlacement? Placement { get; set; }
+    [JsonIgnore] public bool IsSet => Steps.Count > 0;
+}
+
+/// <summary>A window rectangle in screen pixels.</summary>
+public sealed class WindowPlacement
+{
+    public int Left { get; set; }
+    public int Top { get; set; }
+    public int Width { get; set; }
+    public int Height { get; set; }
+    public bool Maximized { get; set; }
 }
 
 public sealed class Settings
 {
     // First run
     public bool OnboardingCompleted { get; set; }
+    public string Language { get; set; } = "";             // System | uk | en | de | es | fr | pt | zh | ja
 
     // Appearance
     public string ThemeMode { get; set; } = "System";      // System | Dark | Light
@@ -81,6 +103,8 @@ public sealed class Settings
         CornerRadius = Math.Clamp(CornerRadius, 0, 16);
         InterfaceScale = double.IsFinite(InterfaceScale) ? Math.Clamp(InterfaceScale, .8, 1.5) : 1;
         SurfaceOpacity = double.IsFinite(SurfaceOpacity) ? Math.Clamp(SurfaceOpacity, .5, 1) : .96;
+        // A configuration saved before languages existed belongs to someone used to the Ukrainian interface.
+        if (Language != "System" && L.Languages.All(l => l.Code != Language)) Language = OnboardingCompleted ? L.Source : "System";
         if (ThemeMode is not ("System" or "Dark" or "Light")) ThemeMode = "System";
         if (AccentMode is not ("System" or "Custom")) AccentMode = "System";
         if (Alignment is not ("Windows" or "Left" or "Center" or "Right")) Alignment = "Windows";
@@ -106,15 +130,15 @@ public sealed class ConfigurationStore(string path)
             try
             {
                 var config = JsonSerializer.Deserialize<Configuration>(File.ReadAllText(candidate), Options)
-                    ?? throw new InvalidDataException("Порожня конфігурація.");
+                    ?? throw new InvalidDataException(L.T("Порожня конфігурація."));
                 config.Validate();
-                if (candidate != Path) RecoveryMessage = "Налаштування відновлено з копії: " + candidate;
+                if (candidate != Path) RecoveryMessage = L.F("Налаштування відновлено з копії: {0}", candidate);
                 return config;
             }
             catch (Exception ex) when (ex is IOException or InvalidDataException or JsonException or UnauthorizedAccessException) { }
         }
         // Preserve the corrupt original; the UI asks the user to inspect the error.
-        throw new InvalidDataException("Конфігурація та її резервні копії пошкоджені. Файли збережено: " + Path);
+        throw new InvalidDataException(L.F("Конфігурація та її резервні копії пошкоджені. Файли збережено: {0}", Path));
     }
 
     public void Save(Configuration config)

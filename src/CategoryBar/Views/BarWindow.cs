@@ -220,7 +220,7 @@ internal sealed class BarWindow : OverlayWindow
         {
             var first = new StackPanel { Orientation = Orientation.Horizontal };
             var plus = Ui.Icon(Icons.Plus, "Accent", 14); plus.Margin = new Thickness(0, 0, 8, 0);
-            first.Children.Add(plus); first.Children.Add(Ui.Text("Створити першу категорію", 13, "Accent"));
+            first.Children.Add(plus); first.Children.Add(Ui.Text(L.T("Створити першу категорію"), 13, "Accent"));
             var outline = new Rectangle { StrokeDashArray = [4, 3], StrokeThickness = 1, RadiusX = 6, RadiusY = 6, Opacity = .7, IsHitTestVisible = false }.Res(Shape.StrokeProperty, "Accent");
             var create = Chrome(new Grid { Children = { outline, new Border { Padding = new Thickness(14, 0, 14, 0), Child = first } } }, null);
             create.Element.Padding = new Thickness(0);
@@ -243,7 +243,7 @@ internal sealed class BarWindow : OverlayWindow
         if (hidden.Count > 0)
         {
             var more = new StackPanel { Orientation = Orientation.Horizontal };
-            more.Children.Add(Ui.Text("Ще " + hidden.Count, 13, "Text.Muted"));
+            more.Children.Add(Ui.Text(L.F("Ще {0}", hidden.Count), 13, "Text.Muted"));
             var chevron = Ui.Icon(Icons.ChevronUp, "Text.Muted", 12); chevron.Margin = new Thickness(6, 0, -2, 0);
             more.Children.Add(chevron);
             overflowTab = Chrome(more, null);
@@ -257,7 +257,7 @@ internal sealed class BarWindow : OverlayWindow
             };
             views.Add(tab); tabs.Children.Add(tab.Element);
         }
-        var add = Chrome(Ui.Icon(Icons.Plus, "Text.Faint", 13), "Нова категорія");
+        var add = Chrome(Ui.Icon(Icons.Plus, "Text.Faint", 13), L.T("Нова категорія"));
         add.Element.Padding = new Thickness(8, 0, 8, 0);
         add.Element.MouseLeftButtonUp += (_, _) => CreateCategory();
         tabs.Children.Add(add.Element);
@@ -436,30 +436,31 @@ internal sealed class BarWindow : OverlayWindow
         var list = session.Config.Categories;
         var index = list.IndexOf(category);
         var context = new ContextMenu();
-        context.Items.Add(Ui.Item("Перейменувати", () => BeginRename(tab), Icons.Pencil));
-        context.Items.Add(Ui.Item("Редагувати ярлики", () => Open(tab, edit: true), Icons.Sliders));
-        context.Items.Add(Ui.Item("Додати застосунок…", () => AppPickerWindow.Open(session, category), Icons.Plus));
+        context.Items.Add(Ui.Item(L.T("Перейменувати"), () => BeginRename(tab), Icons.Pencil));
+        context.Items.Add(Ui.Item(L.T("Редагувати ярлики"), () => Open(tab, edit: true), Icons.Sliders));
+        context.Items.Add(Ui.Item(L.T("Додати застосунок…"), () => AppPickerWindow.Open(session, category), Icons.Plus));
+        context.Items.Add(Ui.Item(L.T("Створити набір…"), () => SetWindow.Open(session, category), Icons.Apps));
         context.Items.Add(new Separator());
-        context.Items.Add(Ui.Item("Перемістити ліворуч", () => session.Change(() => ConfigurationEditor.Move(list, category, index - 1)), Icons.ChevronLeft, enabled: index > 0));
-        context.Items.Add(Ui.Item("Перемістити праворуч", () => session.Change(() => ConfigurationEditor.Move(list, category, index + 1)), Icons.ChevronRight, enabled: index < list.Count - 1));
-        context.Items.Add(Ui.Item("Нова категорія", CreateCategory, Icons.Plus));
+        context.Items.Add(Ui.Item(L.T("Перемістити ліворуч"), () => session.Change(() => ConfigurationEditor.Move(list, category, index - 1)), Icons.ChevronLeft, enabled: index > 0));
+        context.Items.Add(Ui.Item(L.T("Перемістити праворуч"), () => session.Change(() => ConfigurationEditor.Move(list, category, index + 1)), Icons.ChevronRight, enabled: index < list.Count - 1));
+        context.Items.Add(Ui.Item(L.T("Нова категорія"), CreateCategory, Icons.Plus));
         context.Items.Add(new Separator());
-        context.Items.Add(Ui.Item("Упорядкувати категорії…", () => App.Instance.ShowSettings("Categories"), Icons.Apps));
-        context.Items.Add(Ui.Item("Налаштування…", () => App.Instance.ShowSettings(), Icons.Sliders));
+        context.Items.Add(Ui.Item(L.T("Упорядкувати категорії…"), () => App.Instance.ShowSettings("Categories"), Icons.Apps));
+        context.Items.Add(Ui.Item(L.T("Налаштування…"), () => App.Instance.ShowSettings(), Icons.Sliders));
         context.Items.Add(new Separator());
-        context.Items.Add(Ui.Item("Видалити категорію…", () => Dialogs.DeleteCategory(session, category), Icons.Trash, danger: true));
+        context.Items.Add(Ui.Item(L.T("Видалити категорію…"), () => Dialogs.DeleteCategory(session, category), Icons.Trash, danger: true));
         Popup(context, tab.Element);
     }
 
     private void OpenBarMenu()
     {
         var context = new ContextMenu();
-        context.Items.Add(Ui.Item("Нова категорія", CreateCategory, Icons.Plus));
-        context.Items.Add(Ui.Item("Упорядкувати категорії…", () => App.Instance.ShowSettings("Categories"), Icons.Apps));
-        context.Items.Add(Ui.Item("Налаштування…", () => App.Instance.ShowSettings(), Icons.Sliders));
+        context.Items.Add(Ui.Item(L.T("Нова категорія"), CreateCategory, Icons.Plus));
+        context.Items.Add(Ui.Item(L.T("Упорядкувати категорії…"), () => App.Instance.ShowSettings("Categories"), Icons.Apps));
+        context.Items.Add(Ui.Item(L.T("Налаштування…"), () => App.Instance.ShowSettings(), Icons.Sliders));
         context.Items.Add(new Separator());
-        context.Items.Add(Ui.Item("Сховати панель до перезапуску", App.Instance.HideBars, Icons.ChevronDown));
-        context.Items.Add(Ui.Item("Вийти", App.Instance.Quit, Icons.Close));
+        context.Items.Add(Ui.Item(L.T("Сховати панель до перезапуску"), App.Instance.HideBars, Icons.ChevronDown));
+        context.Items.Add(Ui.Item(L.T("Вийти"), App.Instance.Quit, Icons.Close));
         Popup(context);
     }
 
@@ -471,7 +472,7 @@ internal sealed class BarWindow : OverlayWindow
         if (session.AddCategory() is not { } category) return;
         UpdateLayout();
         if (views.FirstOrDefault(v => v.Category == category) is { } tab) BeginRename(tab);
-        else session.Toast("Категорію створено", "«" + category.Name + "» — у списку «Ще». Перейменувати можна в налаштуваннях.", ToastKind.Info);
+        else session.Toast(L.T("Категорію створено"), L.F("«{0}» — у списку «Ще». Перейменувати можна в налаштуваннях.", category.Name), ToastKind.Info);
     }
 
     private void BeginRename(Tab tab)
@@ -479,7 +480,7 @@ internal sealed class BarWindow : OverlayWindow
         if (tab.Category is not { } category || renaming) return;
         CloseMenu();
         renaming = true;
-        var box = new TextBox { Text = category.Name, MaxLength = 100, MinWidth = 90, MinHeight = 22, Height = 22, Padding = new Thickness(5, 0, 5, 0), Margin = new Thickness(-6, 0, -6, 0), ToolTip = "Enter — зберегти · Esc — скасувати" };
+        var box = new TextBox { Text = category.Name, MaxLength = 100, MinWidth = 90, MinHeight = 22, Height = 22, Padding = new Thickness(5, 0, 5, 0), Margin = new Thickness(-6, 0, -6, 0), ToolTip = L.T("Enter — зберегти · Esc — скасувати") };
         box.SetResourceReference(Control.BorderBrushProperty, "Accent");
         var finished = false;
         void Finish(bool save)

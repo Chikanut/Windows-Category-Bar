@@ -9,8 +9,8 @@ namespace CategoryBar.Views;
 /// </summary>
 internal sealed class OnboardingWindow : ChromeWindow
 {
-    private static readonly string[] CategoryOrder = ["Робота", "Розробка", "Браузери", "Спілкування", "Медіа", "Ігри", "Системні", ApplicationClassifier.Fallback];
-    private static readonly string[] StarterCategories = ["Робота", "Розробка", "Медіа", "Ігри", "Тулзи"];
+    private static readonly string[] CategoryOrder = [L.T("Робота"), L.T("Розробка"), L.T("Браузери"), L.T("Спілкування"), L.T("Медіа"), L.T("Ігри"), L.T("Системні"), L.T(ApplicationClassifier.Fallback)];
+    private static readonly string[] StarterCategories = [L.T("Робота"), L.T("Розробка"), L.T("Медіа"), L.T("Ігри"), L.T("Тулзи")];
 
     private readonly Session session;
     private readonly bool hasExisting;
@@ -26,7 +26,7 @@ internal sealed class OnboardingWindow : ChromeWindow
 
     internal bool Finished { get; private set; }
 
-    internal OnboardingWindow(Session session) : base("Панель категорій — початкове налаштування", 920, 660)
+    internal OnboardingWindow(Session session) : base(L.T("Панель категорій — початкове налаштування"), 920, 660)
     {
         this.session = session;
         hasExisting = session.Config.Categories.Count > 0;
@@ -46,7 +46,7 @@ internal sealed class OnboardingWindow : ChromeWindow
     {
         step = index;
         steps.Children.Clear();
-        var titles = new[] { "Спосіб", "Категорії", "Вигляд" };
+        var titles = new[] { L.T("Спосіб"), L.T("Категорії"), L.T("Вигляд") };
         for (var i = 0; i < titles.Length; i++)
         {
             var active = i == step; var done = i < step;
@@ -99,15 +99,15 @@ internal sealed class OnboardingWindow : ChromeWindow
     private void Welcome()
     {
         var stack = new StackPanel();
-        Headline("Вітаємо в Панелі категорій", "Замість довгого ряду закріплених значків — кілька вкладок над панеллю завдань. Наведіть на вкладку, і її застосунки відкриються колонкою. Оберіть, з чого почати.", stack);
+        Headline(L.T("Вітаємо в Панелі категорій"), L.T("Замість довгого ряду закріплених значків — кілька вкладок над панеллю завдань. Наведіть на вкладку, і її застосунки відкриються колонкою. Оберіть, з чого почати."), stack);
         var options = new StackPanel();
         void Render()
         {
             options.Children.Clear();
-            if (hasExisting) options.Children.Add(Option("Keep", Icons.Check, "Залишити мої категорії", "У вас уже є " + Ui.Plural(session.Config.Categories.Count, "категорія", "категорії", "категорій") + ". Перегляньте їх і за потреби перерозподіліть застосунки.", null));
-            options.Children.Add(Option("Import", Icons.Import, "Перенести з панелі завдань Windows", "Знайдемо закріплені застосунки й розкладемо їх по категоріях. Перед збереженням усе можна поправити." + (hasExisting ? " Наявні категорії залишаться." : ""), hasExisting ? null : "Рекомендовано"));
-            options.Children.Add(Option("StarterCategories", Icons.Sparkle, "Почати з готових категорій", "«Робота», «Розробка», «Медіа», «Ігри», «Тулзи» — порожні, наповните їх самі.", null));
-            if (!hasExisting) options.Children.Add(Option("Empty", Icons.Square, "Порожня панель", "Створите категорії та додасте застосунки вручну.", null));
+            if (hasExisting) options.Children.Add(Option("Keep", Icons.Check, L.T("Залишити мої категорії"), L.N(session.Config.Categories.Count, "У вас уже є {0} категорія. Перегляньте її і за потреби перерозподіліть застосунки.|У вас уже є {0} категорії. Перегляньте їх і за потреби перерозподіліть застосунки.|У вас уже є {0} категорій. Перегляньте їх і за потреби перерозподіліть застосунки."), null));
+            options.Children.Add(Option("Import", Icons.Import, L.T("Перенести з панелі завдань Windows"), L.T("Знайдемо закріплені застосунки й розкладемо їх по категоріях. Перед збереженням усе можна поправити.") + (hasExisting ? " " + L.T("Наявні категорії залишаться.") : ""), hasExisting ? null : L.T("Рекомендовано")));
+            options.Children.Add(Option("StarterCategories", Icons.Sparkle, L.T("Почати з готових категорій"), L.T("«Робота», «Розробка», «Медіа», «Ігри», «Тулзи» — порожні, наповните їх самі."), null));
+            if (!hasExisting) options.Children.Add(Option("Empty", Icons.Square, L.T("Порожня панель"), L.T("Створите категорії та додасте застосунки вручну."), null));
         }
         Border Option(string key, string icon, string title, string description, string? badge)
         {
@@ -135,7 +135,7 @@ internal sealed class OnboardingWindow : ChromeWindow
         Render();
         stack.Children.Add(options);
         content.Children.Add(stack);
-        Buttons(null, null, "Далі", Next, "Майстер можна відкрити знову: Налаштування → Загальне.");
+        Buttons(null, null, L.T("Далі"), Next, L.T("Майстер можна відкрити знову: Налаштування → Загальне."));
         void Next() => Show(mode == "Empty" ? 2 : 1);
     }
 
@@ -148,14 +148,14 @@ internal sealed class OnboardingWindow : ChromeWindow
     {
         var stack = new DockPanel();
         var header = new StackPanel();
-        var subtitle = Headline("Перевірте категорії", "Шукаємо закріплені застосунки…", header);
+        var subtitle = Headline(L.T("Перевірте категорії"), L.T("Шукаємо закріплені застосунки…"), header);
         subtitle.Margin = new Thickness(0, 8, 0, 14);
         DockPanel.SetDock(header, Dock.Top);
         stack.Children.Add(header);
         var holder = new Grid();
         stack.Children.Add(holder);
         content.Children.Add(stack);
-        Buttons("Назад", () => Show(0), "Далі", () => Show(2), "Перетягуйте застосунки між колонками. Подвійний клік по назві — перейменувати.");
+        Buttons(L.T("Назад"), () => Show(0), L.T("Далі"), () => Show(2), L.T("Перетягуйте застосунки між колонками. Подвійний клік по назві — перейменувати."));
 
         if (draftMode != mode)
         {
@@ -166,7 +166,7 @@ internal sealed class OnboardingWindow : ChromeWindow
             {
                 var wait = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
                 wait.Children.Add(Ui.Spinner(18));
-                var text = Ui.Text("Читаємо панель завдань Windows…", 13.5, "Text.Muted"); text.Margin = new Thickness(12, 0, 0, 0);
+                var text = Ui.Text(L.T("Читаємо панель завдань Windows…"), 13.5, "Text.Muted"); text.Margin = new Thickness(12, 0, 0, 0);
                 wait.Children.Add(text);
                 holder.Children.Add(wait);
                 var imported = 0;
@@ -179,21 +179,21 @@ internal sealed class OnboardingWindow : ChromeWindow
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or System.Runtime.InteropServices.COMException)
                 {
-                    session.Toast("Не вдалося прочитати панель завдань", ex.Message, ToastKind.Warning);
+                    session.Toast(L.T("Не вдалося прочитати панель завдань"), ex.Message, ToastKind.Warning);
                 }
                 holder.Children.Clear();
                 subtitle.Text = imported > 0
-                    ? "Знайдено " + Ui.Plural(imported, "закріплений застосунок", "закріплені застосунки", "закріплених застосунків") + ". Ми розклали їх за типом — перетягніть, якщо щось не на своєму місці."
-                    : "Нових закріплених застосунків не знайдено. Додайте застосунки кнопкою «Додати» в потрібній категорії.";
+                    ? L.N(imported, "Знайдено {0} закріплений застосунок. Ми розклали їх за типом — перетягніть, якщо щось не на своєму місці.|Знайдено {0} закріплені застосунки. Ми розклали їх за типом — перетягніть, якщо щось не на своєму місці.|Знайдено {0} закріплених застосунків. Ми розклали їх за типом — перетягніть, якщо щось не на своєму місці.")
+                    : L.T("Нових закріплених застосунків не знайдено. Додайте застосунки кнопкою «Додати» в потрібній категорії.");
             }
             draftMode = mode;
         }
-        if (mode != "Import" || subtitle.Text.StartsWith("Шукаємо", StringComparison.Ordinal))
+        if (mode != "Import" || subtitle.Text.StartsWith(L.T("Шукаємо"), StringComparison.Ordinal))
             subtitle.Text = mode switch
             {
-                "StarterCategories" => "Готові категорії створено. Додайте в них застосунки зараз або пізніше — прямо з панелі.",
-                "Keep" => "Це ваші поточні категорії. Перерозподіліть застосунки, якщо потрібно.",
-                _ => "Перетягніть застосунки, якщо щось не на своєму місці."
+                "StarterCategories" => L.T("Готові категорії створено. Додайте в них застосунки зараз або пізніше — прямо з панелі."),
+                "Keep" => L.T("Це ваші поточні категорії. Перерозподіліть застосунки, якщо потрібно."),
+                _ => L.T("Перетягніть застосунки, якщо щось не на своєму місці.")
             };
 
         board = new BoardView(() => draft, (change, _) => { change(); board?.Refresh(); return true; }, category =>
@@ -232,17 +232,17 @@ internal sealed class OnboardingWindow : ChromeWindow
     private void Look()
     {
         var left = new StackPanel { Width = 400 };
-        var title = Headline("Вигляд", "Усе це можна змінити пізніше в налаштуваннях: шрифт, масштаб, прозорість, заокруглення.", left);
+        var title = Headline(L.T("Вигляд"), L.T("Усе це можна змінити пізніше в налаштуваннях: шрифт, масштаб, прозорість, заокруглення."), left);
         title.MaxWidth = 380;
 
         void Caption(string text) { var caption = Ui.Text(text.ToUpper(), 11, "Text.Faint", bold: true); caption.Margin = new Thickness(0, 6, 0, 8); left.Children.Add(caption); }
-        Caption("Тема");
+        Caption(L.T("Тема"));
         var themes = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 14) };
         var swatches = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 18) };
         void Render()
         {
             themes.Children.Clear();
-            foreach (var (key, label, icon) in new[] { ("System", "Як у Windows", Icons.Windows), ("Dark", "Темна", Icons.Moon), ("Light", "Світла", Icons.Sun) })
+            foreach (var (key, label, icon) in new[] { ("System", L.T("Як у Windows"), Icons.Windows), ("Dark", L.T("Темна"), Icons.Moon), ("Light", L.T("Світла"), Icons.Sun) })
             {
                 var selected = session.Settings.ThemeMode == key;
                 var inner = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
@@ -255,7 +255,7 @@ internal sealed class OnboardingWindow : ChromeWindow
             }
             swatches.Children.Clear();
             var system = session.Settings.AccentMode == "System";
-            swatches.Children.Add(Swatch(Theme.WindowsAccent(), system, "Колір Windows", s => s.AccentMode = "System", Icons.Windows));
+            swatches.Children.Add(Swatch(Theme.WindowsAccent(), system, L.T("Колір Windows"), s => s.AccentMode = "System", Icons.Windows));
             foreach (var preset in Theme.AccentPresets.Take(9))
                 swatches.Children.Add(Swatch(Theme.Parse(preset), !system && session.Settings.AccentColor == preset, preset, s => { s.AccentMode = "Custom"; s.AccentColor = preset; }));
         }
@@ -269,13 +269,13 @@ internal sealed class OnboardingWindow : ChromeWindow
             return ring;
         }
         left.Children.Add(themes);
-        Caption("Колір акценту");
+        Caption(L.T("Колір акценту"));
         left.Children.Add(swatches);
         Render();
 
         var toggle = new CheckBox { IsChecked = autostart, VerticalAlignment = VerticalAlignment.Center }.Res(StyleProperty, "Toggle");
         toggle.Click += (_, _) => autostart = toggle.IsChecked == true;
-        var startText = new StackPanel { Margin = new Thickness(14, 0, 0, 0), Children = { Ui.Text("Запускати разом із Windows", 13.5), Ui.Text("Панель буде на місці після кожного входу.", 12, "Text.Muted") } };
+        var startText = new StackPanel { Margin = new Thickness(14, 0, 0, 0), Children = { Ui.Text(L.T("Запускати разом із Windows"), 13.5), Ui.Text(L.T("Панель буде на місці після кожного входу."), 12, "Text.Muted") } };
         left.Children.Add(new Border { Padding = new Thickness(14, 12, 14, 12), BorderThickness = new Thickness(1), Child = new StackPanel { Orientation = Orientation.Horizontal, Children = { toggle, startText } } }
             .Res(Border.BackgroundProperty, "Card.Bg").Res(Border.BorderBrushProperty, "Surface.Border").Res(Border.CornerRadiusProperty, "Radius"));
 
@@ -284,7 +284,7 @@ internal sealed class OnboardingWindow : ChromeWindow
         layout.ColumnDefinitions.Add(new ColumnDefinition());
         layout.Children.Add(left); layout.Children.Add(Preview().At(1));
         content.Children.Add(layout);
-        Buttons("Назад", () => Show(mode == "Empty" ? 0 : 1), "Готово", Finish);
+        Buttons(L.T("Назад"), () => Show(mode == "Empty" ? 0 : 1), L.T("Готово"), Finish);
     }
 
     /// <summary>A miniature desktop drawn with the live theme resources.</summary>
@@ -292,7 +292,7 @@ internal sealed class OnboardingWindow : ChromeWindow
     {
         var names = (draft.Count > 0 ? draft.Select(c => c.Name) : StarterCategories).Take(4).ToList();
         var apps = draft.FirstOrDefault(c => c.Shortcuts.Count > 0)?.Shortcuts.Take(4).Select(s => (s.Name, s.Target)).ToList()
-            ?? [("Браузер", ""), ("Редактор коду", ""), ("Термінал", ""), ("Нотатки", "")];
+            ?? [(L.T("Браузер"), ""), (L.T("Редактор коду"), ""), (L.T("Термінал"), ""), (L.T("Нотатки"), "")];
         var open = draft.FindIndex(c => c.Shortcuts.Count > 0) is var found && found >= 0 && found < 4 ? found : 0;
 
         var tabs = new StackPanel { Orientation = Orientation.Horizontal };

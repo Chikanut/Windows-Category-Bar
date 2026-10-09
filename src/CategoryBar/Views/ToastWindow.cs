@@ -50,7 +50,7 @@ internal sealed class ToastWindow : OverlayWindow
             }
             text.Children.Add(actions);
         }
-        var close = Ui.IconButton(Icons.Close, "Закрити", Dismiss, "Text.Faint");
+        var close = Ui.IconButton(Icons.Close, L.T("Закрити"), Dismiss, "Text.Faint");
         close.Width = close.Height = close.MinHeight = 22; close.VerticalAlignment = VerticalAlignment.Top; close.Margin = new Thickness(0, -3, -4, 0);
 
         var layout = new Grid { Margin = new Thickness(14, 12, 14, 12) };

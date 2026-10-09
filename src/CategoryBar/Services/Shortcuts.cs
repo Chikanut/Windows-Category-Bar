@@ -61,6 +61,7 @@ internal static class Shortcuts
     /// <summary>Two shortcuts with the same identity start the same thing.</summary>
     internal static string Identity(Shortcut shortcut)
     {
+        if (shortcut.IsSet) return "set:" + shortcut.Id;
         var (target, arguments, _) = Resolve(shortcut);
         // Namespace shortcuts (File Explorer, Control Panel) have no file target; the file name identifies them.
         if (target == shortcut.Target && IsLinkFile(target)) target = Path.GetFileNameWithoutExtension(target);
@@ -69,6 +70,7 @@ internal static class Shortcuts
 
     internal static bool Exists(Shortcut shortcut)
     {
+        if (shortcut.IsSet) return shortcut.Steps.All(Exists);
         if (LaunchTarget.IsShellApplication(shortcut.Target) || LaunchTarget.IsLink(shortcut.Target)) return true;
         return File.Exists(shortcut.Target) || Directory.Exists(shortcut.Target);
     }
@@ -76,9 +78,9 @@ internal static class Shortcuts
     /// <summary>Text shown under a name in pickers and property sheets.</summary>
     internal static string Describe(string target)
     {
-        if (LaunchTarget.IsShellApplication(target)) return "Застосунок Windows";
+        if (LaunchTarget.IsShellApplication(target)) return L.T("Застосунок Windows");
         if (LaunchTarget.IsLink(target)) return target;
-        if (Directory.Exists(target)) return "Папка · " + target;
+        if (Directory.Exists(target)) return L.F("Папка · {0}", target);
         return target;
     }
 
@@ -93,7 +95,7 @@ internal static class Shortcuts
             info = new(shortcut.Target) { UseShellExecute = true };
         else
         {
-            if (!Exists(shortcut)) throw new FileNotFoundException("Файл не знайдено: " + shortcut.Target);
+            if (!Exists(shortcut)) throw new FileNotFoundException(L.F("Файл не знайдено: {0}", shortcut.Target));
             var plainLink = IsLinkFile(shortcut.Target) && shortcut.Arguments.Length == 0 && shortcut.WorkingDirectory.Length == 0;
             var (target, arguments, directory) = plainLink ? (shortcut.Target, "", "") : Resolve(shortcut);
             info = new(target) { UseShellExecute = true, Arguments = arguments };
@@ -116,25 +118,27 @@ internal static class Shortcuts
     /// <summary>
     /// Copies a .lnk or .url file next to the configuration and points the shortcut at the copy, so that it keeps
     /// working after the user deletes the original from the desktop or unpins it. Start menu shortcuts stay where
-    /// they are: installers keep them up to date.
+    /// they are: installers keep them up to date. Returns true when a target changed.
     /// </summary>
-    internal static void KeepOwnCopy(Shortcut shortcut, string configPath)
+    internal static bool KeepOwnCopy(Shortcut shortcut, string configPath)
     {
+        if (shortcut.IsSet) return shortcut.Steps.Count(step => KeepOwnCopy(step, configPath)) > 0;
         var source = shortcut.Target;
-        if (!IsLinkFile(source) && !source.EndsWith(".url", StringComparison.OrdinalIgnoreCase)) return;
-        if (LaunchTarget.IsLink(source) || !File.Exists(source)) return;
+        if (!IsLinkFile(source) && !source.EndsWith(".url", StringComparison.OrdinalIgnoreCase)) return false;
+        if (LaunchTarget.IsLink(source) || !File.Exists(source)) return false;
         var folder = Path.Combine(Path.GetDirectoryName(configPath)!, "ImportedShortcuts");
         bool Inside(string root) => root.Length > 0 && Path.GetFullPath(source).StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
         if (Inside(folder) || Inside(Environment.GetFolderPath(Environment.SpecialFolder.StartMenu))
-            || Inside(Environment.GetFolderPath(Environment.SpecialFolder.CommonStartMenu))) return;
+            || Inside(Environment.GetFolderPath(Environment.SpecialFolder.CommonStartMenu))) return false;
         try
         {
             Directory.CreateDirectory(folder);
             var copy = Path.Combine(folder, shortcut.Id + Path.GetExtension(source).ToLowerInvariant());
             File.Copy(source, copy, true);
             shortcut.Target = copy;
+            return true;
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { } // The original still works.
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return false; } // The original still works.
     }
 
     /// <summary>Creates a shortcut model from a file, folder or link dropped or picked by the user.</summary>
@@ -143,7 +147,7 @@ internal static class Shortcuts
         if (LaunchTarget.IsLink(path))
         {
             var uri = new Uri(path);
-            return new Shortcut { Name = uri.Scheme == "steam" ? "Гра Steam" : uri.Host, Target = path };
+            return new Shortcut { Name = uri.Scheme == "steam" ? L.T("Гра Steam") : uri.Host, Target = path };
         }
         if (!LaunchTarget.IsSupportedFile(path)) return null;
         var name = Directory.Exists(path) ? new DirectoryInfo(path).Name : Path.GetFileNameWithoutExtension(path);

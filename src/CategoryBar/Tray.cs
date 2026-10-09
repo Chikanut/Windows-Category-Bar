@@ -30,7 +30,7 @@ internal sealed class Tray : IDisposable
     private Native.NotifyIconData Data(uint flags) => new()
     {
         Size = Marshal.SizeOf<Native.NotifyIconData>(), Window = source.Handle, Id = 1, Flags = flags,
-        CallbackMessage = CallbackMessage, Icon = icon, Tip = "Панель категорій", Info = "", InfoTitle = ""
+        CallbackMessage = CallbackMessage, Icon = icon, Tip = L.T("Панель категорій"), Info = "", InfoTitle = ""
     };
 
     private void Add() { var data = Data(0x7); Native.Shell_NotifyIcon(0, ref data); }
@@ -105,9 +105,9 @@ internal static class StartupRegistration
     {
         using var key = Registry.CurrentUser.CreateSubKey(KeyPath, writable: true);
         if (!enabled) { key.DeleteValue(ValueName, throwOnMissingValue: false); return; }
-        var executable = Environment.ProcessPath ?? throw new IOException("Не вдалося визначити шлях застосунку.");
+        var executable = Environment.ProcessPath ?? throw new IOException(L.T("Не вдалося визначити шлях застосунку."));
         if (string.Equals(Path.GetFileNameWithoutExtension(executable), "dotnet", StringComparison.OrdinalIgnoreCase))
-            throw new IOException("Для автозапуску запустіть CategoryBar.exe зі збірки.");
+            throw new IOException(L.T("Для автозапуску запустіть CategoryBar.exe зі збірки."));
         var command = "\"" + executable + "\"";
         if (configPath is not null) command += " --config \"" + Path.GetFullPath(configPath) + "\"";
         key.SetValue(ValueName, command, RegistryValueKind.String);

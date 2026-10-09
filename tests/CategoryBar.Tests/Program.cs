@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using CategoryBar.Core;
 
 var passed = 0;
@@ -91,4 +92,53 @@ notifyingEditor.Change(() => appearanceConfig.Settings.ShowCounts = false); noti
 Check("Editor reports changes and undo", changes == 2 && appearanceConfig.Settings.ShowCounts);
 notifyingEditor.ChangeQuietly(() => appearanceConfig.Settings.CornerRadius = 99);
 Check("Quiet changes are validated and keep the undo step empty", appearanceConfig.Settings.CornerRadius == 16 && !notifyingEditor.CanUndo);
+var sets = new Configuration { Categories = [new Category { Name = "Робота", Shortcuts = [new Shortcut { Name = "Ранок", Steps = [
+    new Shortcut { Name = "Редактор", Target = "code.exe", Placement = new WindowPlacement { Left = -1920, Top = 0, Width = 960, Height = 1040 } },
+    new Shortcut { Name = "Браузер", Target = "https://example.com" }] }] }] };
+sets.Validate();
+var setsBack = JsonSerializer.Deserialize<Configuration>(JsonSerializer.Serialize(sets))!;
+setsBack.Validate();
+var setBack = setsBack.Categories[0].Shortcuts[0];
+Check("Set keeps its steps and window placement", setBack.IsSet && setBack.Steps.Count == 2 && setBack.Steps[0].Placement!.Left == -1920 && setBack.Steps[1].Placement is null);
+bool Rejected(Action<Configuration> damage)
+{
+    var copy = JsonSerializer.Deserialize<Configuration>(JsonSerializer.Serialize(sets))!;
+    damage(copy);
+    try { copy.Validate(); return false; } catch (InvalidDataException) { return true; }
+}
+Check("Set inside a set is rejected", Rejected(c => c.Categories[0].Shortcuts[0].Steps[0].Steps.Add(new Shortcut { Name = "X", Target = "x.exe" })));
+Check("Step without a target is rejected", Rejected(c => c.Categories[0].Shortcuts[0].Steps[1].Target = ""));
+Check("Step sharing an identifier is rejected", Rejected(c => c.Categories[0].Shortcuts[0].Steps[1].Id = c.Categories[0].Shortcuts[0].Id));
+Check("Empty window placement is rejected", Rejected(c => c.Categories[0].Shortcuts[0].Steps[0].Placement!.Width = 0));
+// ---- Languages
+var translated = L.Languages.Select(l => l.Code).Where(code => code != L.Source).ToList();
+var tables = translated.ToDictionary(code => code, L.Load);
+Check("Seven languages besides the source have a table", translated.Count == 7 && tables.Values.All(t => t.Count > 0));
+var literal = new Regex("""L\.(?:T|F)\(\s*"((?:[^"\\]|\\.)*)"|L\.N\([^"\n]*?,\s*"((?:[^"\\]|\\.)*)" """.TrimEnd());
+var texts = Directory.EnumerateFiles("src", "*.cs", SearchOption.AllDirectories)
+    .Where(file => !file.Contains(Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar) && !file.EndsWith("L.cs"))
+    .SelectMany(file => literal.Matches(File.ReadAllText(file))).Select(m => m.Groups[1].Success ? m.Groups[1].Value : m.Groups[2].Value)
+    .Select(Regex.Unescape).Append(ApplicationClassifier.Fallback).Distinct().ToList();
+var untranslated = translated.SelectMany(code => texts.Where(text => !tables[code].ContainsKey(text)).Select(text => code + ": " + text)).ToList();
+foreach (var gap in untranslated.Take(20)) Console.WriteLine("  missing " + gap);
+Check("Every interface text is translated into every language", texts.Count > 250 && untranslated.Count == 0);
+static string Holes(string text) => string.Join(",", Regex.Matches(text, @"\{\d\}").Select(m => m.Value).Distinct().Order());
+var mismatched = tables.SelectMany(t => t.Value.Where(pair => Holes(pair.Key) != Holes(pair.Value)).Select(pair => t.Key + ": " + pair.Key)).ToList();
+foreach (var gap in mismatched.Take(20)) Console.WriteLine("  placeholders " + gap);
+Check("Translations keep the placeholders of the source", mismatched.Count == 0);
+Check("Ukrainian plural forms", new[] { 1, 2, 5, 11, 21, 22, 25, 112 }.Select(n => L.PluralForm("uk", n)).SequenceEqual([0, 1, 2, 2, 0, 1, 2, 2]));
+Check("Plural forms of the other languages", L.PluralForm("en", 1) == 0 && L.PluralForm("en", 0) == 1 && L.PluralForm("fr", 0) == 0 && L.PluralForm("fr", 2) == 1 && L.PluralForm("ja", 7) == 0);
+L.Use("en");
+Check("English texts, placeholders and plurals", L.T("Скасувати") == "Cancel" && L.T("Скасувати##undo") == "Undo" && L.F("Додано «{0}»", "Paint") == "Added “Paint”"
+    && L.N(1, "Додано {0} ярлик|Додано {0} ярлики|Додано {0} ярликів") == "Added 1 shortcut" && L.N(5, "Додано {0} ярлик|Додано {0} ярлики|Додано {0} ярликів") == "Added 5 shortcuts");
+L.Use("ja");
+Check("A language with one plural form", L.N(3, "{0} вікно у наборі «{1}».|{0} вікна у наборі «{1}».|{0} вікон у наборі «{1}».", "朝") == "セット「朝」の 3 個のウィンドウ。");
+L.Use(L.Source);
+Check("Source language needs no table", L.T("Скасувати") == "Скасувати" && L.T("Скасувати##undo") == "Скасувати" && L.N(3, "Додано {0} ярлик|Додано {0} ярлики|Додано {0} ярликів") == "Додано 3 ярлики");
+Check("Unknown language setting falls back to a supported one", L.Languages.Any(l => l.Code == L.Resolve("xx")) && L.Resolve("de") == "de");
+var existingUser = new Configuration { Settings = new Settings { OnboardingCompleted = true } };
+existingUser.Validate();
+var newUser = new Configuration();
+newUser.Validate();
+Check("Existing installs keep Ukrainian, new ones follow Windows", existingUser.Settings.Language == "uk" && newUser.Settings.Language == "System");
 Console.WriteLine($"{passed} checks passed.");

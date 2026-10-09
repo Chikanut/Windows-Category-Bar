@@ -41,7 +41,7 @@ internal static class Native
     internal const int GwlExStyle = -20;
     internal const long ExToolWindow = 0x80, ExNoActivate = 0x08000000, ExTopmost = 0x8;
     internal static readonly IntPtr Topmost = new(-1);
-    internal const uint SwpNoActivate = 0x10, SwpNoMove = 0x2, SwpNoSize = 0x1, SwpNoZOrder = 0x4, SwpShowWindow = 0x40, SwpHideWindow = 0x80;
+    internal const uint SwpNoActivate = 0x10, SwpNoMove = 0x2, SwpNoSize = 0x1, SwpNoZOrder = 0x4, SwpShowWindow = 0x40, SwpHideWindow = 0x80, SwpAsync = 0x4000;
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] internal static extern IntPtr FindWindow(string className, string? title);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] internal static extern IntPtr FindWindowEx(IntPtr parent, IntPtr after, string? className, string? title);
@@ -49,7 +49,10 @@ internal static class Native
     [DllImport("user32.dll")] internal static extern bool IsWindowVisible(IntPtr window);
     [DllImport("user32.dll")] internal static extern bool IsWindow(IntPtr window);
     [DllImport("user32.dll")] internal static extern bool IsIconic(IntPtr window);
+    [DllImport("user32.dll")] internal static extern bool IsZoomed(IntPtr window);
     [DllImport("user32.dll")] internal static extern bool ShowWindow(IntPtr window, int command);
+    [DllImport("user32.dll")] internal static extern bool ShowWindowAsync(IntPtr window, int command);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] internal static extern int GetWindowText(IntPtr window, StringBuilder text, int length);
     [DllImport("user32.dll")] internal static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] internal static extern bool SetForegroundWindow(IntPtr window);
     [DllImport("user32.dll")] internal static extern IntPtr MonitorFromWindow(IntPtr window, uint flags);

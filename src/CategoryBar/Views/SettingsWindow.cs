@@ -8,8 +8,8 @@ internal sealed class SettingsWindow : ChromeWindow
 {
     private static readonly (string Key, string Title, string Icon)[] Pages =
     [
-        ("General", "Загальне", Icons.Home), ("Appearance", "Вигляд", Icons.Palette), ("Panel", "Панель і меню", Icons.Layout),
-        ("Categories", "Категорії", Icons.Apps), ("About", "Про програму", Icons.Info)
+        ("General", L.T("Загальне"), Icons.Home), ("Appearance", L.T("Вигляд"), Icons.Palette), ("Panel", L.T("Панель і меню"), Icons.Layout),
+        ("Categories", L.T("Категорії"), Icons.Apps), ("About", L.T("Про програму"), Icons.Info)
     ];
 
     private readonly Session session;
@@ -19,7 +19,7 @@ internal sealed class SettingsWindow : ChromeWindow
     private BoardView? board;
     private Settings Settings => session.Settings;
 
-    internal SettingsWindow(Session session) : base("Панель категорій — Налаштування", 900, 640, canMinimize: true)
+    internal SettingsWindow(Session session) : base(L.T("Панель категорій — Налаштування"), 900, 640, canMinimize: true)
     {
         this.session = session;
         var layout = new Grid();
@@ -149,7 +149,7 @@ internal sealed class SettingsWindow : ChromeWindow
 
     private void General(StackPanel stack)
     {
-        Group(stack, "Запуск");
+        Group(stack, L.T("Запуск"));
         var startup = new CheckBox { IsChecked = StartupRegistration.IsEnabled }.Res(StyleProperty, "Toggle");
         startup.Click += (_, _) =>
         {
@@ -157,42 +157,56 @@ internal sealed class SettingsWindow : ChromeWindow
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
             {
                 startup.IsChecked = StartupRegistration.IsEnabled;
-                session.Toast("Не вдалося змінити автозапуск", ex.Message, ToastKind.Error);
+                session.Toast(L.T("Не вдалося змінити автозапуск"), ex.Message, ToastKind.Error);
             }
         };
-        stack.Children.Add(Card("Запускати разом із Windows", "Панель з’явиться одразу після входу в систему.", startup));
+        stack.Children.Add(Card(L.T("Запускати разом із Windows"), L.T("Панель з’явиться одразу після входу в систему."), startup));
 
-        Group(stack, "Застосунки");
-        stack.Children.Add(Card("Індикатори запущених застосунків", "Позначка під іконкою в меню та під назвою категорії.", Toggle(Settings.ShowRunningIndicators, (s, v) => s.ShowRunningIndicators = v)));
-        stack.Children.Add(Card("Клік по запущеному застосунку", "Shift + клік завжди відкриває нове вікно.",
-            Segments(Settings.ActivateRunning ? "Activate" : "Launch", (s, v) => s.ActivateRunning = v == "Activate", ("Activate", "Перейти до вікна"), ("Launch", "Запустити ще раз"))));
+        Group(stack, L.T("Мова"));
+        var languages = new ComboBox { Width = 230 };
+        languages.Items.Add(new ComboBoxItem { Content = L.T("Як у Windows"), Tag = "System" });
+        foreach (var (code, name) in L.Languages) languages.Items.Add(new ComboBoxItem { Content = name, Tag = code });
+        languages.SelectedIndex = Math.Max(0, languages.Items.Cast<ComboBoxItem>().ToList().FindIndex(i => (string)i.Tag == Settings.Language));
+        languages.SelectionChanged += (_, _) =>
+        {
+            if (languages.SelectedItem is not ComboBoxItem { Tag: string code } || code == Settings.Language) return;
+            var before = L.Current;
+            session.ChangeSettings(s => s.Language = code);
+            if (L.Resolve(code) != before) App.Instance.Restart();
+        };
+        stack.Children.Add(Card(L.T("Мова інтерфейсу"), L.T("Після зміни мови програма перезапуститься."), languages));
 
-        Group(stack, "Початкове налаштування");
-        stack.Children.Add(Card("Перенести з панелі завдань Windows", "Знайти закріплені застосунки та розкласти їх по категоріях. Наявні категорії можна залишити.",
-            Ui.Button("Відкрити майстер", () => App.Instance.ShowOnboarding(), icon: Icons.Import)));
+        Group(stack, L.T("Застосунки"));
+        stack.Children.Add(Card(L.T("Індикатори запущених застосунків"), L.T("Позначка під іконкою в меню та під назвою категорії."), Toggle(Settings.ShowRunningIndicators, (s, v) => s.ShowRunningIndicators = v)));
+        stack.Children.Add(Card(L.T("Клік по запущеному застосунку"), L.T("Shift + клік завжди відкриває нове вікно."),
+            Segments(Settings.ActivateRunning ? "Activate" : "Launch", (s, v) => s.ActivateRunning = v == "Activate", ("Activate", L.T("Перейти до вікна")), ("Launch", L.T("Запустити ще раз")))));
 
-        Group(stack, "Дані");
-        stack.Children.Add(Card("Файл налаштувань", session.Store.Path, Ui.Button("Показати в папці", () =>
+        Group(stack, L.T("Початкове налаштування"));
+        stack.Children.Add(Card(L.T("Перенести з панелі завдань Windows"), L.T("Знайти закріплені застосунки та розкласти їх по категоріях. Наявні категорії можна залишити."),
+            Ui.Button(L.T("Відкрити майстер"), () => App.Instance.ShowOnboarding(), icon: Icons.Import)));
+
+        Group(stack, L.T("Дані"));
+        stack.Children.Add(Card(L.T("Файл налаштувань"), session.Store.Path, Ui.Button(L.T("Показати в папці"), () =>
             Process.Start(new ProcessStartInfo("explorer.exe", "/select,\"" + session.Store.Path + "\""))?.Dispose(), icon: Icons.Folder)));
-        stack.Children.Add(Card("Скасувати останню зміну", "Повертає останнє додавання, переміщення або видалення.",
-            Ui.Button("Скасувати", () => { session.Undo(); Navigate(current); }, icon: Icons.Undo)));
+        stack.Children.Add(Card(L.T("Скасувати останню зміну"), L.T("Повертає останнє додавання, переміщення або видалення."),
+            Ui.Button(L.T("Скасувати##undo"), () => { session.Undo(); Navigate(current); }, icon: Icons.Undo)));
     }
 
     private void Appearance(StackPanel stack)
     {
-        Group(stack, "Кольори");
-        stack.Children.Add(Card("Тема", "«Як у Windows» перемикається разом із системною темою.",
-            Segments(Settings.ThemeMode, (s, v) => s.ThemeMode = v, ("System", "Як у Windows"), ("Dark", "Темна"), ("Light", "Світла"))));
+        Group(stack, L.T("Кольори"));
+        stack.Children.Add(Card(L.T("Тема"), L.T("«Як у Windows» перемикається разом із системною темою."),
+            Segments(Settings.ThemeMode, (s, v) => s.ThemeMode = v, ("System", L.T("Як у Windows")), ("Dark", L.T("Темна")), ("Light", L.T("Світла")))));
 
         var swatches = new StackPanel { Orientation = Orientation.Horizontal };
         void Rebuild()
         {
             swatches.Children.Clear();
             var system = Settings.AccentMode == "System";
-            swatches.Children.Add(Swatch(Theme.WindowsAccent(), system, "Колір Windows", s => s.AccentMode = "System", Icons.Windows));
+            swatches.Children.Add(Swatch(Theme.WindowsAccent(), system, L.T("Колір Windows"), s => s.AccentMode = "System", Icons.Windows));
             foreach (var preset in Theme.AccentPresets)
                 swatches.Children.Add(Swatch(Theme.Parse(preset), !system && Settings.AccentColor.Equals(preset, StringComparison.OrdinalIgnoreCase), preset, s => { s.AccentMode = "Custom"; s.AccentColor = preset; }));
-            var custom = new TextBox { Text = Settings.AccentColor, Width = 84, MaxLength = 7, Margin = new Thickness(8, 0, 0, 0), ToolTip = "Власний колір у форматі #RRGGBB", FontFamily = new FontFamily("Consolas") };
+            var custom = new TextBox { Text = Settings.AccentColor, Width = 84, MaxLength = 7, Margin = new Thickness(8, 0, 0, 0), ToolTip = L.T("Власний колір у форматі #RRGGBB"), FontFamily = new FontFamily("Consolas") };
             void Apply()
             {
                 var text = custom.Text.Trim();
@@ -215,10 +229,10 @@ internal sealed class SettingsWindow : ChromeWindow
             return ring;
         }
         Rebuild();
-        stack.Children.Add(Card("Колір акценту", "Колір Windows оновлюється автоматично, коли ви змінюєте його в системі.", swatches, stacked: true));
-        stack.Children.Add(Card("Тонувати поверхні акцентом", "Додає панелі й меню легкий відтінок вибраного кольору.", Toggle(Settings.TintSurfaces, (s, v) => s.TintSurfaces = v)));
+        stack.Children.Add(Card(L.T("Колір акценту"), L.T("Колір Windows оновлюється автоматично, коли ви змінюєте його в системі."), swatches, stacked: true));
+        stack.Children.Add(Card(L.T("Тонувати поверхні акцентом"), L.T("Додає панелі й меню легкий відтінок вибраного кольору."), Toggle(Settings.TintSurfaces, (s, v) => s.TintSurfaces = v)));
 
-        Group(stack, "Текст і форма");
+        Group(stack, L.T("Текст і форма"));
         var fonts = new ComboBox { Width = 230 };
         var preferred = new[] { Settings.DefaultFont, "Segoe UI", "Segoe UI Variable Display", "Inter", "Onest", "Bahnschrift", "Calibri", "Verdana", "Tahoma", "Consolas", "Cascadia Code", "JetBrains Mono" };
         var installed = Fonts.SystemFontFamilies.Select(f => f.Source).ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -227,11 +241,11 @@ internal sealed class SettingsWindow : ChromeWindow
         foreach (var name in names) fonts.Items.Add(new ComboBoxItem { Content = name, FontFamily = new FontFamily(name), Tag = name });
         fonts.SelectedIndex = names.FindIndex(n => n.Equals(Settings.FontName, StringComparison.OrdinalIgnoreCase));
         fonts.SelectionChanged += (_, _) => { if (fonts.SelectedItem is ComboBoxItem { Tag: string name }) session.ChangeSettings(s => s.FontName = name); };
-        stack.Children.Add(Card("Шрифт", "Використовується на панелі, в меню та у вікнах програми.", fonts));
-        stack.Children.Add(Card("Масштаб інтерфейсу", null, Range(Settings.InterfaceScale * 100, 80, 150, 5, v => v.ToString("0") + "%", (s, v) => s.InterfaceScale = v / 100)));
-        stack.Children.Add(Card("Непрозорість панелі та меню", null, Range(Settings.SurfaceOpacity * 100, 50, 100, 2, v => v.ToString("0") + "%", (s, v) => s.SurfaceOpacity = v / 100)));
-        stack.Children.Add(Card("Заокруглення кутів", null, Range(Settings.CornerRadius, 0, 16, 1, v => v.ToString("0") + " px", (s, v) => s.CornerRadius = (int)v)));
-        stack.Children.Add(Card("Стандартний вигляд", "Повертає тему, колір, шрифт, масштаб і форму до початкових значень.", Ui.Button("Скинути", () =>
+        stack.Children.Add(Card(L.T("Шрифт"), L.T("Використовується на панелі, в меню та у вікнах програми."), fonts));
+        stack.Children.Add(Card(L.T("Масштаб інтерфейсу"), null, Range(Settings.InterfaceScale * 100, 80, 150, 5, v => v.ToString("0") + "%", (s, v) => s.InterfaceScale = v / 100)));
+        stack.Children.Add(Card(L.T("Непрозорість панелі та меню"), null, Range(Settings.SurfaceOpacity * 100, 50, 100, 2, v => v.ToString("0") + "%", (s, v) => s.SurfaceOpacity = v / 100)));
+        stack.Children.Add(Card(L.T("Заокруглення кутів"), null, Range(Settings.CornerRadius, 0, 16, 1, v => v.ToString("0") + " px", (s, v) => s.CornerRadius = (int)v)));
+        stack.Children.Add(Card(L.T("Стандартний вигляд"), L.T("Повертає тему, колір, шрифт, масштаб і форму до початкових значень."), Ui.Button(L.T("Скинути"), () =>
         {
             var defaults = new Settings();
             session.ChangeSettings(s =>
@@ -245,31 +259,31 @@ internal sealed class SettingsWindow : ChromeWindow
 
     private void PanelPage(StackPanel stack)
     {
-        Group(stack, "Розташування");
-        stack.Children.Add(Card("Вирівнювання панелі", "«Як у Windows» повторює розташування кнопок панелі завдань.",
-            Segments(Settings.Alignment, (s, v) => s.Alignment = v, ("Windows", "Як у Windows"), ("Left", "Ліворуч"), ("Center", "По центру"), ("Right", "Праворуч"))));
-        stack.Children.Add(Card("Монітори", "На всіх моніторах, де є панель завдань Windows, або лише на основному.",
-            Segments(Settings.AllMonitors ? "All" : "Primary", (s, v) => s.AllMonitors = v == "All", ("Primary", "Основний"), ("All", "Усі"))));
-        stack.Children.Add(Card("Місце на екрані", "Резервування зменшує максимізовані вікна, щоб панель їх не перекривала.",
-            Segments(Settings.ReserveSpace ? "Reserve" : "Overlay", (s, v) => s.ReserveSpace = v == "Reserve", ("Overlay", "Поверх вікон"), ("Reserve", "Резервувати"))));
-        stack.Children.Add(Card("Мініатюрний режим", "Панель ховається за панель завдань Windows, видно лише стрілку. Наведіть на неї — панель виїде.", Toggle(Settings.MiniatureMode, (s, v) => s.MiniatureMode = v)));
+        Group(stack, L.T("Розташування"));
+        stack.Children.Add(Card(L.T("Вирівнювання панелі"), L.T("«Як у Windows» повторює розташування кнопок панелі завдань."),
+            Segments(Settings.Alignment, (s, v) => s.Alignment = v, ("Windows", L.T("Як у Windows")), ("Left", L.T("Ліворуч")), ("Center", L.T("По центру")), ("Right", L.T("Праворуч")))));
+        stack.Children.Add(Card(L.T("Монітори"), L.T("На всіх моніторах, де є панель завдань Windows, або лише на основному."),
+            Segments(Settings.AllMonitors ? "All" : "Primary", (s, v) => s.AllMonitors = v == "All", ("Primary", L.T("Основний")), ("All", L.T("Усі")))));
+        stack.Children.Add(Card(L.T("Місце на екрані"), L.T("Резервування зменшує максимізовані вікна, щоб панель їх не перекривала."),
+            Segments(Settings.ReserveSpace ? "Reserve" : "Overlay", (s, v) => s.ReserveSpace = v == "Reserve", ("Overlay", L.T("Поверх вікон")), ("Reserve", L.T("Резервувати")))));
+        stack.Children.Add(Card(L.T("Мініатюрний режим"), L.T("Панель ховається за панель завдань Windows, видно лише стрілку. Наведіть на неї — панель виїде."), Toggle(Settings.MiniatureMode, (s, v) => s.MiniatureMode = v)));
 
-        Group(stack, "Меню");
-        stack.Children.Add(Card("Затримка відкриття", "Випадковий проліт курсора не відкриває меню.", Range(Settings.OpenDelayMs, 0, 600, 25, v => v.ToString("0") + " мс", (s, v) => s.OpenDelayMs = (int)v)));
-        stack.Children.Add(Card("Затримка закриття", "Скільки меню чекає після виходу курсора.", Range(Settings.CloseDelayMs, 0, 1000, 50, v => v.ToString("0") + " мс", (s, v) => s.CloseDelayMs = (int)v)));
-        stack.Children.Add(Card("Лічильники на вкладках", "Кількість ярликів поруч із назвою категорії.", Toggle(Settings.ShowCounts, (s, v) => s.ShowCounts = v)));
-        stack.Children.Add(Card("Пошук у меню", "Поле пошуку з’являється, коли в категорії стільки ярликів або більше.",
-            Range(Settings.SearchThreshold, 0, 40, 1, v => v == 0 ? "вимкнено" : "від " + v.ToString("0"), (s, v) => s.SearchThreshold = (int)v)));
-        stack.Children.Add(Card("Сітка для великих категорій", "Від 20 ярликів меню показує іконки сіткою.", Toggle(Settings.GridForLargeCategories, (s, v) => s.GridForLargeCategories = v)));
+        Group(stack, L.T("Меню"));
+        stack.Children.Add(Card(L.T("Затримка відкриття"), L.T("Випадковий проліт курсора не відкриває меню."), Range(Settings.OpenDelayMs, 0, 600, 25, v => L.F("{0} мс", v.ToString("0")), (s, v) => s.OpenDelayMs = (int)v)));
+        stack.Children.Add(Card(L.T("Затримка закриття"), L.T("Скільки меню чекає після виходу курсора."), Range(Settings.CloseDelayMs, 0, 1000, 50, v => L.F("{0} мс", v.ToString("0")), (s, v) => s.CloseDelayMs = (int)v)));
+        stack.Children.Add(Card(L.T("Лічильники на вкладках"), L.T("Кількість ярликів поруч із назвою категорії."), Toggle(Settings.ShowCounts, (s, v) => s.ShowCounts = v)));
+        stack.Children.Add(Card(L.T("Пошук у меню"), L.T("Поле пошуку з’являється, коли в категорії стільки ярликів або більше."),
+            Range(Settings.SearchThreshold, 0, 40, 1, v => v == 0 ? L.T("вимкнено") : L.F("від {0}", v.ToString("0")), (s, v) => s.SearchThreshold = (int)v)));
+        stack.Children.Add(Card(L.T("Сітка для великих категорій"), L.T("Від 20 ярликів меню показує іконки сіткою."), Toggle(Settings.GridForLargeCategories, (s, v) => s.GridForLargeCategories = v)));
     }
 
     private FrameworkElement CategoriesPage()
     {
-        var heading = Ui.Text("Категорії", 22, "Text", bold: true);
-        var hint = Ui.Text("Перетягуйте застосунки між категоріями, а категорії — за заголовок. Подвійний клік по назві перейменовує.", 12.5, "Text.Muted", wrap: true);
+        var heading = Ui.Text(L.T("Категорії"), 22, "Text", bold: true);
+        var hint = Ui.Text(L.T("Перетягуйте застосунки між категоріями, а категорії — за заголовок. Подвійний клік по назві перейменовує."), 12.5, "Text.Muted", wrap: true);
         hint.Margin = new Thickness(0, 6, 0, 0);
         var titles = new StackPanel { Children = { heading, hint } };
-        var undo = Ui.Button("Скасувати зміну", session.Undo, icon: Icons.Undo); undo.VerticalAlignment = VerticalAlignment.Top;
+        var undo = Ui.Button(L.T("Скасувати зміну"), session.Undo, icon: Icons.Undo); undo.VerticalAlignment = VerticalAlignment.Top;
         var top = new Grid { Margin = new Thickness(28, 4, 28, 16) };
         top.ColumnDefinitions.Add(new ColumnDefinition());
         top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -287,24 +301,24 @@ internal sealed class SettingsWindow : ChromeWindow
     {
         var version = Assembly.GetExecutingAssembly().GetName().Version;
         var logo = new Border { Width = 52, Height = 52, CornerRadius = new CornerRadius(13), Child = Ui.Icon(Icons.Layout, "Accent.Text", 26) }.Res(Border.BackgroundProperty, "Accent");
-        var name = Ui.Text("Панель категорій", 18, "Text", bold: true);
-        var build = Ui.Text("Версія " + (version is null ? "—" : version.ToString(3)) + " · Windows 11", 12.5, "Text.Muted"); build.Margin = new Thickness(0, 4, 0, 0);
+        var name = Ui.Text(L.T("Панель категорій"), 18, "Text", bold: true);
+        var build = Ui.Text(L.F("Версія {0}", version is null ? "—" : version.ToString(3)) + " · Windows 11", 12.5, "Text.Muted"); build.Margin = new Thickness(0, 4, 0, 0);
         var texts = new StackPanel { Margin = new Thickness(16, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Children = { name, build } };
         stack.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 18), Children = { logo, texts } });
-        var about = Ui.Text("Категорії застосунків над панеллю завдань Windows. Наведіть курсор на категорію, щоб побачити її застосунки; панель з’являється і зникає разом із панеллю завдань.", 13, "Text.Muted", wrap: true);
+        var about = Ui.Text(L.T("Категорії застосунків над панеллю завдань Windows. Наведіть курсор на категорію, щоб побачити її застосунки; панель з’являється і зникає разом із панеллю завдань."), 13, "Text.Muted", wrap: true);
         about.LineHeight = 20; about.Margin = new Thickness(0, 0, 0, 14);
         stack.Children.Add(about);
 
-        Group(stack, "Підказки");
+        Group(stack, L.T("Підказки"));
         foreach (var (keys, text) in new[]
         {
-            ("Клік по вкладці", "Відкриває або закриває меню без затримки."),
-            ("Подвійний клік по вкладці", "Перейменування категорії на місці."),
-            ("Перетягування вкладки", "Змінює порядок категорій."),
-            ("Перетягування ярлика", "Змінює порядок; над іншою вкладкою — переносить у ту категорію."),
-            ("Файли з Провідника", "Перетягніть .exe, ярлик або папку на вкладку чи в меню."),
-            ("Shift + клік", "Нове вікно вже запущеного застосунку. Ctrl + Shift + клік — від імені адміністратора."),
-            ("Esc", "Закриває меню.")
+            (L.T("Клік по вкладці"), L.T("Відкриває або закриває меню без затримки.")),
+            (L.T("Подвійний клік по вкладці"), L.T("Перейменування категорії на місці.")),
+            (L.T("Перетягування вкладки"), L.T("Змінює порядок категорій.")),
+            (L.T("Перетягування ярлика"), L.T("Змінює порядок; над іншою вкладкою — переносить у ту категорію.")),
+            (L.T("Файли з Провідника"), L.T("Перетягніть .exe, ярлик або папку на вкладку чи в меню.")),
+            (L.T("Shift + клік"), L.T("Нове вікно вже запущеного застосунку. Ctrl + Shift + клік — від імені адміністратора.")),
+            ("Esc", L.T("Закриває меню."))
         })
         {
             var key = Ui.Text(keys, 12.5, "Text", bold: true); key.Width = 210;

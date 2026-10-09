@@ -76,7 +76,7 @@ internal static class AppCatalog
                 var lower = name.ToLowerInvariant();
                 if (lower.Contains("uninstall") || lower.Contains("видал") || lower.Contains("readme") || lower.Contains("license")
                     || lower.EndsWith(" help") || lower.Contains("довідка") || lower.Contains("documentation") || lower.Contains("release notes")) continue;
-                result.Add(Entry(name, path, "Меню «Пуск»"));
+                result.Add(Entry(name, path, L.T("Меню «Пуск»")));
             }
             foreach (var folder in Directory.EnumerateDirectories(root))
                 if ((File.GetAttributes(folder) & FileAttributes.ReparsePoint) == 0) ScanFolder(folder, result);
@@ -99,7 +99,7 @@ internal static class AppCatalog
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
         }
-        return new(name, target, source, ApplicationClassifier.Classify(name, resolved, description).Category);
+        return new(name, target, source, L.T(ApplicationClassifier.Classify(name, resolved, description).Category));
     }
 
     /// <summary>
@@ -112,7 +112,7 @@ internal static class AppCatalog
         var links = new List<CatalogEntry>();
         if (Directory.Exists(PinnedFolder))
             foreach (var file in Directory.EnumerateFiles(PinnedFolder, "*.lnk"))
-                links.Add(Entry(Path.GetFileNameWithoutExtension(file), file, "Панель завдань"));
+                links.Add(Entry(Path.GetFileNameWithoutExtension(file), file, L.T("Панель завдань")));
 
         var buttons = new List<(string Name, string AppId)>();
         try
@@ -147,7 +147,7 @@ internal static class AppCatalog
             if (!appId.Contains('!')) continue;
             var app = apps.FirstOrDefault(a => a.Target.Equals(Shortcuts.AppsFolder + appId, StringComparison.OrdinalIgnoreCase));
             var pinned = pinnedSuffix is not null ? name.EndsWith(pinnedSuffix, StringComparison.CurrentCulture) : !name.Any(char.IsDigit);
-            if (app is not null && pinned && !result.Contains(app)) result.Add(app with { Source = "Панель завдань" });
+            if (app is not null && pinned && !result.Contains(app)) result.Add(app with { Source = L.T("Панель завдань") });
         }
         result.AddRange(links.Where(l => !result.Contains(l)));
         return result;

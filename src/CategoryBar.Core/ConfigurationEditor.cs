@@ -40,7 +40,7 @@ public sealed class ConfigurationEditor(Configuration config, Action<Configurati
     public static void Move<T>(IList<T> items, T item, int destination)
     {
         var from = items.IndexOf(item);
-        if (from < 0) throw new InvalidOperationException("Об’єкт більше не існує.");
+        if (from < 0) throw new InvalidOperationException(L.T("Об’єкт більше не існує."));
         destination = Math.Clamp(destination, 0, items.Count - 1);
         if (from == destination) return;
         items.RemoveAt(from); items.Insert(destination, item);
@@ -49,7 +49,7 @@ public sealed class ConfigurationEditor(Configuration config, Action<Configurati
     public static void MoveShortcut(Category source, Category destination, Shortcut shortcut, int index)
     {
         var from = source.Shortcuts.IndexOf(shortcut);
-        if (from < 0) throw new InvalidOperationException("Ярлик більше не існує.");
+        if (from < 0) throw new InvalidOperationException(L.T("Ярлик більше не існує."));
         if (source == destination && from < index) index--;
         source.Shortcuts.RemoveAt(from);
         destination.Shortcuts.Insert(Math.Clamp(index, 0, destination.Shortcuts.Count), shortcut);

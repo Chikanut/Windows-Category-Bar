@@ -16,6 +16,7 @@ public partial class App : Application
     private SettingsWindow? settings;
     private OnboardingWindow? onboarding;
     private bool reporting;
+    private string[] arguments = [];
 
     internal static App Instance => (App)Current;
     /// <summary>Set when the application was started with --config; autostart then keeps using that file.</summary>
@@ -24,6 +25,8 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        arguments = e.Args;
+        L.Use("System");
         var configArgument = Array.IndexOf(e.Args, "--config");
         if (configArgument >= 0 && configArgument + 1 < e.Args.Length) CustomConfigPath = Path.GetFullPath(e.Args[configArgument + 1]);
         var path = CustomConfigPath ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WindowsCategoryBar", "config.json");
@@ -41,7 +44,7 @@ public partial class App : Application
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
             if (reporting) return;
             reporting = true;
-            try { session?.Toast("Сталася помилка", error.Exception.Message + " Подробиці записано в errors.log.", ToastKind.Error); }
+            try { session?.Toast(L.T("Сталася помилка"), L.F("{0} Подробиці записано в errors.log.", error.Exception.Message), ToastKind.Error); }
             finally { reporting = false; }
         };
 
@@ -54,7 +57,7 @@ public partial class App : Application
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or JsonException)
         {
-            MessageBox.Show(ex.Message, "Панель категорій", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(ex.Message, L.T("Панель категорій"), MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown(1);
             return;
         }
@@ -63,13 +66,14 @@ public partial class App : Application
         if (diagnose >= 0 && diagnose + 1 < e.Args.Length)
         {
             // Writes what the status tracker sees for every shortcut; used to investigate missing indicators.
-            var all = config.Categories.SelectMany(c => c.Shortcuts).ToList();
+            var all = config.Categories.SelectMany(c => c.Shortcuts).SelectMany(s => s.IsSet ? s.Steps : [s]).ToList();
             var (running, broken) = Services.AppStatus.Inspect(all);
             File.WriteAllLines(e.Args[diagnose + 1], all.Select(s => $"{s.Name} | {(running.ContainsKey(s.Id) ? "running" : broken.Contains(s.Id) ? "broken" : "idle")} | {Services.Shortcuts.Resolve(s)}"));
             Shutdown();
             return;
         }
 
+        L.Use(config.Settings.Language);
         Theme.Apply(config.Settings);
         session = new Session(config, store);
         Theme.FollowWindows(() => session.Settings);
@@ -83,7 +87,8 @@ public partial class App : Application
 
         if (config.Settings.OnboardingCompleted) StartBars();
         else ShowOnboarding();
-        if (store.RecoveryMessage is { } recovery) session.Toast("Налаштування відновлено", recovery, ToastKind.Warning);
+        if (e.Args.Contains("--settings") && config.Settings.OnboardingCompleted) ShowSettings();
+        if (store.RecoveryMessage is { } recovery) session.Toast(L.T("Налаштування відновлено"), recovery, ToastKind.Warning);
     }
 
     private void StartBars()
@@ -115,19 +120,19 @@ public partial class App : Application
     {
         var menu = new ContextMenu();
         var hidden = bars.Count > 0 && bars[0].HiddenByUser;
-        menu.Items.Add(Ui.Item("Налаштування…", () => ShowSettings(), Icons.Sliders));
-        menu.Items.Add(Ui.Item("Упорядкувати категорії…", () => ShowSettings("Categories"), Icons.Apps));
+        menu.Items.Add(Ui.Item(L.T("Налаштування…"), () => ShowSettings(), Icons.Sliders));
+        menu.Items.Add(Ui.Item(L.T("Упорядкувати категорії…"), () => ShowSettings("Categories"), Icons.Apps));
         menu.Items.Add(new Separator());
-        menu.Items.Add(hidden ? Ui.Item("Показати панель", ShowBars, Icons.ChevronUp) : Ui.Item("Сховати панель до перезапуску", HideBars, Icons.ChevronDown));
-        var startup = new MenuItem { Header = "Запускати з Windows", IsChecked = StartupRegistration.IsEnabled };
+        menu.Items.Add(hidden ? Ui.Item(L.T("Показати панель"), ShowBars, Icons.ChevronUp) : Ui.Item(L.T("Сховати панель до перезапуску"), HideBars, Icons.ChevronDown));
+        var startup = new MenuItem { Header = L.T("Запускати з Windows"), IsChecked = StartupRegistration.IsEnabled };
         startup.Click += (_, _) =>
         {
             try { StartupRegistration.SetEnabled(!StartupRegistration.IsEnabled, CustomConfigPath); }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException) { session?.Toast("Не вдалося змінити автозапуск", ex.Message, ToastKind.Error); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException) { session?.Toast(L.T("Не вдалося змінити автозапуск"), ex.Message, ToastKind.Error); }
         };
         menu.Items.Add(startup);
         menu.Items.Add(new Separator());
-        menu.Items.Add(Ui.Item("Вийти", Quit, Icons.Close));
+        menu.Items.Add(Ui.Item(L.T("Вийти"), Quit, Icons.Close));
         return menu;
     }
 
@@ -160,7 +165,7 @@ public partial class App : Application
             if (!session.Settings.OnboardingCompleted) session.ChangeSettings(s => s.OnboardingCompleted = true);
             StartBars();
             if (window.Finished)
-                session.Toast("Панель готова", "Наведіть курсор на категорію над панеллю завдань. Перенесені значки тепер можна відкріпити: клацніть значок правою кнопкою → «Відкріпити від панелі завдань».", ToastKind.Success, true);
+                session.Toast(L.T("Панель готова"), L.T("Наведіть курсор на категорію над панеллю завдань. Перенесені значки тепер можна відкріпити: клацніть значок правою кнопкою → «Відкріпити від панелі завдань»."), ToastKind.Success, true);
         };
         window.Surface();
     }
@@ -174,6 +179,25 @@ public partial class App : Application
         tray?.Dispose();
         tray = null;
         Shutdown();
+    }
+
+    /// <summary>
+    /// Starts the application again and reopens the settings. Used after the language changes: every window,
+    /// menu and cached list is built from texts in the language chosen at startup.
+    /// </summary>
+    internal void Restart()
+    {
+        var executable = Environment.ProcessPath;
+        if (executable is null) return;
+        var info = new System.Diagnostics.ProcessStartInfo(executable);
+        foreach (var argument in arguments.Where(a => a != "--settings")) info.ArgumentList.Add(argument);
+        info.ArgumentList.Add("--settings");
+        // The new process must be able to take the single-instance lock.
+        try { instance?.ReleaseMutex(); } catch (ApplicationException) { }
+        instance?.Dispose();
+        instance = null;
+        System.Diagnostics.Process.Start(info)?.Dispose();
+        Quit();
     }
 
     protected override void OnExit(ExitEventArgs e)

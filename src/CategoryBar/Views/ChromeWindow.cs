@@ -28,8 +28,8 @@ internal class ChromeWindow : Window
 
         var caption = Ui.Text(title, 12.5, "Text.Muted"); caption.Margin = new Thickness(14, 0, 0, 0);
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, 6, 0) };
-        if (canMinimize) buttons.Children.Add(CaptionButton(Icons.Minimize, "Згорнути", () => WindowState = WindowState.Minimized));
-        buttons.Children.Add(CaptionButton(Icons.Close, "Закрити", Close));
+        if (canMinimize) buttons.Children.Add(CaptionButton(Icons.Minimize, L.T("Згорнути"), () => WindowState = WindowState.Minimized));
+        buttons.Children.Add(CaptionButton(Icons.Close, L.T("Закрити"), Close));
         TitleBar.Children.Add(caption); TitleBar.Children.Add(buttons);
 
         var layout = new Grid();

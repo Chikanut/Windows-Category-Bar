@@ -69,7 +69,7 @@ internal sealed class BoardView : Grid
     {
         var content = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         var plus = Ui.Icon(Icons.Plus, "Text.Muted", 14); plus.Margin = new Thickness(0, 0, 8, 0);
-        content.Children.Add(plus); content.Children.Add(Ui.Text("Нова категорія", 13, "Text.Muted"));
+        content.Children.Add(plus); content.Children.Add(Ui.Text(L.T("Нова категорія"), 13, "Text.Muted"));
         var outline = new Rectangle { StrokeDashArray = [4, 3], StrokeThickness = 1, RadiusX = 8, RadiusY = 8, Opacity = .6 }.Res(Shape.StrokeProperty, "Text.Faint");
         var button = new Grid { Width = 170, Height = 44, VerticalAlignment = VerticalAlignment.Top, Background = Brushes.Transparent, Cursor = Cursors.Hand, Children = { outline, content } };
         button.MouseLeftButtonUp += (_, _) =>
@@ -89,7 +89,7 @@ internal sealed class BoardView : Grid
         foreach (var shortcut in category.Shortcuts) rows.Children.Add(Row(category, shortcut));
         if (category.Shortcuts.Count == 0)
         {
-            var hint = Ui.Text("Перетягніть сюди застосунки", 12, "Text.Faint", wrap: true);
+            var hint = Ui.Text(L.T("Перетягніть сюди застосунки"), 12, "Text.Faint", wrap: true);
             hint.TextAlignment = TextAlignment.Center; hint.Margin = new Thickness(10, 14, 10, 14); hint.IsHitTestVisible = false;
             rows.Children.Add(hint);
         }
@@ -106,7 +106,7 @@ internal sealed class BoardView : Grid
         }
         var count = Ui.Text(category.Shortcuts.Count.ToString(), 11.5, "Text.Faint"); count.Margin = new Thickness(6, 0, 4, 0);
         header.Children.Add(count.At(1));
-        var more = Ui.IconButton(Icons.More, "Дії з категорією", () => { });
+        var more = Ui.IconButton(Icons.More, L.T("Дії з категорією"), () => { });
         more.Click += (_, _) => OpenColumnMenu(category, more);
         header.Children.Add(more.At(2));
         header.MouseLeftButtonDown += (_, e) =>
@@ -125,7 +125,7 @@ internal sealed class BoardView : Grid
             var add = new Border { Height = 32, Background = Brushes.Transparent, Margin = new Thickness(2, 2, 2, 0), Cursor = Cursors.Hand }.Res(Border.CornerRadiusProperty, "Radius.Small");
             var content = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(10, 0, 0, 0) };
             var plus = Ui.Icon(Icons.Plus, "Text.Faint", 13); plus.Margin = new Thickness(0, 0, 9, 0);
-            content.Children.Add(plus); content.Children.Add(Ui.Text("Додати", 12.5, "Text.Faint"));
+            content.Children.Add(plus); content.Children.Add(Ui.Text(L.T("Додати"), 12.5, "Text.Faint"));
             add.Child = content;
             add.MouseEnter += (_, _) => add.SetResourceReference(Border.BackgroundProperty, "Hover");
             add.MouseLeave += (_, _) => add.Background = Brushes.Transparent;
@@ -153,10 +153,10 @@ internal sealed class BoardView : Grid
         line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         line.ColumnDefinitions.Add(new ColumnDefinition());
         line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        line.Children.Add(Ui.AppIcon(shortcut.Name, shortcut.Target, 20));
+        line.Children.Add(Ui.ShortcutIcon(shortcut, 20));
         var name = Ui.Text(shortcut.Name, 12.5); name.Margin = new Thickness(9, 0, 0, 0);
         line.Children.Add(name.At(1));
-        var remove = Ui.IconButton(Icons.Close, "Прибрати з категорії", () => commit(() => category.Shortcuts.Remove(shortcut), "Прибрано «" + shortcut.Name + "»"), "Text.Faint");
+        var remove = Ui.IconButton(Icons.Close, L.T("Прибрати з категорії"), () => commit(() => category.Shortcuts.Remove(shortcut), L.F("Прибрано «{0}»", shortcut.Name)), "Text.Faint");
         remove.Width = remove.Height = remove.MinHeight = 22; remove.Visibility = Visibility.Hidden; remove.Margin = new Thickness(4, 0, -4, 0);
         line.Children.Add(remove.At(2));
         var row = new Border { Height = RowHeight, Padding = new Thickness(8, 0, 8, 0), Background = Brushes.Transparent, Child = line, Tag = shortcut, ToolTip = shortcut.Name }.Res(Border.CornerRadiusProperty, "Radius.Small");
@@ -194,12 +194,12 @@ internal sealed class BoardView : Grid
         var list = source();
         var index = list.IndexOf(category);
         var menu = new ContextMenu { PlacementTarget = target, Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom };
-        menu.Items.Add(Ui.Item("Перейменувати", () => { renaming = category; Refresh(); }, Icons.Pencil));
-        if (addApps is not null) menu.Items.Add(Ui.Item("Додати застосунки…", () => addApps(category), Icons.Plus));
-        menu.Items.Add(Ui.Item("Перемістити ліворуч", () => commit(() => ConfigurationEditor.Move(list, category, index - 1), null), Icons.ChevronLeft, enabled: index > 0));
-        menu.Items.Add(Ui.Item("Перемістити праворуч", () => commit(() => ConfigurationEditor.Move(list, category, index + 1), null), Icons.ChevronRight, enabled: index < list.Count - 1));
+        menu.Items.Add(Ui.Item(L.T("Перейменувати"), () => { renaming = category; Refresh(); }, Icons.Pencil));
+        if (addApps is not null) menu.Items.Add(Ui.Item(L.T("Додати застосунки…"), () => addApps(category), Icons.Plus));
+        menu.Items.Add(Ui.Item(L.T("Перемістити ліворуч"), () => commit(() => ConfigurationEditor.Move(list, category, index - 1), null), Icons.ChevronLeft, enabled: index > 0));
+        menu.Items.Add(Ui.Item(L.T("Перемістити праворуч"), () => commit(() => ConfigurationEditor.Move(list, category, index + 1), null), Icons.ChevronRight, enabled: index < list.Count - 1));
         menu.Items.Add(new Separator());
-        menu.Items.Add(Ui.Item("Видалити категорію", () => DeleteRequested?.Invoke(category), Icons.Trash, danger: true));
+        menu.Items.Add(Ui.Item(L.T("Видалити категорію"), () => DeleteRequested?.Invoke(category), Icons.Trash, danger: true));
         menu.IsOpen = true;
     }
 
@@ -209,12 +209,12 @@ internal sealed class BoardView : Grid
     private void OpenRowMenu(Category category, Shortcut shortcut, UIElement target)
     {
         var menu = new ContextMenu { PlacementTarget = target };
-        var move = new MenuItem { Header = "Перемістити до", Icon = Ui.Icon(Icons.Move) };
+        var move = new MenuItem { Header = L.T("Перемістити до"), Icon = Ui.Icon(Icons.Move) };
         foreach (var other in source().Where(c => c != category))
             move.Items.Add(Ui.Item(other.Name, () => commit(() => { category.Shortcuts.Remove(shortcut); other.Shortcuts.Add(shortcut); }, null)));
         move.IsEnabled = move.Items.Count > 0;
         menu.Items.Add(move);
-        menu.Items.Add(Ui.Item("Прибрати з категорії", () => commit(() => category.Shortcuts.Remove(shortcut), "Прибрано «" + shortcut.Name + "»"), Icons.Trash, danger: true));
+        menu.Items.Add(Ui.Item(L.T("Прибрати з категорії"), () => commit(() => category.Shortcuts.Remove(shortcut), L.F("Прибрано «{0}»", shortcut.Name)), Icons.Trash, danger: true));
         menu.IsOpen = true;
     }
 
@@ -236,7 +236,7 @@ internal sealed class BoardView : Grid
             dragging = true;
             var label = pressed is Shortcut s ? s.Name : ((Category)pressed).Name;
             var content = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(8, 0, 12, 0) };
-            if (pressed is Shortcut shortcut) content.Children.Add(Ui.AppIcon(shortcut.Name, shortcut.Target, 20));
+            if (pressed is Shortcut shortcut) content.Children.Add(Ui.ShortcutIcon(shortcut, 20));
             var text = Ui.Text(label, 12.5, "Text", bold: pressed is Category); text.Margin = new Thickness(9, 0, 0, 0); text.MaxWidth = 170;
             content.Children.Add(text);
             ghost = new Border { Height = RowHeight, BorderThickness = new Thickness(1), Child = content, Opacity = .95 }
@@ -320,7 +320,7 @@ internal sealed class BoardView : Grid
             var from = origin.Shortcuts.IndexOf(shortcut);
             if (origin == destination && (index == from || index == from + 1)) return;
             commit(() => ConfigurationEditor.MoveShortcut(origin, destination, shortcut, index),
-                origin == destination ? null : "Переміщено «" + shortcut.Name + "» до «" + destination.Name + "»");
+                origin == destination ? null : L.F("Переміщено «{0}» до «{1}»", shortcut.Name, destination.Name));
         }
     }
 }

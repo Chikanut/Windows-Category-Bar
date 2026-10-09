@@ -8,6 +8,8 @@ namespace CategoryBar.Services;
 /// Tracks which shortcuts are running, missing or being started. Inspection happens on the shell worker;
 /// <see cref="Changed"/> is raised on the UI thread only when something actually changed.
 /// </summary>
+internal readonly record struct OpenWindow(IntPtr Handle, string Path, string AppId);
+
 internal sealed class AppStatus
 {
     private readonly Func<IEnumerable<Shortcut>> shortcuts;
@@ -26,8 +28,10 @@ internal sealed class AppStatus
         timer.Tick += (_, _) => Refresh();
     }
 
-    internal bool IsRunning(Shortcut shortcut) => running.ContainsKey(shortcut.Id);
-    internal bool IsBroken(Shortcut shortcut) => broken.Contains(shortcut.Id);
+    /// <summary>A set is running when all of its applications are, and broken when any of them is missing.</summary>
+    internal bool IsRunning(Shortcut shortcut) => shortcut.IsSet ? shortcut.Steps.All(IsRunning) : running.ContainsKey(shortcut.Id);
+    internal bool IsBroken(Shortcut shortcut) => shortcut.IsSet ? shortcut.Steps.Any(IsBroken) : broken.Contains(shortcut.Id);
+    internal IntPtr WindowOf(Shortcut shortcut) => running.TryGetValue(shortcut.Id, out var window) && Native.IsWindow(window) ? window : IntPtr.Zero;
     internal bool IsLaunching(Shortcut shortcut) => launching.ContainsKey(shortcut.Id);
     internal bool AnyRunning(Category category) => category.Shortcuts.Any(IsRunning);
 
@@ -70,18 +74,17 @@ internal sealed class AppStatus
         finally { busy = false; }
     }
 
-    internal static (Dictionary<Guid, IntPtr>, HashSet<Guid>) Inspect(List<Shortcut> items)
+    /// <summary>Top-level application windows, front to back, with the program that owns each.</summary>
+    internal static List<OpenWindow> OpenWindows()
     {
-        var byPath = new Dictionary<string, IntPtr>(StringComparer.OrdinalIgnoreCase);
-        var byName = new Dictionary<string, (string Path, IntPtr Window)>(StringComparer.OrdinalIgnoreCase);
-        var byAppId = new Dictionary<string, IntPtr>(StringComparer.OrdinalIgnoreCase);
+        var result = new List<OpenWindow>();
         var processes = new Dictionary<uint, (string Path, string AppId)>();
         var text = new StringBuilder(1024);
 
         (string Path, string AppId) Describe(uint id)
         {
             if (processes.TryGetValue(id, out var known)) return known;
-            var result = ("", "");
+            var described = ("", "");
             var process = Native.OpenProcess(0x1000 /* PROCESS_QUERY_LIMITED_INFORMATION */, false, id);
             if (process != IntPtr.Zero)
             {
@@ -91,11 +94,11 @@ internal sealed class AppStatus
                     var path = Native.QueryFullProcessImageName(process, 0, text, ref length) ? text.ToString() : "";
                     length = text.Capacity; text.Clear();
                     var appId = Native.GetApplicationUserModelId(process, ref length, text) == 0 ? text.ToString() : "";
-                    result = (path, appId);
+                    described = (path, appId);
                 }
                 finally { Native.CloseHandle(process); }
             }
-            return processes[id] = result;
+            return processes[id] = described;
         }
 
         Native.EnumWindows((window, lParam) =>
@@ -117,11 +120,23 @@ internal sealed class AppStatus
             if (path.Length == 0) return true;
             // Explorer always runs as the shell; only its folder windows count as a running application.
             if (path.EndsWith("\\explorer.exe", StringComparison.OrdinalIgnoreCase) && className != "CabinetWClass") return true;
-            byPath.TryAdd(path, window);
-            byName.TryAdd(Path.GetFileName(path), (path, window));
-            if (appId.Length > 0) byAppId.TryAdd(appId, window);
+            result.Add(new(window, path, appId));
             return true;
         }, IntPtr.Zero);
+        return result;
+    }
+
+    internal static (Dictionary<Guid, IntPtr>, HashSet<Guid>) Inspect(List<Shortcut> items)
+    {
+        var byPath = new Dictionary<string, IntPtr>(StringComparer.OrdinalIgnoreCase);
+        var byName = new Dictionary<string, (string Path, IntPtr Window)>(StringComparer.OrdinalIgnoreCase);
+        var byAppId = new Dictionary<string, IntPtr>(StringComparer.OrdinalIgnoreCase);
+        foreach (var open in OpenWindows())
+        {
+            byPath.TryAdd(open.Path, open.Handle);
+            byName.TryAdd(Path.GetFileName(open.Path), (open.Path, open.Handle));
+            if (open.AppId.Length > 0) byAppId.TryAdd(open.AppId, open.Handle);
+        }
 
         var running = new Dictionary<Guid, IntPtr>();
         var broken = new HashSet<Guid>();
@@ -140,7 +155,8 @@ internal sealed class AppStatus
             {
                 var (target, arguments, _) = Shortcuts.Resolve(item);
                 // The File Explorer pin is a namespace shortcut without a file target.
-                if (target == item.Target && Shortcuts.IsLinkFile(target) && item.Name is "File Explorer" or "Провідник" or "Проводник")
+                if (target == item.Target && Shortcuts.IsLinkFile(target) && item.Name is "File Explorer" or "Провідник" or "Проводник"
+                    or "Explorer" or "Datei-Explorer" or "Explorador de archivos" or "Explorateur de fichiers" or "Explorador de Arquivos" or "文件资源管理器" or "エクスプローラー")
                     target = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
                 if (!byPath.TryGetValue(target, out window))
                 {

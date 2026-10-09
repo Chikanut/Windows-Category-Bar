@@ -38,7 +38,7 @@ windows-11 taskbar launcher app-launcher productivity desktop wpf dotnet csharp 
 
 ### Нотатки до релізу
 
-Двомовний текст лежить у [release-notes-0.2.0.md](release-notes-0.2.0.md).
+Двомовний текст лежить у [release-notes-0.3.0.md](release-notes-0.3.0.md).
 
 ## Крок 1. Вирішіть питання з ліцензією
 
@@ -89,7 +89,7 @@ gh repo edit --add-topic windows-11,taskbar,launcher,app-launcher,productivity,d
 
 Ще краще — коротка анімація: запишіть 5–8 секунд (наведення → меню → клік) через ScreenToGif, збережіть як `Documentation/screenshots/demo.gif` до 5 МБ і вставте замість головного знімка.
 
-Окремі знімки для англійського README не потрібні: інтерфейс українською, і в англійській версії про це сказано.
+Знімки можна лишити українськими (в англійському README про це сказано) або перезняти англійською: мова перемикається в Налаштуваннях → Загальне.
 
 ## Крок 6. Додайте картинку для соцмереж
 
@@ -100,14 +100,14 @@ gh repo edit --add-topic windows-11,taskbar,launcher,app-launcher,productivity,d
 
 ## Крок 7. Опублікуйте реліз
 
-Архів уже зібрано: `artifacts\CategoryBar-0.2.0-win-x64.zip` (один `CategoryBar.exe`, близько 56 МБ). Якщо після цього змінювався код, зберіть заново:
+Архів уже зібрано: `artifacts\CategoryBar-0.3.0-win-x64.zip` (один `CategoryBar.exe`, близько 56 МБ). Якщо після цього змінювався код, зберіть заново:
 
 ```powershell
 .\scripts\build.ps1 -SelfContained
 ```
 
 ```powershell
-Compress-Archive -Path artifacts\portable\CategoryBar.exe -DestinationPath artifacts\CategoryBar-0.2.0-win-x64.zip -Force
+Compress-Archive -Path artifacts\portable\CategoryBar.exe -DestinationPath artifacts\CategoryBar-0.3.0-win-x64.zip -Force
 ```
 
 Перед збіркою закрийте панель, запущену з `artifacts\portable`, інакше файл буде зайнятий.
@@ -115,7 +115,7 @@ Compress-Archive -Path artifacts\portable\CategoryBar.exe -DestinationPath artif
 Створіть реліз разом із тегом:
 
 ```powershell
-gh release create v0.2.0 artifacts\CategoryBar-0.2.0-win-x64.zip --title "Category Bar 0.2.0" --notes-file Documentation\release-notes-0.2.0.md
+gh release create v0.3.0 artifacts\CategoryBar-0.3.0-win-x64.zip --title "Category Bar 0.3.0" --notes-file Documentation\release-notes-0.3.0.md
 ```
 
 Після цього значки «release» і «downloads» у README почнуть показувати дані, а посилання «Download» відкриватиме цей реліз.
@@ -129,7 +129,7 @@ gh release create v0.2.0 artifacts\CategoryBar-0.2.0-win-x64.zip --title "Catego
 - [ ] Під назвою видно опис і теми.
 - [ ] README відкривається англійською, перемикач веде на українську версію і назад.
 - [ ] Усі зображення завантажуються, значки показують версію, а не «no releases».
-- [ ] Праворуч у блоці **Releases** є `v0.2.0` з позначкою **Latest**.
+- [ ] Праворуч у блоці **Releases** є `v0.3.0` з позначкою **Latest**.
 - [ ] Архів завантажується, розпаковується, `CategoryBar.exe` запускається на чистому профілі.
 
 ## Необов’язково, але корисно

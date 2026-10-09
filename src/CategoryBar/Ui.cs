@@ -141,6 +141,23 @@ internal static class Ui
         return host;
     }
 
+    /// <summary>A set is drawn as up to four of its applications' icons in one tile.</summary>
+    internal static FrameworkElement ShortcutIcon(Shortcut shortcut, double size = 24)
+    {
+        if (!shortcut.IsSet) return AppIcon(shortcut.Name, shortcut.Target, size);
+        var shown = shortcut.Steps.Take(4).ToList();
+        if (shown.Count == 1) return AppIcon(shown[0].Name, shown[0].Target, size);
+        var cell = Math.Floor(size / 2);
+        var tiles = new System.Windows.Controls.Primitives.UniformGrid { Columns = 2, Width = cell * 2, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
+        foreach (var step in shown)
+        {
+            var icon = AppIcon(step.Name, step.Target, cell - 1);
+            icon.Margin = new Thickness(.5);
+            tiles.Children.Add(icon);
+        }
+        return new Grid { Width = size, Height = size, IsHitTestVisible = false, Children = { tiles } };
+    }
+
     private static int StableHash(string text)
     {
         var hash = 17;
@@ -176,14 +193,7 @@ internal static class Ui
     internal static string FreshCategoryName(IEnumerable<Category> existing)
     {
         var names = existing.Select(c => c.Name).ToHashSet(StringComparer.CurrentCultureIgnoreCase);
-        if (!names.Contains("Нова категорія")) return "Нова категорія";
-        for (var i = 2; ; i++) if (!names.Contains("Нова категорія " + i)) return "Нова категорія " + i;
-    }
-
-    internal static string Plural(int count, string one, string few, string many)
-    {
-        var n = Math.Abs(count) % 100; var d = n % 10;
-        var word = n is > 10 and < 20 ? many : d == 1 ? one : d is >= 2 and <= 4 ? few : many;
-        return count + " " + word;
+        if (!names.Contains(L.T("Нова категорія"))) return L.T("Нова категорія");
+        for (var i = 2; ; i++) if (!names.Contains(L.F("Нова категорія {0}", i))) return L.F("Нова категорія {0}", i);
     }
 }
