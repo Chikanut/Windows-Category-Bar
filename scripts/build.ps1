@@ -1,4 +1,4 @@
-param([switch]$Publish)
+param([switch]$Publish, [switch]$VisualCheck)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 Push-Location $projectRoot
@@ -11,6 +11,14 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
     dotnet run --project tests\CategoryBar.Tests -c Release --no-build
     if ($LASTEXITCODE -ne 0) { throw 'Checks failed.' }
+    if ($VisualCheck) {
+        $reviewFolder = Join-Path $projectRoot '.local\settings-review'
+        $executable = Join-Path $projectRoot 'src\CategoryBar\bin\Release\net10.0-windows\CategoryBar.exe'
+        $renderProcess = Start-Process -FilePath $executable -ArgumentList @('--render-settings', ('"' + $reviewFolder + '"')) -WindowStyle Hidden -PassThru
+        if (-not $renderProcess.WaitForExit(20000)) { Stop-Process -Id $renderProcess.Id; throw 'Settings render timed out.' }
+        if ($renderProcess.ExitCode -ne 0) { throw "Settings checks failed. See $reviewFolder\failure.txt" }
+        Get-Content -LiteralPath (Join-Path $reviewFolder 'checks.txt')
+    }
     if ($Publish) {
         dotnet publish src\CategoryBar -c Release --no-restore --self-contained false -o artifacts\portable -p:UseSharedCompilation=false --disable-build-servers
         if ($LASTEXITCODE -ne 0) { throw 'Publish failed.' }

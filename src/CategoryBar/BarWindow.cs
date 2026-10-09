@@ -33,6 +33,7 @@ public sealed class BarWindow : Window
     private bool lastEscape;
     private TaskbarObservation? lastObservation;
     private readonly string logPath;
+    private SettingsWindow? settingsWindow;
     internal System.Collections.Generic.IEnumerable<Category> Categories => config.Categories;
 
     public BarWindow(Configuration config, ConfigurationStore store)
@@ -61,6 +62,15 @@ public sealed class BarWindow : Window
         trayMenu.Items.Add("Налаштування…", null, (_, _) => Dispatcher.Invoke(ShowSettings));
         trayMenu.Items.Add("Створити категорію", null, (_, _) => Dispatcher.Invoke(CreateCategory));
         trayMenu.Items.Add("Сховати / показати панель", null, (_, _) => Dispatcher.Invoke(() => { temporarilyHidden = !temporarilyHidden; UpdatePosition(); }));
+        var startupItem = new Forms.ToolStripMenuItem("Запускати з Windows");
+        startupItem.Click += (_, _) => Dispatcher.Invoke(() =>
+        {
+            try { StartupRegistration.SetEnabled(!StartupRegistration.IsEnabled, store.Path); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+            { Notify("Не вдалося змінити автозапуск", ex.Message); }
+        });
+        trayMenu.Opening += (_, _) => startupItem.Checked = StartupRegistration.IsEnabled;
+        trayMenu.Items.Add(startupItem);
         trayMenu.Items.Add("Відкрити конфігурацію", null, (_, _) => Process.Start(new ProcessStartInfo("explorer.exe", Path.GetDirectoryName(store.Path)!) { UseShellExecute = true }));
         trayMenu.Items.Add(new Forms.ToolStripSeparator());
         trayMenu.Items.Add("Вийти", null, (_, _) => Dispatcher.Invoke(() => Application.Current.Shutdown()));
@@ -325,6 +335,13 @@ public sealed class BarWindow : Window
     private void ShowSettings()
     {
         CloseMenu();
-        new SettingsWindow(config.Settings, SaveAndRefresh).ShowDialog();
+        if (settingsWindow is not null) { settingsWindow.Activate(); return; }
+        settingsWindow = new SettingsWindow(config, store.Path, () =>
+        {
+            store.Save(config);
+            RebuildTabs(); UpdatePosition();
+        });
+        settingsWindow.Closed += (_, _) => settingsWindow = null;
+        settingsWindow.Show();
     }
 }

@@ -15,6 +15,18 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        if (e.Args.Contains("--render-settings"))
+        {
+            var index = Array.IndexOf(e.Args, "--render-settings");
+            if (index + 1 >= e.Args.Length) { Shutdown(2); return; }
+            try { SettingsPreview.RenderAndCheck(e.Args[index + 1]); Shutdown(); }
+            catch (Exception ex)
+            {
+                File.WriteAllText(Path.Combine(e.Args[index + 1], "failure.txt"), ex.ToString());
+                Shutdown(1);
+            }
+            return;
+        }
         if (e.Args.Contains("--probe"))
         {
             var index = Array.IndexOf(e.Args, "--probe");
