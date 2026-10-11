@@ -49,6 +49,26 @@ try
     var rejected = false;
     try { store.Save(recovered); } catch (InvalidDataException) { rejected = true; }
     Check("Empty names cannot overwrite saved state", rejected);
+
+    var retryPath = Path.Combine(folder, "retry-config.json");
+    var retryStore = new ConfigurationStore(retryPath);
+    var retryConfig = new Configuration { Categories = [new Category { Name = "Before" }] };
+    retryStore.Save(retryConfig);
+    using (var blocker = new FileStream(retryPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+    {
+        var release = Task.Run(async () => { await Task.Delay(75); blocker.Dispose(); });
+        retryConfig.Categories[0].Name = "After";
+        retryStore.Save(retryConfig);
+        release.GetAwaiter().GetResult();
+    }
+    Check("Saving tolerates a brief Windows delete-sharing lock", retryStore.Load().Categories[0].Name == "After");
+    using (var blocker = new FileStream(retryPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+    {
+        retryConfig.Categories[0].Name = "Must not replace";
+        var failed = false;
+        try { retryStore.Save(retryConfig); } catch (IOException) { failed = true; }
+        Check("Persistent lock reports failure and retains the original configuration", failed && retryStore.Load().Categories[0].Name == "After" && !File.Exists(retryPath + ".tmp"));
+    }
 }
 finally
 {

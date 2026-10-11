@@ -20,11 +20,15 @@ internal static class Program
     [STAThread]
     private static void Main()
     {
+        Velopack.VelopackApp.Build().Run();
         var app = new RenderApp { ShutdownMode = ShutdownMode.OnExplicitShutdown };
         foreach (var file in new[] { "Controls", "ThemeControls", "ThemeSurfaces" })
             app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/CategoryBar;component/Themes/" + file + ".xaml", UriKind.Relative) });
         var folder = Path.GetFullPath(Path.Combine(".local", "theme-renders")); Directory.CreateDirectory(folder);
         var configPath = Path.Combine(folder, "config.json"); Theme.Initialize(configPath);
+        typeof(App).GetProperty("Updates", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .SetValue(app, new CategoryBar.Services.AppUpdates(new Session(new Configuration(), new ConfigurationStore(configPath))));
+        MiniatureDragChecks.Run(configPath);
         foreach (var id in new[] { "architecture-test", "native-css-check", "aurora-motion" }) Theme.Library.Remove(id);
         var templateIdentities = new HashSet<ControlTemplate>();
         foreach (var theme in BuiltInThemes.All)

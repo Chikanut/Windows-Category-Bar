@@ -171,10 +171,22 @@ public sealed class ConfigurationStore(string path)
                     if (previous is not null) File.Copy(Path, Path + ".bak1", true);
                 }
                 catch (Exception ex) when (ex is IOException or InvalidDataException or JsonException) { }
-                File.Replace(temporary, Path, null);
+                ReplaceWithRetry(temporary, Path);
             }
             else File.Move(temporary, Path);
         }
         finally { if (File.Exists(temporary)) File.Delete(temporary); }
+    }
+
+    private static void ReplaceWithRetry(string temporary, string destination)
+    {
+        for (var attempt = 0; ; attempt++)
+        {
+            try { File.Replace(temporary, destination, null); return; }
+            // Windows scanners/readers can briefly deny deletion. These errors leave both names intact;
+            // retry the atomic replacement, never fall back to deleting the user's configuration.
+            catch (IOException ex) when (attempt < 4 && (ex.HResult & 0xffff) is 32 or 33 or 1175)
+            { System.Threading.Thread.Sleep(25 * (attempt + 1)); }
+        }
     }
 }
