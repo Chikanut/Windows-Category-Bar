@@ -112,4 +112,12 @@ internal static class StartupRegistration
         if (configPath is not null) command += " --config \"" + Path.GetFullPath(configPath) + "\"";
         key.SetValue(ValueName, command, RegistryValueKind.String);
     }
+
+    internal static void RemoveOwnEntry()
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(KeyPath, writable: true);
+        if (key?.GetValue(ValueName) is string command && Environment.ProcessPath is string executable &&
+            command.StartsWith("\"" + executable + "\"", StringComparison.OrdinalIgnoreCase))
+            key.DeleteValue(ValueName, throwOnMissingValue: false);
+    }
 }

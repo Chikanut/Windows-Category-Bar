@@ -1,0 +1,52 @@
+name: Windows release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Verify release version
+        run: |
+          [xml]$project = Get-Content src/CategoryBar/CategoryBar.csproj
+          $version = [string]$project.Project.PropertyGroup.Version
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$version") {
+            throw 'Tag must match the version in CategoryBar.csproj.'
+          }
+      - name: Build, test and package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./scripts/release.ps1 -DownloadPrevious
+      - name: Upload draft release
+        env:
+          VPK_TOKEN: ${{ github.token }}
+        run: |
+          [xml]$project = Get-Content src/CategoryBar/CategoryBar.csproj
+          $version = [string]$project.Project.PropertyGroup.Version
+          dotnet vpk upload github --repoUrl "https://github.com/$env:GITHUB_REPOSITORY" --outputDir artifacts/releases --tag "v$version" --releaseName "Category Bar $version" --targetCommitish $env:GITHUB_SHA
+          if ($LASTEXITCODE -ne 0) { throw 'Release upload failed.' }
+      - name: Attach release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [xml]$project = Get-Content src/CategoryBar/CategoryBar.csproj
+          $version = [string]$project.Project.PropertyGroup.Version
+          gh release edit "v$version" --notes-file "Documentation/release-notes-$version.md"
+          if ($LASTEXITCODE -ne 0) { throw 'Release notes upload failed.' }

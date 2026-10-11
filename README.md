@@ -34,17 +34,21 @@ Once the taskbar fills up with pinned icons, the one you need gets hard to find.
 - **Behaves like part of Windows.** The bar shows and hides together with the taskbar and follows the system theme and accent colour.
 - **Nothing gets lost.** Every change can be undone, and settings are saved with five backup copies.
 - **Eight languages.** The app follows the Windows language, or you pick one in Settings → General.
-- **No installer.** A single `.exe`; .NET does not need to be installed.
+- **Easy installation and updates.** .NET is included; updates arrive through GitHub Releases.
 
 ## Install
 
-1. Download `CategoryBar-<version>-win-x64.zip` from the [latest release](https://github.com/Chikanut/Windows-Category-Bar/releases/latest).
-2. Unpack it anywhere, for example `C:\Tools\CategoryBar`.
-3. Run `CategoryBar.exe`.
+1. Download `CategoryBar-win-Setup.exe` from the [latest release](https://github.com/Chikanut/Windows-Category-Bar/releases/latest).
+2. Exit any old portable copy from its tray menu, then run the installer.
+3. Launch Category Bar from the Start menu. Existing settings are reused.
 
-Requires Windows 11 x64. The file is not code-signed, so SmartScreen may warn on first launch: choose "More info" → "Run anyway".
+Requires Windows 11 x64; .NET is included. The installer is not code-signed, so SmartScreen may warn on first launch.
 
-To uninstall, exit from the tray icon, delete the folder with `CategoryBar.exe` and, if you like, the data in `%LOCALAPPDATA%\WindowsCategoryBar`.
+Updates are checked at startup and in **Settings → General → Check for updates**. Click **Update and restart** to install a new version. Categories and settings are preserved.
+
+To uninstall, exit the app and remove Category Bar in Windows Settings → Apps. User data remains in `%LOCALAPPDATA%\WindowsCategoryBar` unless you delete it yourself.
+
+Release process: [Documentation/updates.md](Documentation/updates.md).
 
 ## First run
 
@@ -134,7 +138,7 @@ Translations live in `src/CategoryBar.Core/Languages/<code>.json` as a table fro
 
 ## Data and backups
 
-Everything is stored locally; the app sends nothing over the network.
+Your categories and settings are stored locally. Update checks contact GitHub; your configuration is not sent.
 
 | What | Where |
 | --- | --- |

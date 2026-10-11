@@ -301,5 +301,20 @@
   "Shift + клік": "Umschalt + Klick",
   "Нове вікно вже запущеного застосунку. Ctrl + Shift + клік — від імені адміністратора.": "Ein neues Fenster einer bereits laufenden App. Strg + Umschalt + Klick führt sie als Administrator aus.",
   "Закриває меню.": "Schließt das Menü.",
-  "Програми": "Programme"
+  "Програми": "Programme",
+  "Поточна версія: {0}": "Aktuelle Version: {0}",
+  "Для оновлень установіть додаток через Setup.exe з GitHub Releases.": "Für Updates installieren Sie die App mit Setup.exe von GitHub Releases.",
+  "Перевіряємо оновлення…": "Updates werden gesucht…",
+  "Версія {0} актуальна.": "Version {0} ist aktuell.",
+  "Доступна версія {0}.": "Version {0} ist verfügbar.",
+  "Доступне оновлення": "Update verfügbar",
+  "Переглянути": "Ansehen",
+  "Не вдалося перевірити оновлення. Спробуйте пізніше.": "Updates konnten nicht geprüft werden. Versuchen Sie es später erneut.",
+  "Оновлення": "Updates",
+  "Завантажуємо оновлення…": "Update wird heruntergeladen…",
+  "Завантажуємо оновлення: {0}%": "Update wird heruntergeladen: {0}%",
+  "Не вдалося встановити оновлення. Спробуйте ще раз.": "Das Update konnte nicht installiert werden. Versuchen Sie es erneut.",
+  "Перевірити оновлення": "Nach Updates suchen",
+  "Оновити та перезапустити": "Aktualisieren und neu starten",
+  "Перевірка при запуску. Встановлення — за вашим підтвердженням.": "Prüfung beim Start. Installation nur nach Ihrer Bestätigung."
 }

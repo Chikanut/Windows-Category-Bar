@@ -17,6 +17,9 @@ internal sealed class SettingsWindow : ChromeWindow
     private readonly Grid page = new();
     private string current = "General";
     private BoardView? board;
+    private Button? updateCheck;
+    private Button? updateInstall;
+    private TextBlock? updateStatus;
     private Settings Settings => session.Settings;
 
     internal SettingsWindow(Session session) : base(L.T("Панель категорій — Налаштування"), 900, 640, canMinimize: true)
@@ -30,7 +33,8 @@ internal sealed class SettingsWindow : ChromeWindow
         Body.Children.Add(layout);
         TitleBar.SetResourceReference(Panel.BackgroundProperty, "Sidebar.Bg");
         session.Changed += OnSessionChanged;
-        Closed += (_, _) => session.Changed -= OnSessionChanged;
+        App.Instance.Updates.Changed += RefreshUpdates;
+        Closed += (_, _) => { session.Changed -= OnSessionChanged; App.Instance.Updates.Changed -= RefreshUpdates; };
         Navigate("General");
     }
 
@@ -149,6 +153,15 @@ internal sealed class SettingsWindow : ChromeWindow
 
     private void General(StackPanel stack)
     {
+        Group(stack, L.T("Оновлення"));
+        updateStatus = Ui.Text(App.Instance.Updates.Status, 12, "Text.Muted", wrap: true);
+        updateStatus.Margin = new Thickness(0, 0, 0, 10);
+        updateCheck = Ui.Button(L.T("Перевірити оновлення"), () => { _ = App.Instance.Updates.Check(manual: true); });
+        updateInstall = Ui.Button(L.T("Оновити та перезапустити"), () => { _ = App.Instance.Updates.Install(); }, "Button.Primary");
+        updateInstall.Margin = new Thickness(0, 8, 0, 0);
+        var updateControls = new StackPanel { Children = { updateStatus, updateCheck, updateInstall } };
+        stack.Children.Add(Card(L.F("Версія {0}", Services.AppUpdates.Version), L.T("Перевірка при запуску. Встановлення — за вашим підтвердженням."), updateControls, stacked: true));
+        RefreshUpdates();
         Group(stack, L.T("Запуск"));
         var startup = new CheckBox { IsChecked = StartupRegistration.IsEnabled }.Res(StyleProperty, "Toggle");
         startup.Click += (_, _) =>
@@ -190,6 +203,18 @@ internal sealed class SettingsWindow : ChromeWindow
             Process.Start(new ProcessStartInfo("explorer.exe", "/select,\"" + session.Store.Path + "\""))?.Dispose(), icon: Icons.Folder)));
         stack.Children.Add(Card(L.T("Скасувати останню зміну"), L.T("Повертає останнє додавання, переміщення або видалення."),
             Ui.Button(L.T("Скасувати##undo"), () => { session.Undo(); Navigate(current); }, icon: Icons.Undo)));
+    }
+
+    private void RefreshUpdates()
+    {
+        var updates = App.Instance.Updates;
+        if (updateStatus is not null) updateStatus.Text = updates.Status;
+        if (updateCheck is not null) updateCheck.IsEnabled = !updates.Busy;
+        if (updateInstall is not null)
+        {
+            updateInstall.Visibility = updates.HasUpdate ? Visibility.Visible : Visibility.Collapsed;
+            updateInstall.IsEnabled = !updates.Busy;
+        }
     }
 
     private void Appearance(StackPanel stack)

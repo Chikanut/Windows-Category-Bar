@@ -301,5 +301,20 @@
   "Shift + клік": "Maj + clic",
   "Нове вікно вже запущеного застосунку. Ctrl + Shift + клік — від імені адміністратора.": "Une nouvelle fenêtre d'une application déjà lancée. Ctrl + Maj + clic l'exécute en tant qu'administrateur.",
   "Закриває меню.": "Ferme le menu.",
-  "Програми": "Programmes"
+  "Програми": "Programmes",
+  "Поточна версія: {0}": "Version actuelle : {0}",
+  "Для оновлень установіть додаток через Setup.exe з GitHub Releases.": "Pour recevoir les mises à jour, installez l’application avec Setup.exe depuis GitHub Releases.",
+  "Перевіряємо оновлення…": "Recherche de mises à jour…",
+  "Версія {0} актуальна.": "La version {0} est à jour.",
+  "Доступна версія {0}.": "La version {0} est disponible.",
+  "Доступне оновлення": "Mise à jour disponible",
+  "Переглянути": "Afficher",
+  "Не вдалося перевірити оновлення. Спробуйте пізніше.": "Impossible de rechercher les mises à jour. Réessayez plus tard.",
+  "Оновлення": "Mises à jour",
+  "Завантажуємо оновлення…": "Téléchargement de la mise à jour…",
+  "Завантажуємо оновлення: {0}%": "Téléchargement de la mise à jour : {0} %",
+  "Не вдалося встановити оновлення. Спробуйте ще раз.": "Impossible d’installer la mise à jour. Réessayez.",
+  "Перевірити оновлення": "Rechercher les mises à jour",
+  "Оновити та перезапустити": "Mettre à jour et redémarrer",
+  "Перевірка при запуску. Встановлення — за вашим підтвердженням.": "Vérification au démarrage. Installation avec votre accord uniquement."
 }

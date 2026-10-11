@@ -21,6 +21,9 @@ public partial class App : Application
     internal static App Instance => (App)Current;
     /// <summary>Set when the application was started with --config; autostart then keeps using that file.</summary>
     internal string? CustomConfigPath { get; private set; }
+    internal Services.AppUpdates Updates { get; private set; } = null!;
+    internal string[] UpdateRestartArguments => CustomConfigPath is null ? ["--settings"] : ["--config", CustomConfigPath, "--settings"];
+    private readonly DispatcherTimer updateTimer = new() { Interval = TimeSpan.FromSeconds(15) };
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -76,6 +79,15 @@ public partial class App : Application
         L.Use(config.Settings.Language);
         Theme.Apply(config.Settings);
         session = new Session(config, store);
+        Updates = new Services.AppUpdates(session);
+        if (Updates.IsInstalled && StartupRegistration.IsEnabled)
+        {
+            try { StartupRegistration.SetEnabled(true, CustomConfigPath); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+            { session.Toast(L.T("Не вдалося змінити автозапуск"), ex.Message, ToastKind.Warning); }
+        }
+        updateTimer.Tick += async (_, _) => { updateTimer.Stop(); await Updates.Check(manual: false); };
+        if (Updates.IsInstalled) updateTimer.Start();
         Theme.FollowWindows(() => session.Settings);
         session.ToastRequested += request => { if (bars.FirstOrDefault(b => b.IsPrimary)?.ShowToast(request) != true) tray?.Balloon(request.Title, request.Body); };
         session.Changed += SyncBars;
@@ -122,6 +134,7 @@ public partial class App : Application
         var hidden = bars.Count > 0 && bars[0].HiddenByUser;
         menu.Items.Add(Ui.Item(L.T("Налаштування…"), () => ShowSettings(), Icons.Sliders));
         menu.Items.Add(Ui.Item(L.T("Упорядкувати категорії…"), () => ShowSettings("Categories"), Icons.Apps));
+        menu.Items.Add(Ui.Item(L.T("Перевірити оновлення"), () => { ShowSettings("General"); _ = Updates.Check(manual: true); }, Icons.Import));
         menu.Items.Add(new Separator());
         menu.Items.Add(hidden ? Ui.Item(L.T("Показати панель"), ShowBars, Icons.ChevronUp) : Ui.Item(L.T("Сховати панель до перезапуску"), HideBars, Icons.ChevronDown));
         var startup = new MenuItem { Header = L.T("Запускати з Windows"), IsChecked = StartupRegistration.IsEnabled };
@@ -173,6 +186,7 @@ public partial class App : Application
     internal void Quit()
     {
         monitorTimer.Stop();
+        updateTimer.Stop();
         foreach (var bar in bars.ToList()) bar.Close(); // Releases any reserved screen area.
         settings?.Close();
         onboarding?.Close();
