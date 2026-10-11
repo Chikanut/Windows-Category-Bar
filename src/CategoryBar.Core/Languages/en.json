@@ -429,5 +429,9 @@
   "Райдужна кайма": "Colour fringe",
   "Розклад кольорів у заломленому краї.": "Colours separating in the bent rim.",
   "Густина скла": "Glass density",
-  "Скільки власного кольору скла лежить поверх фону.": "How much of the glass’s own colour lies over the background."
+  "Скільки власного кольору скла лежить поверх фону.": "How much of the glass’s own colour lies over the background.",
+  "Прозора скляна капсула: розмиті шпалери за нею заломлюються на краях, відкрита категорія — лінза, рух пружний.": "A capsule of clear glass: the blurred wallpaper behind it bends at the rim, the open category is a lens and motion is springy.",
+  "Розмиті шпалери": "Blurred wallpaper",
+  "Крізь панель, меню й сповіщення видно розмиті шпалери робочого столу.": "The blurred desktop wallpaper shows through the bar, menus and notifications.",
+  "Менше — чіткіше зображення, більше — матове скло.": "Lower keeps the picture sharper; higher gives frosted glass."
 }

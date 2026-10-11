@@ -429,5 +429,9 @@
   "Райдужна кайма": "Franja de color",
   "Розклад кольорів у заломленому краї.": "Separación de colores en el borde refractado.",
   "Густина скла": "Densidad del vidrio",
-  "Скільки власного кольору скла лежить поверх фону.": "Cuánto color propio del vidrio cubre el fondo."
+  "Скільки власного кольору скла лежить поверх фону.": "Cuánto color propio del vidrio cubre el fondo.",
+  "Прозора скляна капсула: розмиті шпалери за нею заломлюються на краях, відкрита категорія — лінза, рух пружний.": "Una cápsula de vidrio transparente: el fondo de pantalla desenfocado se refracta en el borde, la categoría abierta es una lente y el movimiento es elástico.",
+  "Розмиті шпалери": "Fondo de pantalla desenfocado",
+  "Крізь панель, меню й сповіщення видно розмиті шпалери робочого столу.": "A través de la barra, los menús y las notificaciones se ve el fondo de pantalla desenfocado.",
+  "Менше — чіткіше зображення, більше — матове скло.": "Menos deja la imagen más nítida; más da un vidrio esmerilado."
 }

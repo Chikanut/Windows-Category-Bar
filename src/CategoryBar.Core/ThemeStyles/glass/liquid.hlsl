@@ -1,10 +1,10 @@
 // Liquid glass for a rounded rectangle. s0 is the material layer only (the shape filled with its tint), never text.
-// s1 is the live picture of whatever lies behind the surface (the engine's "Theme.Backdrop" brush).
+// s1 is the picture behind the surface: the blurred desktop wallpaper (the engine's "Theme.Backdrop" brush).
 // The distance to the edge is computed from the element's size and corner radius, so the rim is a smooth
 // bevel of any width: it bends the picture like a lens, fringes its colours a little and catches the light.
 // c0 Specular: light on the rim.          c1 Refraction: how far, in pixels, the rim bends the backdrop.
 // c2/c3: the element's size in pixels.    c4 Bevel: width of the rim in pixels.
-// c5 Live: 1 when s1 holds a backdrop.    c6 Dispersion: colour fringing.    c7 Radius: corner radius in pixels.
+// c5 Live: 1 when s1 holds a picture.     c6 Dispersion: colour fringing.    c7 Radius: corner radius in pixels.
 sampler2D Input : register(s0);
 sampler2D Backdrop : register(s1);
 float Specular : register(c0);
@@ -38,7 +38,8 @@ float4 main(float2 uv : TEXCOORD) : COLOR
     float3 tint = c.rgb / max(c.a, 0.001);
     float3 rgb = lerp(tint, behind, Live * (1 - strength));
     // Without a picture behind it the sheet is made denser, so text stays readable over a busy desktop.
-    float alpha = lerp(c.a, coverage, max(Live, 0.45));
+    // With a picture a little of the real screen still shows through, which keeps the sheet looking like glass.
+    float alpha = lerp(c.a, coverage, max(Live * 0.86, 0.45));
     float facing = dot(normal, float2(-0.42, -0.9));
     rgb = saturate(rgb + max(facing, facing * -0.4) * rim * Specular);
     return float4(rgb * alpha, alpha);

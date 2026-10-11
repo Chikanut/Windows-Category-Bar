@@ -47,13 +47,13 @@ internal static class ParameterChecks
         Check((double)app.Resources["Theme.Parameter.specular"] == .2, "reset restores author defaults");
         material.ApplyTemplate(); material.UpdateLayout();
         Check(app.Resources["bar.Backdrop"] is true && (double)app.Resources["menu.BackdropBlur"] == 10 && (double)app.Resources["Theme.Backdrop.Enabled"] == 0
-            && Descendants(material).OfType<Border>().First(border => border.Effect is ThemeShaderEffect).Effect is ThemeShaderEffect { Auxiliary: ImageBrush, P5: 0 }, "glass asks for a live backdrop and stays plain glass until a window supplies one");
+            && Descendants(material).OfType<Border>().First(border => border.Effect is ThemeShaderEffect).Effect is ThemeShaderEffect { Auxiliary: ImageBrush, P5: 0 }, "glass asks for a backdrop and stays plain glass until a window supplies one");
         glass.Parameters.Single(p => p.Id == "backdrop").Set(settings, glass.Id, "none"); Theme.Apply(settings);
-        Check(app.Resources["bar.Backdrop"] is false, "the user can switch the live backdrop off");
+        Check(app.Resources["bar.Backdrop"] is false, "the user can switch the backdrop off");
         settings.ThemeParameters.Remove(glass.Id); Theme.Apply(settings);
         var flat = new byte[40 * 20 * 4]; for (var i = 0; i < flat.Length; i += 4) { flat[i] = 200; flat[i + 1] = 100; flat[i + 2] = 50; flat[i + 3] = 255; }
         flat[4 * (40 * 10 + 20)] = 0;
-        var (soft, softWidth, softHeight) = CategoryBar.Interop.ScreenBackdrop.Soften(flat, 40, 20, 160, 12);
+        var (soft, softWidth, softHeight) = CategoryBar.Interop.ScreenBackdrop.SoftenAndShrink(flat, 40, 20, 160, 12);
         Check(softWidth == 10 && softHeight == 5 && soft.Length == 200 && soft[1] == 100 && soft[2] == 50 && soft[0] is > 190 and < 200 && soft[3] == 255, "backdrop pictures are shrunk and blurred without darkening their edges");
         window.Close();
 

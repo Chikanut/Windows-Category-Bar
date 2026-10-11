@@ -50,7 +50,7 @@ internal static class ThemeStyleResources
         foreach (var selector in new[] { "tab", "menu-item", "card" }) resources[selector + ".Stagger"] = css.Number(selector, "stagger", 0);
         foreach (var selector in new[] { "bar", "menu", "toast" })
         {
-            resources[selector + ".Backdrop"] = css.Value(selector, "backdrop", "none") == "live";
+            resources[selector + ".Backdrop"] = css.Value(selector, "backdrop", "none") is "wallpaper" or "live";
             resources[selector + ".BackdropBlur"] = css.Number(selector, "backdrop-blur", 12);
         }
         resources["Toggle.Radius"] = new CornerRadius(10);

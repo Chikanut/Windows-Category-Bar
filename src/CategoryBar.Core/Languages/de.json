@@ -429,5 +429,9 @@
   "Райдужна кайма": "Farbsaum",
   "Розклад кольорів у заломленому краї.": "Farbaufspaltung im gebrochenen Rand.",
   "Густина скла": "Glasdichte",
-  "Скільки власного кольору скла лежить поверх фону.": "Wie viel Eigenfarbe des Glases über dem Hintergrund liegt."
+  "Скільки власного кольору скла лежить поверх фону.": "Wie viel Eigenfarbe des Glases über dem Hintergrund liegt.",
+  "Прозора скляна капсула: розмиті шпалери за нею заломлюються на краях, відкрита категорія — лінза, рух пружний.": "Eine Kapsel aus klarem Glas: Das weichgezeichnete Hintergrundbild dahinter wird am Rand gebrochen, die geöffnete Kategorie ist eine Linse, die Bewegung federt.",
+  "Розмиті шпалери": "Weichgezeichnetes Hintergrundbild",
+  "Крізь панель, меню й сповіщення видно розмиті шпалери робочого столу.": "Durch Leiste, Menüs und Benachrichtigungen scheint das weichgezeichnete Hintergrundbild.",
+  "Менше — чіткіше зображення, більше — матове скло.": "Weniger lässt das Bild schärfer, mehr ergibt Milchglas."
 }

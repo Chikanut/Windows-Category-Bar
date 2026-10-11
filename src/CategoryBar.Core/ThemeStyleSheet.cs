@@ -103,9 +103,9 @@ public sealed class ThemeStyleSheet
             "icon-size" => element == "menu-item" && Range(value, 16, 40),
             // Distance between the bar and the taskbar, and between an open menu and the bar.
             "offset" => element is "bar" or "menu" && Range(value, 0, 24),
-            // "live" gives the surface a picture of the screen behind it, softened by backdrop-blur pixels,
-            // which the theme's material shader may bend and tint (the "Theme.Backdrop" brush).
-            "backdrop" => element is "bar" or "menu" or "toast" && value is "none" or "live",
+            // "wallpaper" gives the surface the desktop wallpaper behind it, blurred by backdrop-blur pixels,
+            // which the theme's material shader may bend and tint (the "Theme.Backdrop" brush). "live" is its old name.
+            "backdrop" => element is "bar" or "menu" or "toast" && value is "none" or "wallpaper" or "live",
             "backdrop-blur" => element is "bar" or "menu" or "toast" && Range(value, 0, 40),
             // Delay between neighbours when tabs, menu rows or cards play their Enter transition.
             "stagger" => element is "tab" or "menu-item" or "card" && Range(value, 0, 120),

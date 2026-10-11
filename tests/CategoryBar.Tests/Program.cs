@@ -154,8 +154,8 @@ try
     var painted = ThemeStyleSheet.Parse(".card { background: linear-gradient(135deg, var(--card-bg), mix(var(--card-bg), var(--accent-fill), 0.2), rgba(40,80,120,0.5)); box-shadow: 4px 4px 0px alpha(var(--border), 0.8); } .button:hover { background: radial-gradient(#FFFFFF, transparent); color: var(--accent-fill-text); }");
     Check("File CSS supports gradients, colour functions, hard shadows and interactive states", ThemePaint.IsBrush(painted.Value("card", "background", "")) && ThemePaint.Shadow(painted.Value("card", "box-shadow", ""))?.Blur == 0 && painted.Has("button:hover", "color"));
     Check("Paint syntax rejects remote sources and unbounded effects", ThemeRejected(() => ThemeStyleSheet.Parse(".card { background: url(file:///secret); }")) && ThemeRejected(() => ThemeStyleSheet.Parse(".card { box-shadow: 0px 8px 500px #000000; }")) && ThemeRejected(() => ThemeStyleSheet.Parse(".card { background: mix(#000000, #FFFFFF, 7); }")));
-    var living = ThemeStyleSheet.Parse(".bar { backdrop: live; backdrop-blur: 14px; }");
-    Check("CSS lets a surface show the screen behind it", living.Value("bar", "backdrop", "") == "live" && living.Number("bar", "backdrop-blur", 0) == 14
+    var living = ThemeStyleSheet.Parse(".bar { backdrop: wallpaper; backdrop-blur: 14px; } .menu { backdrop: live; }");
+    Check("CSS lets a surface show the wallpaper behind it", living.Value("bar", "backdrop", "") == "wallpaper" && living.Number("bar", "backdrop-blur", 0) == 14
         && ThemeRejected(() => ThemeStyleSheet.Parse(".card { backdrop: live; }")) && ThemeRejected(() => ThemeStyleSheet.Parse(".bar { backdrop: screen; }")));
     var layout = ThemeStyleSheet.Parse(".bar { offset: 12px; } .menu { offset: 14px; } .tab { stagger: 40ms; } .sidebar { width: 240px; margin: 4px 8px; }");
     Check("CSS carries layout rules: floating bar, menu distance, navigation width and stagger", layout.Number("bar", "offset", 0) == 12 && layout.Number("menu", "offset", 0) == 14 && layout.Number("tab", "stagger", 0) == 40 && layout.Number("sidebar", "width", 0) == 240);

@@ -429,5 +429,9 @@
   "Райдужна кайма": "Franja de cor",
   "Розклад кольорів у заломленому краї.": "Separação de cores na borda refratada.",
   "Густина скла": "Densidade do vidro",
-  "Скільки власного кольору скла лежить поверх фону.": "Quanto da cor própria do vidro fica sobre o fundo."
+  "Скільки власного кольору скла лежить поверх фону.": "Quanto da cor própria do vidro fica sobre o fundo.",
+  "Прозора скляна капсула: розмиті шпалери за нею заломлюються на краях, відкрита категорія — лінза, рух пружний.": "Uma cápsula de vidro transparente: o papel de parede desfocado refrata na borda, a categoria aberta é uma lente e o movimento é elástico.",
+  "Розмиті шпалери": "Papel de parede desfocado",
+  "Крізь панель, меню й сповіщення видно розмиті шпалери робочого столу.": "O papel de parede desfocado aparece através da barra, dos menus e das notificações.",
+  "Менше — чіткіше зображення, більше — матове скло.": "Menos deixa a imagem mais nítida; mais dá um vidro fosco."
 }

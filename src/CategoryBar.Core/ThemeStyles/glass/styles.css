@@ -1,6 +1,6 @@
 /* Liquid Glass: a clear capsule floating above the taskbar. The bar, its menus and notifications show the
-   screen behind them, softened and bent at the rim by the theme's shader; "tint" is how much glass colour
-   lies over that picture. Without a live backdrop the same surfaces are plain translucent glass. */
+   blurred desktop wallpaper behind them, bent at the rim by the theme's shader; "tint" is how much glass colour
+   lies over that picture. Without a backdrop the same surfaces are plain translucent glass. */
 .bar { height: 50px; padding: 5px; gap: 2px; border-radius: var(--p-roundness); offset: var(--p-float); box-shadow: 0px 8px 22px rgba(0,0,0,0.22);
        background: alpha(var(--bar-bg), var(--p-tint)); backdrop: var(--p-backdrop); backdrop-blur: var(--p-blur); }
 .tab { height: 40px; padding: 0px 18px; border-radius: var(--p-roundness); font-size: 13px; font-weight: semibold; indicator: none; stagger: 36ms; }

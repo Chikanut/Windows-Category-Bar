@@ -85,7 +85,7 @@ internal static class Lab
                     var area = new Int32Rect((int)Math.Round(place.X + origin.X), (int)Math.Round(place.Y + origin.Y), (int)glass.ActualWidth, (int)glass.ActualHeight);
                     area = new Int32Rect(Math.Max(0, area.X), Math.Max(0, area.Y), Math.Min(area.Width, width - Math.Max(0, area.X)), Math.Min(area.Height, height - Math.Max(0, area.Y)));
                     var raw = new byte[area.Width * area.Height * 4]; desktop.CopyPixels(area, raw, area.Width * 4, 0);
-                    var (pixels, w, h) = CategoryBar.Interop.ScreenBackdrop.Soften(raw, area.Width, area.Height, area.Width * 4, place.Window.TryFindResource("bar.BackdropBlur") is double blur ? blur : 0);
+                    var (pixels, w, h) = CategoryBar.Interop.ScreenBackdrop.SoftenAndShrink(raw, area.Width, area.Height, area.Width * 4, place.Window.TryFindResource("bar.BackdropBlur") is double blur ? blur : 0);
                     place.Window.Resources["Theme.Backdrop"] = new ImageBrush(BitmapSource.Create(w, h, 96, 96, PixelFormats.Bgr32, null, pixels, w * 4)) { Stretch = Stretch.Fill };
                     place.Window.Resources["Theme.Backdrop.Enabled"] = 1d;
                 }

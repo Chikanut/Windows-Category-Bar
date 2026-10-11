@@ -79,7 +79,7 @@ internal static class Theme
             TransparencyEnabled = !contrast && personalization?.GetValue("EnableTransparency") is not 0;
         (StyleSheet, Accent, WindowBaseColor, parameterKeys) = Fill(resources, Current, settings, IsDark);
 
-        // Overlay windows replace these with a live picture of the screen behind them when the theme asks for one.
+        // Overlay windows replace these with the blurred wallpaper behind them when the theme asks for one.
         resources["Theme.Backdrop"] = NoBackdrop; resources["Theme.Backdrop.Enabled"] = 0d;
         resources["Font"] = new FontFamily(settings.FontName + ", Segoe UI Variable Text, Segoe UI");
         var scale = new ScaleTransform(settings.InterfaceScale, settings.InterfaceScale); scale.Freeze();
@@ -203,7 +203,8 @@ internal static class Theme
         var pending = false;
         SystemEvents.UserPreferenceChanged += (_, e) =>
         {
-            if (e.Category is not (UserPreferenceCategory.General or UserPreferenceCategory.Color or UserPreferenceCategory.VisualStyle) || pending) return;
+            // Desktop: a new wallpaper changes what glass surfaces show behind themselves.
+            if (e.Category is not (UserPreferenceCategory.General or UserPreferenceCategory.Color or UserPreferenceCategory.VisualStyle or UserPreferenceCategory.Desktop) || pending) return;
             pending = true;
             Application.Current.Dispatcher.BeginInvoke(async () =>
             {

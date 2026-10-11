@@ -1,7 +1,7 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:fx="clr-namespace:CategoryBar.Theming;assembly=CategoryBar">
   <!--
     Liquid Glass. A surface is one flat sheet of clear, lightly tinted glass: no gloss bands, no bevel gradients.
-    What makes it glass is optics. The "liquid" shader takes the engine's live picture of the screen behind the
+    What makes it glass is optics. The "liquid" shader takes the blurred desktop wallpaper behind the
     surface, bends it inside the rim like a lens (with a trace of colour fringing) and lights the rim; a hairline
     then catches the light. The open tab and the hovered row are a second, thinner sheet lying on the first.
   -->
