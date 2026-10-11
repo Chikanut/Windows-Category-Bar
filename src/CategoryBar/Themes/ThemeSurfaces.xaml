@@ -1,9 +1,12 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:fx="clr-namespace:CategoryBar.Theming">
 <!-- Shared material paints only the background. Text and hit targets never pass through its shader. -->
+<ControlTemplate x:Key="Theme.FlatMaterialTemplate" TargetType="ContentControl">
+  <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"/>
+</ControlTemplate>
 <ControlTemplate x:Key="Theme.MaterialTemplate" TargetType="ContentControl">
   <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"/>
 </ControlTemplate>
-<ControlTemplate x:Key="Theme.BarTemplate" TargetType="ContentControl"><Grid>
+<ControlTemplate x:Key="Theme.BarTemplate" TargetType="ContentControl"><Grid Background="Transparent">
 <ContentControl x:Name="face" Focusable="False" IsHitTestVisible="False" Template="{DynamicResource Theme.MaterialTemplate}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Tag="{DynamicResource bar.Radius}"/>
 <Border Background="{DynamicResource bar.Overlay}" CornerRadius="{DynamicResource bar.Radius}" IsHitTestVisible="False"/>
 <Border BorderBrush="{DynamicResource bar.Rim}" BorderThickness="{DynamicResource bar.RimWidth}" CornerRadius="{DynamicResource bar.Radius}" Margin="1" IsHitTestVisible="False"/>
@@ -18,7 +21,7 @@
 <Setter Property="Padding" Value="{DynamicResource bar.Padding}"/><Setter Property="Opacity" Value="{DynamicResource bar.Opacity}"/>
 <Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="VerticalContentAlignment" Value="Stretch"/>
 </Style>
-<ControlTemplate x:Key="Theme.TabTemplate" TargetType="ContentControl"><Grid>
+<ControlTemplate x:Key="Theme.TabTemplate" TargetType="ContentControl"><Grid Background="Transparent">
 <ContentControl x:Name="face" Focusable="False" IsHitTestVisible="False" Template="{DynamicResource Theme.MaterialTemplate}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Tag="{DynamicResource tab.Radius}"/>
 <Border Background="{DynamicResource tab.Overlay}" CornerRadius="{DynamicResource tab.Radius}" IsHitTestVisible="False"/>
 <Border BorderBrush="{DynamicResource tab.Rim}" BorderThickness="{DynamicResource tab.RimWidth}" CornerRadius="{DynamicResource tab.Radius}" Margin="1" IsHitTestVisible="False"/>
@@ -44,7 +47,7 @@
 <Setter Property="Padding" Value="{DynamicResource tab.Padding}"/><Setter Property="Opacity" Value="{DynamicResource tab.Opacity}"/>
 <Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="VerticalContentAlignment" Value="Stretch"/>
 </Style>
-<ControlTemplate x:Key="Theme.MenuTemplate" TargetType="ContentControl"><Grid>
+<ControlTemplate x:Key="Theme.MenuTemplate" TargetType="ContentControl"><Grid Background="Transparent">
 <ContentControl x:Name="face" Focusable="False" IsHitTestVisible="False" Template="{DynamicResource Theme.MaterialTemplate}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Tag="{DynamicResource menu.Radius}"/>
 <Border Background="{DynamicResource menu.Overlay}" CornerRadius="{DynamicResource menu.Radius}" IsHitTestVisible="False"/>
 <Border BorderBrush="{DynamicResource menu.Rim}" BorderThickness="{DynamicResource menu.RimWidth}" CornerRadius="{DynamicResource menu.Radius}" Margin="1" IsHitTestVisible="False"/>
@@ -59,7 +62,7 @@
 <Setter Property="Padding" Value="{DynamicResource menu.Padding}"/><Setter Property="Opacity" Value="{DynamicResource menu.Opacity}"/>
 <Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="VerticalContentAlignment" Value="Stretch"/>
 </Style>
-<ControlTemplate x:Key="Theme.MenuItemTemplate" TargetType="ContentControl"><Grid>
+<ControlTemplate x:Key="Theme.MenuItemTemplate" TargetType="ContentControl"><Grid Background="Transparent">
 <ContentControl x:Name="face" Focusable="False" IsHitTestVisible="False" Template="{DynamicResource Theme.MaterialTemplate}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Tag="{DynamicResource menu-item.Radius}"/>
 <Border Background="{DynamicResource menu-item.Overlay}" CornerRadius="{DynamicResource menu-item.Radius}" IsHitTestVisible="False"/>
 <Border BorderBrush="{DynamicResource menu-item.Rim}" BorderThickness="{DynamicResource menu-item.RimWidth}" CornerRadius="{DynamicResource menu-item.Radius}" Margin="1" IsHitTestVisible="False"/>
@@ -79,7 +82,7 @@
 <Setter Property="Padding" Value="{DynamicResource menu-item.Padding}"/><Setter Property="Opacity" Value="{DynamicResource menu-item.Opacity}"/>
 <Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="VerticalContentAlignment" Value="Stretch"/>
 </Style>
-<ControlTemplate x:Key="Theme.SidebarTemplate" TargetType="ContentControl"><Grid>
+<ControlTemplate x:Key="Theme.SidebarTemplate" TargetType="ContentControl"><Grid Background="Transparent">
 <ContentControl x:Name="face" Focusable="False" IsHitTestVisible="False" Template="{DynamicResource Theme.MaterialTemplate}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Tag="{DynamicResource sidebar.Radius}"/>
 <Border Background="{DynamicResource sidebar.Overlay}" CornerRadius="{DynamicResource sidebar.Radius}" IsHitTestVisible="False"/>
 <Border BorderBrush="{DynamicResource sidebar.Rim}" BorderThickness="{DynamicResource sidebar.RimWidth}" CornerRadius="{DynamicResource sidebar.Radius}" Margin="1" IsHitTestVisible="False"/>
@@ -94,7 +97,7 @@
 <Setter Property="Padding" Value="{DynamicResource sidebar.Padding}"/><Setter Property="Opacity" Value="{DynamicResource sidebar.Opacity}"/>
 <Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="VerticalContentAlignment" Value="Stretch"/>
 </Style>
-<ControlTemplate x:Key="Theme.TitleBarTemplate" TargetType="ContentControl"><Grid>
+<ControlTemplate x:Key="Theme.TitleBarTemplate" TargetType="ContentControl"><Grid Background="Transparent">
 <ContentControl x:Name="face" Focusable="False" IsHitTestVisible="False" Template="{DynamicResource Theme.MaterialTemplate}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Tag="{DynamicResource titlebar.Radius}"/>
 <Border Background="{DynamicResource titlebar.Overlay}" CornerRadius="{DynamicResource titlebar.Radius}" IsHitTestVisible="False"/>
 <Border BorderBrush="{DynamicResource titlebar.Rim}" BorderThickness="{DynamicResource titlebar.RimWidth}" CornerRadius="{DynamicResource titlebar.Radius}" Margin="1" IsHitTestVisible="False"/>
@@ -109,7 +112,7 @@
 <Setter Property="Padding" Value="{DynamicResource titlebar.Padding}"/><Setter Property="Opacity" Value="{DynamicResource titlebar.Opacity}"/>
 <Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="VerticalContentAlignment" Value="Stretch"/>
 </Style>
-<ControlTemplate x:Key="Theme.PageTemplate" TargetType="ContentControl"><Grid>
+<ControlTemplate x:Key="Theme.PageTemplate" TargetType="ContentControl"><Grid Background="Transparent">
 <ContentControl x:Name="face" Focusable="False" IsHitTestVisible="False" Template="{DynamicResource Theme.MaterialTemplate}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Tag="{DynamicResource page.Radius}"/>
 <Border Background="{DynamicResource page.Overlay}" CornerRadius="{DynamicResource page.Radius}" IsHitTestVisible="False"/>
 <Border BorderBrush="{DynamicResource page.Rim}" BorderThickness="{DynamicResource page.RimWidth}" CornerRadius="{DynamicResource page.Radius}" Margin="1" IsHitTestVisible="False"/>
@@ -124,7 +127,7 @@
 <Setter Property="Padding" Value="{DynamicResource page.Padding}"/><Setter Property="Opacity" Value="{DynamicResource page.Opacity}"/>
 <Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="VerticalContentAlignment" Value="Stretch"/>
 </Style>
-<ControlTemplate x:Key="Theme.ToastTemplate" TargetType="ContentControl"><Grid>
+<ControlTemplate x:Key="Theme.ToastTemplate" TargetType="ContentControl"><Grid Background="Transparent">
 <ContentControl x:Name="face" Focusable="False" IsHitTestVisible="False" Template="{DynamicResource Theme.MaterialTemplate}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Tag="{DynamicResource toast.Radius}"/>
 <Border Background="{DynamicResource toast.Overlay}" CornerRadius="{DynamicResource toast.Radius}" IsHitTestVisible="False"/>
 <Border BorderBrush="{DynamicResource toast.Rim}" BorderThickness="{DynamicResource toast.RimWidth}" CornerRadius="{DynamicResource toast.Radius}" Margin="1" IsHitTestVisible="False"/>
@@ -140,7 +143,7 @@
 <Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="VerticalContentAlignment" Value="Stretch"/>
 </Style>
 <ControlTemplate x:Key="Theme.WindowTemplate" TargetType="fx:ThemeSurface">
-<Grid>
+<Grid Background="Transparent">
 <ContentControl Template="{DynamicResource Theme.MaterialTemplate}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Tag="{DynamicResource window.Radius}" IsHitTestVisible="False" Focusable="False"/>
 <Grid Margin="{TemplateBinding Padding}"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition/></Grid.RowDefinitions>
 <ContentControl Style="{DynamicResource Theme.TitleBar}" Height="{DynamicResource titlebar.Height}" Content="{TemplateBinding Header}"/>
@@ -153,13 +156,13 @@
 <Setter Property="Padding" Value="{DynamicResource window.Padding}"/>
 </Style>
 <ControlTemplate x:Key="Theme.WorkspaceTemplate" TargetType="fx:ThemeSurface">
-<Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/></Grid.ColumnDefinitions>
+<Grid Background="Transparent"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/></Grid.ColumnDefinitions>
 <ContentControl Style="{DynamicResource Theme.Sidebar}" Width="208" Content="{TemplateBinding Header}"/>
 <ContentControl Grid.Column="1" Style="{DynamicResource Theme.Page}" Content="{TemplateBinding Content}"/>
 </Grid></ControlTemplate>
 <Style x:Key="Theme.Workspace" TargetType="fx:ThemeSurface"><Setter Property="Template" Value="{DynamicResource Theme.WorkspaceTemplate}"/></Style>
 <ControlTemplate x:Key="Theme.SettingTemplate" TargetType="fx:ThemeSurface">
-<ContentControl Style="{DynamicResource Theme.Card}"><Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+<ContentControl Style="{DynamicResource Theme.Card}"><Grid Background="Transparent"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
 <ContentPresenter Content="{TemplateBinding Header}" VerticalAlignment="Center"/>
 <ContentPresenter Grid.Column="1" Margin="20,0,0,0" VerticalAlignment="Center"/>
 </Grid></ContentControl></ControlTemplate>

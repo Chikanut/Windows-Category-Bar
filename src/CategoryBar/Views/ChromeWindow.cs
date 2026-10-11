@@ -66,7 +66,7 @@ internal class ChromeWindow : Window
             Native.StyleFrame(handle, Theme.IsDark, Theme.StyleSheet.Number("window", "border-radius", 8) > 0);
             var backdrop = Native.ApplyBackdrop(handle, Theme.TransparencyEnabled ? Theme.Current.Backdrop : "None");
             if (HwndSource.FromHwnd(handle)?.CompositionTarget is { } target)
-                target.BackgroundColor = backdrop ? Colors.Transparent : Theme.Parse((Theme.IsDark ? Theme.Current.Dark : Theme.Current.Light)["Window.Bg"]);
+                target.BackgroundColor = backdrop ? Colors.Transparent : Theme.WindowBaseColor;
             if (backdrop) Background = Brushes.Transparent;
             else this.Res(BackgroundProperty, "Window.Bg");
         }

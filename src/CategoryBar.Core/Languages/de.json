@@ -350,5 +350,20 @@
   "Розташування навігації": "Navigationsposition",
   "Згори": "Oben",
   "Акцентна лінія": "Akzentlinie",
-  "Колір лінії": "Linienfarbe"
+  "Колір лінії": "Linienfarbe",
+  "Кольори поверхонь": "Oberflächenfarben",
+  "Зберігаються окремо для кожної теми та світлого або темного режиму.": "Werden für jedes Design und den hellen oder dunklen Modus separat gespeichert.",
+  "Фон вікна": "Fensterhintergrund",
+  "Фон навігації": "Navigationshintergrund",
+  "Фон панелі": "Leistenhintergrund",
+  "Фон меню": "Menühintergrund",
+  "Фон карток": "Kartenhintergrund",
+  "Фон елементів керування": "Steuerelementhintergrund",
+  "Текст": "Text",
+  "Другорядний текст": "Sekundärer Text",
+  "Контури": "Konturen",
+  "Скинути кольори цієї теми": "Farben dieses Designs zurücksetzen",
+  "Викривлення відблиску": "Verzerrung des Lichtreflexes",
+  "Впливає на відблиск матеріалу, а не на зображення робочого столу.": "Beeinflusst den Lichtreflex des Materials, nicht das Desktopbild.",
+  "Вибрати колір": "Farbe auswählen"
 }

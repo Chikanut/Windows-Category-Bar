@@ -73,6 +73,7 @@ public sealed class Settings
     // Appearance
     public string ThemeId { get; set; } = "fluent";
     public Dictionary<string, Dictionary<string, string>> ThemeParameters { get; set; } = [];
+    public Dictionary<string, Dictionary<string, string>> ThemeColors { get; set; } = [];
     public string ThemeMode { get; set; } = "System";      // System | Dark | Light
     public string AccentMode { get; set; } = "System";     // System | Theme | Custom
     public string AccentColor { get; set; } = "#8EA8FF";
@@ -110,6 +111,12 @@ public sealed class Settings
         if (ThemeMode is not ("System" or "Dark" or "Light")) ThemeMode = "System";
         if (AccentMode is not ("System" or "Theme" or "Custom")) AccentMode = "System";
         if (!ThemeDefinition.IsValidId(ThemeId)) ThemeId = "fluent";
+        ThemeColors ??= [];
+        ThemeColors = ThemeColors.Where(p => ThemeDefinition.IsValidId(p.Key) && p.Value is not null).Take(64)
+            .ToDictionary(p => p.Key, p => p.Value.Where(v =>
+                (v.Key.StartsWith("Dark:", StringComparison.Ordinal) || v.Key.StartsWith("Light:", StringComparison.Ordinal))
+                && ThemeDefinition.Tokens.Contains(v.Key[(v.Key.IndexOf(':') + 1)..]) && IsHexColor(v.Value))
+                .Take(ThemeDefinition.Tokens.Length * 2).ToDictionary(v => v.Key, v => v.Value.ToUpperInvariant()));
         ThemeParameters ??= [];
         ThemeParameters = ThemeParameters.Where(p => ThemeDefinition.IsValidId(p.Key) && p.Value is not null).Take(64)
             .ToDictionary(p => p.Key, p => p.Value.Where(v => ThemeDefinition.IsValidId(v.Key) && v.Value is { Length: <= 128 }).Take(24).ToDictionary(v => v.Key, v => v.Value));

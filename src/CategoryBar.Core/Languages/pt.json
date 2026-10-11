@@ -350,5 +350,20 @@
   "Розташування навігації": "Posição da navegação",
   "Згори": "Em cima",
   "Акцентна лінія": "Linha de destaque",
-  "Колір лінії": "Cor da linha"
+  "Колір лінії": "Cor da linha",
+  "Кольори поверхонь": "Cores das superfícies",
+  "Зберігаються окремо для кожної теми та світлого або темного режиму.": "Salvas separadamente para cada tema e modo claro ou escuro.",
+  "Фон вікна": "Fundo da janela",
+  "Фон навігації": "Fundo da navegação",
+  "Фон панелі": "Fundo da barra",
+  "Фон меню": "Fundo do menu",
+  "Фон карток": "Fundo dos cartões",
+  "Фон елементів керування": "Fundo dos controles",
+  "Текст": "Texto",
+  "Другорядний текст": "Texto secundário",
+  "Контури": "Bordas",
+  "Скинути кольори цієї теми": "Redefinir as cores deste tema",
+  "Викривлення відблиску": "Distorção do reflexo",
+  "Впливає на відблиск матеріалу, а не на зображення робочого столу.": "Afeta o reflexo do material, não a imagem da área de trabalho.",
+  "Вибрати колір": "Escolher cor"
 }

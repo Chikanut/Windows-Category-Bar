@@ -350,5 +350,20 @@
   "Розташування навігації": "Navigation position",
   "Згори": "Top",
   "Акцентна лінія": "Accent line",
-  "Колір лінії": "Line color"
+  "Колір лінії": "Line color",
+  "Кольори поверхонь": "Surface colors",
+  "Зберігаються окремо для кожної теми та світлого або темного режиму.": "Saved separately for each theme and light or dark mode.",
+  "Фон вікна": "Window background",
+  "Фон навігації": "Navigation background",
+  "Фон панелі": "Bar background",
+  "Фон меню": "Menu background",
+  "Фон карток": "Card background",
+  "Фон елементів керування": "Control background",
+  "Текст": "Text",
+  "Другорядний текст": "Secondary text",
+  "Контури": "Borders",
+  "Скинути кольори цієї теми": "Reset this theme’s colors",
+  "Викривлення відблиску": "Highlight distortion",
+  "Впливає на відблиск матеріалу, а не на зображення робочого столу.": "Affects the material highlight, not the desktop image.",
+  "Вибрати колір": "Choose color"
 }

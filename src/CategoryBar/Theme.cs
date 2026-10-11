@@ -13,6 +13,7 @@ internal static class Theme
     internal static Color Accent { get; private set; } = Parse("#8EA8FF");
     internal static double Scale { get; private set; } = 1;
     internal static bool TransparencyEnabled { get; private set; }
+    internal static Color WindowBaseColor { get; private set; }
     internal static ThemeStore Library { get; private set; } = new(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WindowsCategoryBar", "Themes"));
     internal static ThemeDefinition Current { get; private set; } = BuiltInThemes.All[0];
     internal static ThemeStyleSheet StyleSheet { get; private set; } = ThemeStyleSheet.Parse("");
@@ -64,13 +65,14 @@ internal static class Theme
         IsDark = settings.ThemeMode == "System" ? WindowsUsesDarkMode() : settings.ThemeMode == "Dark";
         Current = Library.Resolve(settings.ThemeId);
         StyleSheet = ThemeStyleSheet.Parse(SystemParameters.HighContrast ? BuiltInThemes.All[0].StyleSheet : Current.StyleSheet);
-        var palette = IsDark ? Current.Dark : Current.Light;
+        var palette = Palette(settings, Current, IsDark);
         var raw = settings.AccentMode == "System" ? WindowsAccent() : Parse(settings.AccentMode == "Theme" ? palette["Accent"] : settings.AccentColor);
         Accent = Readable(raw, IsDark);
         Scale = settings.InterfaceScale;
 
         var tint = settings.TintSurfaces ? (IsDark ? .12 : .08) : 0;
         Color Surface(string key) => Mix(Parse(palette[key]), raw, tint);
+        WindowBaseColor = Surface("Window.Bg");
         var ink = IsDark ? Colors.White : Colors.Black;
         using var personalization = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
         var transparency = !SystemParameters.HighContrast && personalization?.GetValue("EnableTransparency") is not 0;
@@ -90,11 +92,11 @@ internal static class Theme
         if (Current.Backdrop != "None" && transparency) Brush("Window.Bg", Glass(Surface("Window.Bg")));
         if (Current.Material == "Glass" && transparency)
         {
-            foreach (var key in new[] { "Bar.Bg", "Menu.Bg" })
+            foreach (var key in new[] { "Window.Bg", "Sidebar.Bg", "Card.Bg", "Bar.Bg", "Menu.Bg" })
             {
                 var color = Surface(key);
-                var top = Mix(color, Colors.White, IsDark ? .16 : .45);
-                var brush = new LinearGradientBrush(key == "Card.Bg" ? top : Glass(top), key == "Card.Bg" ? color : Glass(color), 90);
+                var top = Mix(color, Colors.White, IsDark ? .025 : .06);
+                var brush = new LinearGradientBrush(Glass(top), Glass(color), 90);
                 brush.Freeze(); resources[key] = brush;
             }
         }
@@ -111,7 +113,7 @@ internal static class Theme
         Brush("Tooltip.Bg", Parse(IsDark ? "#F2F2F4" : "#2A2A30"));
         Brush("Tooltip.Fg", Parse(IsDark ? "#1C1C1F" : "#F2F2F4"));
         Brush("Glass.Rim", SystemParameters.HighContrast ? Colors.Transparent : Alpha(Colors.White, IsDark ? .18 : .65));
-        var sheen = new LinearGradientBrush(SystemParameters.HighContrast ? Colors.Transparent : Alpha(Colors.White, IsDark ? .16 : .45), Colors.Transparent, 90);
+        var sheen = new LinearGradientBrush(SystemParameters.HighContrast ? Colors.Transparent : Alpha(Colors.White, IsDark ? .025 : .06), Colors.Transparent, 90);
         sheen.Freeze(); resources["Glass.Sheen"] = sheen;
         if (SystemParameters.HighContrast)
         {
@@ -133,7 +135,16 @@ internal static class Theme
         var shadow = new DropShadowEffect { BlurRadius = 22, ShadowDepth = 5, Direction = 270, Color = Colors.Black, Opacity = IsDark ? .45 : .22 };
         shadow.Freeze();
         resources["Shadow"] = shadow;
+        var surfacePaints = ThemeDefinition.Tokens.Where(k => k.EndsWith(".Bg", StringComparison.Ordinal)).ToDictionary(k => k, k => resources[k]);
         ThemeStyleResources.Apply(resources, StyleSheet, Current.CornerRadius == 0 ? 1 : (double)settings.CornerRadius / Current.CornerRadius);
+        if (!SystemParameters.HighContrast && settings.ThemeColors.TryGetValue(Current.Id, out var colors))
+            foreach (var (token, selectors) in new[] { ("Window.Bg", new[] { "window" }), ("Sidebar.Bg", new[] { "sidebar", "titlebar" }),
+                ("Bar.Bg", new[] { "bar" }), ("Menu.Bg", new[] { "menu" }), ("Card.Bg", new[] { "card" }), ("Control.Bg", new[] { "button", "input" }) })
+                if (colors.ContainsKey((IsDark ? "Dark:" : "Light:") + token))
+                {
+                    resources[token] = surfacePaints[token];
+                    foreach (var selector in selectors) resources[selector + ".Background"] = surfacePaints[token];
+                }
         // Each skin provides actual control templates, not just palette substitutions.
         if (templates is not null) resources.MergedDictionaries.Remove(templates);
         if (authoredResources is not null) resources.MergedDictionaries.Remove(authoredResources);
@@ -142,7 +153,17 @@ internal static class Theme
         authoredResources = authored;
         resources.MergedDictionaries.Add(authoredResources);
         foreach (var key in authoredResources.Keys.Cast<object>().ToArray()) { resources[key] = authoredResources[key]; authoredKeys.Add(key); }
+        resources["Theme.ControlMaterialTemplate"] = resources[Current.Material == "Glass" ? "Theme.FlatMaterialTemplate" : "Theme.MaterialTemplate"];
         Changed?.Invoke();
+    }
+
+    internal static Dictionary<string, string> Palette(Settings settings, ThemeDefinition theme, bool dark)
+    {
+        var palette = new Dictionary<string, string>(dark ? theme.Dark : theme.Light);
+        if (settings.ThemeColors.TryGetValue(theme.Id, out var overrides))
+            foreach (var token in ThemeDefinition.Tokens)
+                if (overrides.TryGetValue((dark ? "Dark:" : "Light:") + token, out var color) && Settings.IsHexColor(color)) palette[token] = color;
+        return palette;
     }
 
     internal static void Select(Settings settings, ThemeDefinition theme)
@@ -161,9 +182,12 @@ internal static class Theme
         foreach (var parameter in copy.Parameters) parameter.Default = parameter.Resolve(settings, Current.Id);
         copy.Id = "custom-" + Guid.NewGuid().ToString("N");
         copy.StyleSheet = StyleSheet.WithGeometry(Current.CornerRadius == 0 ? 1 : (double)settings.CornerRadius / Current.CornerRadius);
+        if (settings.ThemeColors.TryGetValue(Current.Id, out var colors))
+            copy.StyleSheet = ThemeStyleSheet.Parse(copy.StyleSheet).WithSurfaceColors(colors.Keys.Select(key => key[(key.IndexOf(':') + 1)..]));
         copy.CornerRadius = settings.CornerRadius; copy.SurfaceOpacity = settings.SurfaceOpacity; copy.FontName = settings.FontName;
         foreach (var (dark, palette) in new[] { (true, copy.Dark), (false, copy.Light) })
         {
+            foreach (var (key, value) in Palette(settings, Current, dark)) palette[key] = value;
             var raw = settings.AccentMode == "System" ? WindowsAccent() : Parse(settings.AccentMode == "Theme" ? palette["Accent"] : settings.AccentColor);
             if (settings.TintSurfaces)
                 foreach (var key in ThemeDefinition.Tokens.Where(k => k.EndsWith(".Bg", StringComparison.Ordinal))) palette[key] = Hex(Mix(Parse(palette[key]), raw, dark ? .12 : .08));

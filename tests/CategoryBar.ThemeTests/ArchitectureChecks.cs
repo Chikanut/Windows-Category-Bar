@@ -43,6 +43,7 @@ internal static class ArchitectureChecks
                     var bitmap = new RenderTargetBitmap((int)width, (int)height, 96, 96, PixelFormats.Pbgra32); bitmap.Render(root);
                     var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
                     using var stream = File.Create(Path.Combine(folder, theme.Id + (dark ? "-dark" : "-light") + "-gallery.png")); encoder.Save(stream);
+                    InteractionChecks.Gallery(window, root);
                 }
                 window.Close();
             }

@@ -17,6 +17,7 @@ internal sealed class SettingsWindow : ChromeWindow
     private readonly Grid page = new();
     private string current = "General";
     private BoardView? board;
+    private readonly Dictionary<string, (ThemeDefinition Theme, ContentControl Host)> themePreviews = [];
     private Button? updateCheck;
     private Button? updateInstall;
     private TextBlock? updateStatus;
@@ -32,7 +33,12 @@ internal sealed class SettingsWindow : ChromeWindow
         Navigate("General");
     }
 
-    private void OnSessionChanged() { if (current == "Categories") board?.Refresh(); }
+    private void OnSessionChanged()
+    {
+        if (current == "Categories") board?.Refresh();
+        if (current == "Appearance")
+            foreach (var (theme, host) in themePreviews.Values) host.Content = ThemePreview.Create(theme, Theme.IsDark, Settings);
+    }
 
     internal void Navigate(string key)
     {
@@ -209,13 +215,13 @@ internal sealed class SettingsWindow : ChromeWindow
             swatches.Children.Add(Swatch(Theme.Parse((Theme.IsDark ? Theme.Current.Dark : Theme.Current.Light)["Accent"]), Settings.AccentMode == "Theme", L.T("Колір теми"), s => s.AccentMode = "Theme"));
             swatches.Children.Add(Swatch(Theme.WindowsAccent(), system, L.T("Колір Windows"), s => s.AccentMode = "System", Icons.Windows));
             foreach (var preset in Theme.AccentPresets)
-                swatches.Children.Add(Swatch(Theme.Parse(preset), !system && Settings.AccentColor.Equals(preset, StringComparison.OrdinalIgnoreCase), preset, s => { s.AccentMode = "Custom"; s.AccentColor = preset; }));
+                swatches.Children.Add(Swatch(Theme.Parse(preset), Settings.AccentMode == "Custom" && Settings.AccentColor.Equals(preset, StringComparison.OrdinalIgnoreCase), preset, s => { s.AccentMode = "Custom"; s.AccentColor = preset; }));
             var custom = new TextBox { Text = Settings.AccentColor, Width = 84, MaxLength = 7, Margin = new Thickness(8, 0, 0, 0), ToolTip = L.T("Власний колір у форматі #RRGGBB"), FontFamily = new FontFamily("Consolas") };
             void Apply()
             {
                 var text = custom.Text.Trim();
                 if (!text.StartsWith('#')) text = "#" + text;
-                if (!Settings.IsHexColor(text) || !system && text.Equals(Settings.AccentColor, StringComparison.OrdinalIgnoreCase)) return;
+                if (!Settings.IsHexColor(text) || Settings.AccentMode == "Custom" && text.Equals(Settings.AccentColor, StringComparison.OrdinalIgnoreCase)) return;
                 session.ChangeSettings(s => { s.AccentMode = "Custom"; s.AccentColor = text.ToUpperInvariant(); });
                 Rebuild();
             }
@@ -236,6 +242,8 @@ internal sealed class SettingsWindow : ChromeWindow
         stack.Children.Add(Card(L.T("Колір акценту"), L.T("Колір Windows оновлюється автоматично, коли ви змінюєте його в системі."), swatches, stacked: true));
         stack.Children.Add(Card(L.T("Тонувати поверхні акцентом"), L.T("Додає панелі й меню легкий відтінок вибраного кольору."), Toggle(Settings.TintSurfaces, (s, v) => s.TintSurfaces = v)));
 
+        PaletteColors(stack);
+
         Group(stack, L.T("Текст і форма"));
         var fonts = new ComboBox { Width = 230 };
         var preferred = new[] { Settings.DefaultFont, "Segoe UI", "Segoe UI Variable Display", "Inter", "Onest", "Bahnschrift", "Calibri", "Verdana", "Tahoma", "Consolas", "Cascadia Code", "JetBrains Mono" };
@@ -255,10 +263,54 @@ internal sealed class SettingsWindow : ChromeWindow
             session.ChangeSettings(s =>
             {
                 s.ThemeId = defaults.ThemeId; s.ThemeMode = defaults.ThemeMode; s.AccentMode = defaults.AccentMode; s.AccentColor = defaults.AccentColor; s.TintSurfaces = defaults.TintSurfaces;
+                s.ThemeColors.Clear();
                 s.FontName = defaults.FontName; s.InterfaceScale = defaults.InterfaceScale; s.SurfaceOpacity = defaults.SurfaceOpacity; s.CornerRadius = defaults.CornerRadius;
             });
             Navigate(current);
         })));
+    }
+
+    private void PaletteColors(StackPanel stack)
+    {
+        var theme = Theme.Current;
+        var prefix = Theme.IsDark ? "Dark:" : "Light:";
+        var palette = Theme.Palette(Settings, theme, Theme.IsDark);
+        Group(stack, L.T("Кольори поверхонь"));
+        stack.Children.Add(Ui.Text(L.T("Зберігаються окремо для кожної теми та світлого або темного режиму."), 12, "Text.Muted", wrap: true));
+        foreach (var (token, label) in new[] {
+            ("Window.Bg", L.T("Фон вікна")), ("Sidebar.Bg", L.T("Фон навігації")),
+            ("Bar.Bg", L.T("Фон панелі")), ("Menu.Bg", L.T("Фон меню")),
+            ("Card.Bg", L.T("Фон карток")), ("Control.Bg", L.T("Фон елементів керування")),
+            ("Text", L.T("Текст")), ("Text.Muted", L.T("Другорядний текст")), ("Surface.Border", L.T("Контури")) })
+        {
+            var row = new StackPanel { Orientation = Orientation.Horizontal };
+            var swatch = new Border { Width = 24, Height = 24, CornerRadius = new CornerRadius(6), Margin = new Thickness(0, 0, 10, 0), Background = new SolidColorBrush(Theme.Parse(palette[token])) };
+            var input = new TextBox { Text = palette[token], Width = 100, MaxLength = 7, FontFamily = new FontFamily("Consolas"), ToolTip = L.T("Власний колір у форматі #RRGGBB") };
+            void ApplyColor()
+            {
+                var value = input.Text.Trim(); if (!value.StartsWith('#')) value = "#" + value;
+                if (!Settings.IsHexColor(value)) { input.Text = palette[token]; return; }
+                value = value.ToUpperInvariant(); if (value == palette[token]) return;
+                if (!session.ChangeSettings(s => {
+                    if (!s.ThemeColors.TryGetValue(theme.Id, out var colors)) s.ThemeColors[theme.Id] = colors = [];
+                    colors[prefix + token] = value;
+                })) { input.Text = palette[token]; return; }
+                palette[token] = value; input.Text = value; swatch.Background = new SolidColorBrush(Theme.Parse(value));
+            }
+            input.KeyDown += (_, e) => { if (e.Key == Key.Enter) { ApplyColor(); e.Handled = true; } };
+            input.LostKeyboardFocus += (_, _) => ApplyColor();
+            System.Windows.Automation.AutomationProperties.SetName(input, label);
+            var picker = Ui.Button("", () => { if (Services.ColorPicker.Show(this, Theme.Parse(palette[token])) is { } color) { input.Text = Theme.Hex(color); ApplyColor(); } }, "Button.Icon");
+            picker.Content = swatch; picker.Width = 36; picker.Height = 36; picker.Margin = new Thickness(0, 0, 8, 0); swatch.Margin = new Thickness(0);
+            picker.ToolTip = L.T("Вибрати колір"); System.Windows.Automation.AutomationProperties.SetName(picker, label + ": " + L.T("Вибрати колір"));
+            row.Children.Add(picker); row.Children.Add(input);
+            stack.Children.Add(Card(label, null, row));
+        }
+        stack.Children.Add(Ui.Button(L.T("Скинути кольори цієї теми"), () => {
+            session.ChangeSettings(s => { if (s.ThemeColors.TryGetValue(theme.Id, out var colors))
+                foreach (var key in colors.Keys.Where(k => k.StartsWith(prefix, StringComparison.Ordinal)).ToArray()) colors.Remove(key); });
+            Navigate("Appearance");
+        }, "Button.Secondary"));
     }
 
     private void ThemeParameters(StackPanel stack)
@@ -322,6 +374,7 @@ internal sealed class SettingsWindow : ChromeWindow
 
     private void ThemeGallery(StackPanel stack)
     {
+        themePreviews.Clear();
         Group(stack, L.T("Стилі оформлення"));
         var gallery = new Grid();
         gallery.ColumnDefinitions.Add(new ColumnDefinition()); gallery.ColumnDefinitions.Add(new ColumnDefinition());
@@ -330,8 +383,9 @@ internal sealed class SettingsWindow : ChromeWindow
         {
             var theme = all[i]; var selected = theme.Id == Theme.Current.Id;
             if (i % 2 == 0) gallery.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            var sample = new StackPanel();
-            sample.Children.Add(ThemePreview.Create(theme, Theme.IsDark));
+            var sample = new StackPanel { IsHitTestVisible = false };
+            var preview = new ContentControl { Content = ThemePreview.Create(theme, Theme.IsDark, Settings), IsHitTestVisible = false };
+            themePreviews[theme.Id] = (theme, preview); sample.Children.Add(preview);
             var title = Ui.Text(theme.Name + (selected ? "  ✓" : ""), 14, bold: true); title.Margin = new Thickness(0, 10, 0, 4); sample.Children.Add(title);
             var description = theme.Id switch
             {

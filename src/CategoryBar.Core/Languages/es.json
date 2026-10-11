@@ -350,5 +350,20 @@
   "Розташування навігації": "Posición de navegación",
   "Згори": "Arriba",
   "Акцентна лінія": "Línea de acento",
-  "Колір лінії": "Color de línea"
+  "Колір лінії": "Color de línea",
+  "Кольори поверхонь": "Colores de superficies",
+  "Зберігаються окремо для кожної теми та світлого або темного режиму.": "Se guardan por separado para cada tema y modo claro u oscuro.",
+  "Фон вікна": "Fondo de ventana",
+  "Фон навігації": "Fondo de navegación",
+  "Фон панелі": "Fondo de barra",
+  "Фон меню": "Fondo del menú",
+  "Фон карток": "Fondo de tarjetas",
+  "Фон елементів керування": "Fondo de controles",
+  "Текст": "Texto",
+  "Другорядний текст": "Texto secundario",
+  "Контури": "Bordes",
+  "Скинути кольори цієї теми": "Restablecer colores de este tema",
+  "Викривлення відблиску": "Distorsión del reflejo",
+  "Впливає на відблиск матеріалу, а не на зображення робочого столу.": "Afecta al reflejo del material, no a la imagen del escritorio.",
+  "Вибрати колір": "Elegir color"
 }
