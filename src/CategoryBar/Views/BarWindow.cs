@@ -217,6 +217,7 @@ internal sealed class BarWindow : OverlayWindow
             handle.Element.Height = 13;
             handle.Element.Padding = new Thickness(22, 0, 22, 0);
             handle.Element.MouseEnter += (_, _) => ExpandMiniature();
+            handle.Element.MouseLeftButtonUp += (_, e) => { ExpandMiniature(); e.Handled = true; };
             handle.Element.AllowDrop = true;
             void RevealForDrag(object sender, DragEventArgs e)
             {

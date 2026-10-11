@@ -34,6 +34,23 @@ public sealed class ThemeStyleSheet
         return string.Join("\n", copy.GroupBy(v => v.Key[..v.Key.LastIndexOf('.')]).Select(group =>
             "." + group.Key + " { " + string.Join(" ", group.Select(v => v.Key[(v.Key.LastIndexOf('.') + 1)..] + ": " + v.Value + ";")) + " }"));
     }
+    public string WithSurfaceColors(IEnumerable<string> tokens)
+    {
+        var copy = new Dictionary<string, string>(values);
+        foreach (var token in tokens.Distinct())
+        {
+            var (variable, selectors) = token switch {
+                "Window.Bg" => ("window-bg", new[] { "window" }), "Sidebar.Bg" => ("sidebar-bg", new[] { "sidebar", "titlebar" }),
+                "Bar.Bg" => ("bar-bg", new[] { "bar" }), "Menu.Bg" => ("menu-bg", new[] { "menu" }),
+                "Card.Bg" => ("card-bg", new[] { "card" }), "Control.Bg" => ("control-bg", new[] { "button", "input" }),
+                _ => ("", Array.Empty<string>())
+            };
+            foreach (var selector in selectors) copy[selector + ".background"] = "var(--" + variable + ")";
+        }
+        return string.Join("\n", copy.GroupBy(v => v.Key[..v.Key.LastIndexOf('.')]).Select(group =>
+            "." + group.Key + " { " + string.Join(" ", group.Select(v => v.Key[(v.Key.LastIndexOf('.') + 1)..] + ": " + v.Value + ";")) + " }"));
+    }
+
     private static ThemeStyleSheet Parse(string css, bool inherit)
     {
         if (css is null || css.Length > 12000) throw Invalid();

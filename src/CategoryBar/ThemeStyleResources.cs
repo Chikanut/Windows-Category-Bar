@@ -32,7 +32,7 @@ internal static class ThemeStyleResources
         resources["card.Margin"] = new Thickness(0, 0, 0, css.Number("card", "gap", 6));
         resources["Toggle.Radius"] = new CornerRadius(css.Skin == "midnight" ? 0 : 10);
         resources["Radius"] = resources["menu.Radius"];
-        resources["Radius.Small"] = resources["button.Radius"];
+        resources["Radius.Small"] = new CornerRadius(Math.Min(10, ((CornerRadius)resources["button.Radius"]).TopLeft));
         foreach (var suffix in new[] { "Radius", "Border", "Padding", "Margin", "Height", "MinHeight", "FontSize", "FontWeight" }) resources["button-primary." + suffix] = resources["button." + suffix];
         resources["button-primary.Radius"] = new CornerRadius(Math.Clamp(css.Number("button-primary", "border-radius", css.Number("button", "border-radius", 6)) * radiusScale, 0, 32));
         resources["button-primary.Border"] = new Thickness(css.Number("button-primary", "border-width", css.Number("button", "border-width", 0)));

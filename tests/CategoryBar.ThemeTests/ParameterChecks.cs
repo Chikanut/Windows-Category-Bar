@@ -54,7 +54,7 @@ internal static class ParameterChecks
         editor.Navigate("Appearance");
         var root = (FrameworkElement)editor.Content;
         root.Measure(new Size(900, 640)); root.Arrange(new Rect(0, 0, 900, 640)); root.UpdateLayout();
-        var slider = Descendants(root).OfType<Slider>().Single(control => System.Windows.Automation.AutomationProperties.GetName(control) == L.T("Заломлення скла"));
+        var slider = Descendants(root).OfType<Slider>().Single(control => System.Windows.Automation.AutomationProperties.GetName(control) == L.T("Викривлення відблиску"));
         slider.Value = .055;
         slider.RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, 0) { RoutedEvent = Mouse.LostMouseCaptureEvent });
         Check(Math.Abs((double)app.Resources["Theme.Parameter.refraction"] - .055) < .00001

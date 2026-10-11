@@ -11,7 +11,7 @@ float4 main(float2 uv : TEXCOORD) : COLOR
     float4 source = tex2D(Input, bent);
     float4 mask = tex2D(Input, uv);
     float light = pow(edge, 18) * Rim;
-    float sheen = pow(saturate(1 - abs(uv.y - (0.13 + uv.x * 0.28)) * 3), 4) * .08;
+    float sheen = pow(saturate(1 - abs(uv.y - (0.13 + uv.x * 0.28)) * 3), 4) * .01;
     source = lerp(mask, source, step(.01, source.a));
     float3 rgb = source.rgb / max(source.a, .001);
     rgb = saturate(rgb + light * float3(.70, .88, 1) + sheen);

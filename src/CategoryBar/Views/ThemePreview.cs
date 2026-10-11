@@ -3,24 +3,31 @@ namespace CategoryBar.Views;
 /// <summary>Uses the theme's real templates and stylesheet in an isolated resource scope.</summary>
 internal static class ThemePreview
 {
-    internal static FrameworkElement Create(ThemeDefinition theme, bool dark)
+    internal static FrameworkElement Create(ThemeDefinition theme, bool dark, Settings? settings = null)
     {
         var css = ThemeStyleSheet.Parse(theme.StyleSheet);
-        var palette = dark ? theme.Dark : theme.Light;
+        if (settings is not null && settings.ThemeColors.TryGetValue(theme.Id, out var colors))
+            css = ThemeStyleSheet.Parse(css.WithSurfaceColors(colors.Keys.Where(key => key.StartsWith(dark ? "Dark:" : "Light:", StringComparison.Ordinal)).Select(key => key[(key.IndexOf(':') + 1)..])));
+        var palette = settings is null ? (dark ? theme.Dark : theme.Light) : Theme.Palette(settings, theme, dark);
         var scope = new StackPanel { Width = 270 };
         scope.Resources["Font"] = new FontFamily(theme.FontName);
         System.Windows.Documents.TextElement.SetFontFamily(scope, (FontFamily)scope.Resources["Font"]);
+        var shared = new ResourceDictionary { Source = new Uri("/CategoryBar;component/Themes/ThemeSurfaces.xaml", UriKind.Relative) };
+        scope.Resources.MergedDictionaries.Add(shared);
         scope.Resources.MergedDictionaries.Add(ThemeStyleResources.Templates(css.Skin));
         scope.Resources.MergedDictionaries.Add(Theming.ThemeResourceLoader.Load(theme));
         foreach (var (key, value) in palette) scope.Resources[key] = new SolidColorBrush(Theme.Parse(value));
-        var accent = Theme.Parse(palette["Accent"]);
+        var active = settings is not null && theme.Id == settings.ThemeId;
+        var accent = active ? Theme.Accent : Theme.Parse(palette["Accent"]);
+        scope.Resources["Accent"] = new SolidColorBrush(accent);
         scope.Resources["Accent.Soft"] = new SolidColorBrush(Color.FromArgb(46, accent.R, accent.G, accent.B));
         scope.Resources["Hover"] = Brushes.Transparent;
-        scope.Resources["Accent.Text"] = dark ? Brushes.Black : Brushes.White;
+        scope.Resources["Accent.Text"] = active ? Application.Current.Resources["Accent.Text"] : dark ? Brushes.Black : Brushes.White;
         scope.Resources["Glass.Rim"] = new SolidColorBrush(Colors.White) { Opacity = .4 };
         scope.Resources["Glass.Sheen"] = new LinearGradientBrush(Color.FromArgb(45, 255, 255, 255), Colors.Transparent, 90);
         ThemeStyleResources.Apply(scope.Resources, css);
-        Theming.ThemeParameterResources.Apply(scope.Resources, theme, new Settings());
+        Theming.ThemeParameterResources.Apply(scope.Resources, theme, settings ?? new Settings());
+        scope.Resources["Theme.ControlMaterialTemplate"] = theme.Material == "Glass" ? Application.Current.Resources["Theme.FlatMaterialTemplate"] : scope.Resources["Theme.MaterialTemplate"];
         var tabs = new StackPanel { Orientation = Orientation.Horizontal };
         for (var i = 0; i < 3; i++)
         {

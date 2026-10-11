@@ -1,18 +1,19 @@
 [
   {
     "Id": "refraction",
-    "Label": "Заломлення скла",
+    "Label": "Викривлення відблиску",
     "Type": "Number",
     "Default": "0.025",
     "Minimum": 0,
     "Maximum": 0.08,
-    "Step": 0.005
+    "Step": 0.005,
+    "Description": "Впливає на відблиск матеріалу, а не на зображення робочого столу."
   },
   {
     "Id": "rim-light",
     "Label": "Сила відблиску",
     "Type": "Number",
-    "Default": "0.18",
+    "Default": "0.04",
     "Minimum": 0,
     "Maximum": 0.35,
     "Step": 0.01

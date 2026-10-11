@@ -29,6 +29,7 @@ internal static class Program
         typeof(App).GetProperty("Updates", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
             .SetValue(app, new CategoryBar.Services.AppUpdates(new Session(new Configuration(), new ConfigurationStore(configPath))));
         MiniatureDragChecks.Run(configPath);
+        InteractionChecks.Colors(configPath);
         foreach (var id in new[] { "architecture-test", "native-css-check", "aurora-motion" }) Theme.Library.Remove(id);
         var templateIdentities = new HashSet<ControlTemplate>();
         foreach (var theme in BuiltInThemes.All)
@@ -36,6 +37,7 @@ internal static class Program
         {
             var config = new Configuration(); Theme.Select(config.Settings, theme); config.Settings.ThemeMode = dark ? "Dark" : "Light";
             Theme.Apply(config.Settings);
+            InteractionChecks.Run(config.Settings, configPath);
             var button = Ui.Button("Preview", () => { }); button.ApplyTemplate();
             if (button.Template != app.Resources["Theme.ButtonTemplate"] || button.MinHeight != Theme.StyleSheet.Number("button", "min-height", 30))
                 throw new Exception(theme.Name + " did not apply its component stylesheet.");

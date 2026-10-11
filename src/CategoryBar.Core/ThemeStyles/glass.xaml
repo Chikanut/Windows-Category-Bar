@@ -3,7 +3,7 @@
 <Grid><Border x:Name="liquid" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}">
 <Border.Effect><fx:ThemeShaderEffect Shader="liquid" P0="{DynamicResource Theme.Parameter.refraction}" P1="{DynamicResource Theme.Parameter.rim-light}"/></Border.Effect>
 </Border>
-<Border Margin="1" BorderThickness="1,1,1,0" BorderBrush="{DynamicResource Theme.Parameter.rim-color}" Opacity="0.35" Visibility="{DynamicResource Theme.Parameter.show-rim.Visibility}" CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" IsHitTestVisible="False"/>
+<Border Margin="1" BorderThickness="1,1,1,0" BorderBrush="{DynamicResource Theme.Parameter.rim-color}" Opacity="0.12" Visibility="{DynamicResource Theme.Parameter.show-rim.Visibility}" CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" IsHitTestVisible="False"/>
 </Grid></ControlTemplate>
 <ControlTemplate x:Key="Theme.WorkspaceTemplate" TargetType="fx:ThemeSurface">
 <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="216"/><ColumnDefinition/></Grid.ColumnDefinitions>
