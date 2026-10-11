@@ -151,7 +151,7 @@ Saving is atomic; if the main file is damaged, the app restores settings from th
 
 ## Build from source
 
-C# / .NET 10, WPF, Win32 / DWM / Windows Shell, System.Text.Json. No third-party NuGet packages. Requires the .NET SDK 10.0.4xx.
+C# / .NET 10, WPF, Win32 / DWM / Windows Shell, System.Text.Json. Velopack provides installer packaging and updates. Requires the .NET SDK 10.0.4xx.
 
 ```powershell
 .\scripts\build.ps1 -SelfContained   # build, core checks, executable in artifacts\portable

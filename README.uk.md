@@ -149,7 +149,7 @@
 
 ## Збірка з коду
 
-C# / .NET 10, WPF, Win32 / DWM / Windows Shell, System.Text.Json. Сторонніх NuGet-пакетів немає. Потрібен .NET SDK 10.0.4xx.
+C# / .NET 10, WPF, Win32 / DWM / Windows Shell, System.Text.Json. Velopack забезпечує пакування інсталятора й оновлення. Потрібен .NET SDK 10.0.4xx.
 
 ```powershell
 .\scripts\build.ps1 -SelfContained   # збірка, перевірки ядра, executable в artifacts\portable
