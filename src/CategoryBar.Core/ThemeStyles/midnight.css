@@ -1,0 +1,16 @@
+/* Carbon: dense graphite, precise edges, floating accents. */
+.theme { skin: studio; }
+.bar { height: 40px; padding: 4px; gap: 2px; border-radius: 8px; border-width: 0px; }
+.tab { height: 32px; padding: 0px 14px; margin: 0px; border-radius: 6px; border-width: 0px; font-size: 12px; font-weight: semibold; indicator: rail; selected-background: accent-soft; }
+.menu { width: 280px; padding: 10px; gap: 2px; border-radius: 12px; border-width: 0px; box-shadow: 0px 8px 32px rgba(0,0,0,0.3); }
+.menu-item { height: 36px; padding: 0px 12px; margin: 0px; border-radius: 6px; border-width: 0px; icon-size: 20px; }
+.button { min-height: 32px; padding: 5px 14px; border-radius: 6px; border-width: 0px; font-size: 12px; font-weight: semibold; }
+.button-primary { background: var(--accent); box-shadow: 0px 3px 12px rgba(50,210,170,0.15); }
+.input { min-height: 32px; padding: 5px 12px; border-radius: 6px; border-width: 0px; }
+.card { padding: 18px 20px; gap: 10px; border-radius: 10px; border-width: 0px; overlay: linear-gradient(120deg, rgba(255,255,255,0.035), transparent); }
+.sidebar-item { height: 36px; padding: 0px 14px; margin: 2px 0px; border-radius: 6px; font-weight: semibold; }
+.window { border-radius: 0px; border-width: 1px; }
+.titlebar { height: 36px; border-width: 1px; }
+.sidebar { border-radius: 0px; border-width: 1px; }
+.page { background: transparent; border-width: 0px; }
+.toast { border-radius: 0px; border-width: 1px; }

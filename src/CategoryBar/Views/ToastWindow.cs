@@ -62,8 +62,7 @@ internal sealed class ToastWindow : OverlayWindow
         progress = new Border { Height = 2, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Bottom, CornerRadius = new CornerRadius(1) }.Res(Border.BackgroundProperty, "Accent");
         var card = new Grid { Width = 340, Margin = new Thickness(ShadowMargin) };
         card.Children.Add(new Border().Res(Border.BackgroundProperty, "Popup.Bg").Res(Border.CornerRadiusProperty, "Radius").Res(EffectProperty, "Shadow"));
-        var surface = new Border { BorderThickness = new Thickness(1), ClipToBounds = true, Child = new Grid { Children = { layout, progress } } }
-            .Res(Border.BackgroundProperty, "Popup.Bg").Res(Border.BorderBrushProperty, "Surface.Border").Res(Border.CornerRadiusProperty, "Radius");
+        var surface = new ContentControl { Content = new Grid { Children = { layout, progress } } }.Res(StyleProperty, "Theme.Toast");
         card.Children.Add(surface);
         progress.Visibility = sticky ? Visibility.Collapsed : Visibility.Visible;
         progress.Margin = new Thickness(10, 0, 10, 0);
@@ -73,7 +72,7 @@ internal sealed class ToastWindow : OverlayWindow
         var inset = (int)((ShadowMargin - 14) * Dpi * Theme.Scale);
         Place(monitor.Right - width + inset, bottom - height + inset, width, height);
         if (!IsVisible) Show();
-        Ui.FadeIn(card, 0, 10, 180);
+        Ui.FadeIn(card, 0, 10, 180, "Theme.Toast.Enter");
         StartLife();
     }
 

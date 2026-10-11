@@ -13,7 +13,7 @@ internal sealed class SettingsWindow : ChromeWindow
     ];
 
     private readonly Session session;
-    private readonly StackPanel navigation = new() { Margin = new Thickness(10, 6, 10, 10) };
+    private readonly StackPanel navigation = new StackPanel().Res(StyleProperty, "Theme.NavigationPanel");
     private readonly Grid page = new();
     private string current = "General";
     private BoardView? board;
@@ -25,13 +25,7 @@ internal sealed class SettingsWindow : ChromeWindow
     internal SettingsWindow(Session session) : base(L.T("Панель категорій — Налаштування"), 900, 640, canMinimize: true)
     {
         this.session = session;
-        var layout = new Grid();
-        layout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(208) });
-        layout.ColumnDefinitions.Add(new ColumnDefinition());
-        layout.Children.Add(new Border { Child = navigation, Margin = new Thickness(0, 0, 0, 0) }.Res(Border.BackgroundProperty, "Sidebar.Bg"));
-        layout.Children.Add(page.At(1));
-        Body.Children.Add(layout);
-        TitleBar.SetResourceReference(Panel.BackgroundProperty, "Sidebar.Bg");
+        Body.Children.Add(new Theming.ThemeSurface { Header = navigation, Content = page }.Res(StyleProperty, "Theme.Workspace"));
         session.Changed += OnSessionChanged;
         App.Instance.Updates.Changed += RefreshUpdates;
         Closed += (_, _) => { session.Changed -= OnSessionChanged; App.Instance.Updates.Changed -= RefreshUpdates; };
@@ -51,18 +45,15 @@ internal sealed class SettingsWindow : ChromeWindow
             var glyph = Ui.Icon(icon, active ? "Accent" : "Text.Muted"); glyph.Margin = new Thickness(0, 0, 11, 0);
             content.Children.Add(glyph);
             content.Children.Add(Ui.Text(title, 13, active ? "Text" : "Text.Muted", bold: active));
-            var item = new Border { Height = 36, Padding = new Thickness(12, 0, 12, 0), Margin = new Thickness(0, 0, 0, 2), Background = Brushes.Transparent, Child = content, Cursor = Cursors.Hand }.Res(Border.CornerRadiusProperty, "Radius.Small");
-            if (active) item.SetResourceReference(Border.BackgroundProperty, "Selected");
-            else
-            {
-                item.MouseEnter += (_, _) => item.SetResourceReference(Border.BackgroundProperty, "Hover");
-                item.MouseLeave += (_, _) => item.Background = Brushes.Transparent;
-                item.MouseLeftButtonUp += (_, _) => Navigate(pageKey);
-            }
+            var item = Ui.Button(title, () => Navigate(pageKey), "Navigation.Item");
+            item.Content = content; item.Tag = active ? "selected" : null;
+            System.Windows.Automation.AutomationProperties.SetName(item, title);
             navigation.Children.Add(item);
         }
         board = null;
+        Theming.ThemeMotion.Stop(page);
         page.Children.Clear();
+        Theming.ThemeMotion.Play(page, "Theme.Page.Enter", offset: 12, milliseconds: 220);
         if (current == "Categories") { page.Children.Add(CategoriesPage()); return; }
         var stack = new StackPanel { Margin = new Thickness(28, 4, 28, 28) };
         var heading = Ui.Text(Pages.First(p => p.Key == current).Title, 22, "Text", bold: true); heading.Margin = new Thickness(0, 0, 0, 16);
@@ -74,7 +65,7 @@ internal sealed class SettingsWindow : ChromeWindow
             case "Panel": PanelPage(stack); break;
             default: About(stack); break;
         }
-        page.Children.Add(new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = stack });
+        page.Children.Add(new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = stack });
     }
 
     // ---- Building blocks -------------------------------------------------------------------------
@@ -86,7 +77,7 @@ internal sealed class SettingsWindow : ChromeWindow
         stack.Children.Add(caption);
     }
 
-    private static Border Card(string label, string? hint, FrameworkElement control, bool stacked = false)
+    private static FrameworkElement Card(string label, string? hint, FrameworkElement control, bool stacked = false)
     {
         var texts = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         texts.Children.Add(Ui.Text(label, 13.5));
@@ -95,23 +86,8 @@ internal sealed class SettingsWindow : ChromeWindow
             var note = Ui.Text(hint, 12, "Text.Muted", wrap: true); note.Margin = new Thickness(0, 3, 0, 0); note.LineHeight = 17;
             texts.Children.Add(note);
         }
-        FrameworkElement content;
-        if (stacked)
-        {
-            control.Margin = new Thickness(0, 12, 0, 0); control.HorizontalAlignment = HorizontalAlignment.Left;
-            content = new StackPanel { Children = { texts, control } };
-        }
-        else
-        {
-            var grid = new Grid();
-            grid.ColumnDefinitions.Add(new ColumnDefinition());
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            control.VerticalAlignment = VerticalAlignment.Center; control.Margin = new Thickness(20, 0, 0, 0);
-            grid.Children.Add(texts); grid.Children.Add(control.At(1));
-            content = grid;
-        }
-        return new Border { Padding = new Thickness(16, 13, 16, 13), Margin = new Thickness(0, 0, 0, 6), BorderThickness = new Thickness(1), Child = content, MinHeight = 56 }
-            .Res(Border.BackgroundProperty, "Card.Bg").Res(Border.BorderBrushProperty, "Surface.Border").Res(Border.CornerRadiusProperty, "Radius");
+        return new Theming.ThemeSurface { Header = texts, Content = control, Tag = stacked ? "stacked" : null }
+            .Res(StyleProperty, "Theme.Setting");
     }
 
     private CheckBox Toggle(bool value, Action<Settings, bool> apply)
@@ -219,15 +195,18 @@ internal sealed class SettingsWindow : ChromeWindow
 
     private void Appearance(StackPanel stack)
     {
+        ThemeGallery(stack);
+        ThemeParameters(stack);
         Group(stack, L.T("Кольори"));
         stack.Children.Add(Card(L.T("Тема"), L.T("«Як у Windows» перемикається разом із системною темою."),
-            Segments(Settings.ThemeMode, (s, v) => s.ThemeMode = v, ("System", L.T("Як у Windows")), ("Dark", L.T("Темна")), ("Light", L.T("Світла")))));
+            Segments(Settings.ThemeMode, (s, v) => { s.ThemeMode = v; Dispatcher.BeginInvoke(() => Navigate("Appearance")); }, ("System", L.T("Як у Windows")), ("Dark", L.T("Темна")), ("Light", L.T("Світла")))));
 
         var swatches = new StackPanel { Orientation = Orientation.Horizontal };
         void Rebuild()
         {
             swatches.Children.Clear();
             var system = Settings.AccentMode == "System";
+            swatches.Children.Add(Swatch(Theme.Parse((Theme.IsDark ? Theme.Current.Dark : Theme.Current.Light)["Accent"]), Settings.AccentMode == "Theme", L.T("Колір теми"), s => s.AccentMode = "Theme"));
             swatches.Children.Add(Swatch(Theme.WindowsAccent(), system, L.T("Колір Windows"), s => s.AccentMode = "System", Icons.Windows));
             foreach (var preset in Theme.AccentPresets)
                 swatches.Children.Add(Swatch(Theme.Parse(preset), !system && Settings.AccentColor.Equals(preset, StringComparison.OrdinalIgnoreCase), preset, s => { s.AccentMode = "Custom"; s.AccentColor = preset; }));
@@ -275,11 +254,149 @@ internal sealed class SettingsWindow : ChromeWindow
             var defaults = new Settings();
             session.ChangeSettings(s =>
             {
-                s.ThemeMode = defaults.ThemeMode; s.AccentMode = defaults.AccentMode; s.AccentColor = defaults.AccentColor; s.TintSurfaces = defaults.TintSurfaces;
+                s.ThemeId = defaults.ThemeId; s.ThemeMode = defaults.ThemeMode; s.AccentMode = defaults.AccentMode; s.AccentColor = defaults.AccentColor; s.TintSurfaces = defaults.TintSurfaces;
                 s.FontName = defaults.FontName; s.InterfaceScale = defaults.InterfaceScale; s.SurfaceOpacity = defaults.SurfaceOpacity; s.CornerRadius = defaults.CornerRadius;
             });
             Navigate(current);
         })));
+    }
+
+    private void ThemeParameters(StackPanel stack)
+    {
+        var theme = Theme.Current;
+        if (theme.Parameters.Count == 0) return;
+        Group(stack, L.T("Параметри теми"));
+        foreach (var parameter in theme.Parameters)
+        {
+            var value = parameter.Resolve(Settings, theme.Id);
+            FrameworkElement control;
+            void Set(Settings settings, string next) => parameter.Set(settings, theme.Id, next);
+            switch (parameter.Type)
+            {
+                case "Number":
+                    control = Range(double.Parse(value, System.Globalization.CultureInfo.InvariantCulture), parameter.Minimum, parameter.Maximum, parameter.Step,
+                        number => number.ToString("0.###"), (settings, number) => Set(settings, number.ToString("G17", System.Globalization.CultureInfo.InvariantCulture)));
+                    break;
+                case "Toggle":
+                    control = Toggle(value == "true", (settings, enabled) => Set(settings, enabled ? "true" : "false"));
+                    break;
+                case "Choice":
+                    var choices = new ComboBox { MinWidth = 190, MaxWidth = 250 };
+                    foreach (var option in parameter.Options) choices.Items.Add(new ComboBoxItem { Content = L.T(option.Value), Tag = option.Key });
+                    choices.SelectedIndex = parameter.Options.Keys.ToList().IndexOf(value);
+                    choices.SelectionChanged += (_, _) =>
+                    {
+                        if (choices.SelectedItem is ComboBoxItem { Tag: string selected }) session.ChangeSettings(settings => Set(settings, selected));
+                    };
+                    control = choices;
+                    break;
+                default:
+                    var color = new TextBox { Text = value, Width = 98, MaxLength = 7, ToolTip = L.T("Власний колір у форматі #RRGGBB") };
+                    var swatch = new Border { Width = 24, Height = 24, Margin = new Thickness(0, 0, 8, 0), CornerRadius = new CornerRadius(5) }
+                        .Res(Border.BackgroundProperty, "Theme.Parameter." + parameter.Id);
+                    void CommitColor()
+                    {
+                        var next = color.Text.Trim(); if (!next.StartsWith('#')) next = "#" + next;
+                        if (!parameter.Accepts(next)) { color.SetResourceReference(Control.BorderBrushProperty, "Danger"); return; }
+                        color.SetResourceReference(Control.BorderBrushProperty, "input.BorderBrush");
+                        if (next.Equals(parameter.Resolve(Settings, theme.Id), StringComparison.OrdinalIgnoreCase)) return;
+                        session.ChangeSettings(settings => Set(settings, next.ToUpperInvariant()));
+                    }
+                    color.KeyDown += (_, e) => { if (e.Key == Key.Enter) { CommitColor(); e.Handled = true; } };
+                    color.LostKeyboardFocus += (_, _) => CommitColor();
+                    System.Windows.Automation.AutomationProperties.SetName(color, L.T(parameter.Label));
+                    control = new StackPanel { Orientation = Orientation.Horizontal, Children = { swatch, color } };
+                    break;
+            }
+            System.Windows.Automation.AutomationProperties.SetName(control, L.T(parameter.Label));
+            System.Windows.Automation.AutomationProperties.SetHelpText(control, L.T(parameter.Description));
+            if (control is StackPanel panel && panel.Children.OfType<Slider>().FirstOrDefault() is { } slider)
+                System.Windows.Automation.AutomationProperties.SetName(slider, L.T(parameter.Label));
+            stack.Children.Add(Card(L.T(parameter.Label), parameter.Description.Length == 0 ? null : L.T(parameter.Description), control));
+        }
+        stack.Children.Add(Ui.Button(L.T("Скинути параметри теми"), () =>
+        {
+            if (session.ChangeSettings(settings => settings.ThemeParameters.Remove(theme.Id))) Navigate("Appearance");
+        }));
+    }
+
+    private void ThemeGallery(StackPanel stack)
+    {
+        Group(stack, L.T("Стилі оформлення"));
+        var gallery = new Grid();
+        gallery.ColumnDefinitions.Add(new ColumnDefinition()); gallery.ColumnDefinitions.Add(new ColumnDefinition());
+        var all = Theme.Library.All.ToList();
+        for (var i = 0; i < all.Count; i++)
+        {
+            var theme = all[i]; var selected = theme.Id == Theme.Current.Id;
+            if (i % 2 == 0) gallery.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var sample = new StackPanel();
+            sample.Children.Add(ThemePreview.Create(theme, Theme.IsDark));
+            var title = Ui.Text(theme.Name + (selected ? "  ✓" : ""), 14, bold: true); title.Margin = new Thickness(0, 10, 0, 4); sample.Children.Add(title);
+            var description = theme.Id switch
+            {
+                "fluent" => L.T("Спокійні поверхні й знайомий стиль Windows."),
+                "glass" => L.T("Напівпрозоре скло, світлі контури й м’які відблиски."),
+                "expressive" => L.T("Виразні бузкові тони й округлі кольорові поверхні."),
+                "midnight" => L.T("Графітові поверхні, чіткі контури й м’ятний акцент."),
+                _ => theme.Description
+            };
+            sample.Children.Add(Ui.Text(description, 12, "Text.Muted", wrap: true));
+            var button = Ui.Button("", () => { session.ChangeSettings(s => Theme.Select(s, theme)); Navigate("Appearance"); }, "Button.Secondary");
+            button.Content = sample; button.Padding = new Thickness(12); button.HorizontalContentAlignment = HorizontalAlignment.Stretch;
+            button.Margin = new Thickness(i % 2 == 0 ? 0 : 5, 0, i % 2 == 0 ? 5 : 0, 10);
+            if (selected) { button.BorderThickness = new Thickness(2); button.SetResourceReference(Control.BorderBrushProperty, "Accent"); }
+            System.Windows.Automation.AutomationProperties.SetName(button, theme.Name);
+            System.Windows.Automation.AutomationProperties.SetHelpText(button, description);
+            gallery.Children.Add(button.At(i % 2, i / 2));
+        }
+        stack.Children.Add(gallery);
+        var actions = new WrapPanel { Margin = new Thickness(0, 2, 0, 10) };
+        actions.Children.Add(Ui.Button(L.T("Імпортувати тему…"), ImportTheme, "Button.Secondary"));
+        actions.Children.Add(Ui.Button(L.T("Експортувати тему…"), ExportTheme, "Button.Secondary"));
+        if (!Theme.Library.IsBuiltIn(Theme.Current.Id))
+            actions.Children.Add(Ui.Button(L.T("Видалити тему"), () =>
+            {
+                var id = Theme.Current.Id;
+                if (!Dialogs.Confirm(L.T("Видалити тему"), Theme.Current.Name, L.T("Видалити"), danger: true)) return;
+                ThemeOperation(() => { if (!session.ChangeSettings(s => Theme.Select(s, BuiltInThemes.All[0]))) return; Theme.Library.Remove(id); Navigate("Appearance"); });
+            }));
+        foreach (FrameworkElement action in actions.Children) action.Margin = new Thickness(0, 0, 6, 6);
+        stack.Children.Add(actions);
+        stack.Children.Add(Ui.Text(L.T("Вибір стилю застосовує його колір, шрифт і форму. Нижче їх можна налаштувати. Для власних тем використовуйте файли .categorybar-theme.json."), 12, "Text.Muted", wrap: true));
+    }
+
+    private void ThemeOperation(Action action)
+    {
+        try { action(); }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or InvalidOperationException)
+        { session.Toast(L.T("Не вдалося змінити тему"), ex.Message, ToastKind.Error); }
+    }
+
+    private void ImportTheme()
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog { Filter = L.T("Теми Category Bar") + "|*.categorybar-theme.json;*.json", CheckFileExists = true };
+        if (dialog.ShowDialog(this) != true) return;
+        ThemeOperation(() =>
+        {
+            var theme = ThemeFiles.Read(dialog.FileName);
+            // Keep both themes when IDs collide; downloaded themes cannot overwrite installed ones.
+            if (Theme.Library.All.Any(t => t.Id == theme.Id)) theme.Id = "custom-" + Guid.NewGuid().ToString("N");
+            _ = Theming.ThemeResourceLoader.Load(theme);
+            Theme.Library.Install(theme); session.ChangeSettings(s => Theme.Select(s, theme)); Navigate("Appearance");
+            session.Toast(L.T("Тему встановлено"), theme.Name);
+        });
+    }
+
+    private void ExportTheme()
+    {
+        var dialog = new Microsoft.Win32.SaveFileDialog { Filter = L.T("Теми Category Bar") + "|*.categorybar-theme.json", FileName = Theme.Current.Id + ThemeFiles.Extension, AddExtension = true, DefaultExt = ThemeFiles.Extension };
+        if (dialog.ShowDialog(this) != true) return;
+        ThemeOperation(() =>
+        {
+            var theme = Theme.Capture(Settings); theme.Id = Theme.Current.Id;
+            ThemeFiles.Write(dialog.FileName, theme); session.Toast(L.T("Тему експортовано"), Theme.Current.Name);
+        });
     }
 
     private void PanelPage(StackPanel stack)

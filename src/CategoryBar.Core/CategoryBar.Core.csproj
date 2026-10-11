@@ -1,4 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup>
   <ItemGroup><EmbeddedResource Include="Languages/*.json" LogicalName="CategoryBar.Core.Languages.%(Filename).json" /></ItemGroup>
+  <ItemGroup><EmbeddedResource Include="ThemeStyles/*.css" LogicalName="CategoryBar.Core.ThemeStyles.%(Filename).css" /></ItemGroup>
+  <ItemGroup><EmbeddedResource Include="ThemeStyles/*.xaml" LogicalName="CategoryBar.Core.ThemeStyles.%(Filename).xaml" /><EmbeddedResource Include="ThemeStyles/*.ps" LogicalName="CategoryBar.Core.ThemeStyles.%(Filename).ps" /></ItemGroup>
+  <ItemGroup><EmbeddedResource Include="ThemeStyles/*.parameters.json" LogicalName="CategoryBar.Core.ThemeStyles.%(Filename).json" /></ItemGroup>
 </Project>

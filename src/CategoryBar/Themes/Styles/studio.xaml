@@ -1,0 +1,55 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- A single renderer for user-authored surfaces; no preset-specific decorations. -->
+  <ControlTemplate x:Key="Theme.ButtonTemplate" TargetType="Button">
+    <Grid>
+      <ContentControl Focusable="False" IsHitTestVisible="False" Template="{DynamicResource Theme.MaterialTemplate}" x:Name="face" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Tag="{DynamicResource button.Radius}" Effect="{DynamicResource button.Shadow}"/>
+      <Border Background="{DynamicResource button.Overlay}" CornerRadius="{DynamicResource button.Radius}" IsHitTestVisible="False"/>
+      <Border BorderBrush="{DynamicResource button.Rim}" BorderThickness="{DynamicResource button.RimWidth}" CornerRadius="{DynamicResource button.Radius}" Margin="1" IsHitTestVisible="False"/>
+      <Border x:Name="state" CornerRadius="{DynamicResource button.Radius}" Background="Transparent" IsHitTestVisible="False"/>
+      <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+    </Grid>
+    <ControlTemplate.Triggers>
+      <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="state" Property="Background" Value="{DynamicResource button:hover.Background}"/><Setter TargetName="face" Property="BorderBrush" Value="{DynamicResource button:hover.BorderBrush}"/><Setter Property="Opacity" Value="{DynamicResource button:hover.Opacity}"/><Setter TargetName="face" Property="Effect" Value="{DynamicResource button:hover.Shadow}"/><Setter Property="Foreground" Value="{DynamicResource button:hover.Foreground}"/></Trigger>
+      <Trigger Property="IsPressed" Value="True"><Setter TargetName="state" Property="Background" Value="{DynamicResource button:pressed.Background}"/><Setter TargetName="face" Property="BorderBrush" Value="{DynamicResource button:pressed.BorderBrush}"/><Setter Property="Opacity" Value="{DynamicResource button:pressed.Opacity}"/><Setter TargetName="face" Property="Effect" Value="{DynamicResource button:pressed.Shadow}"/><Setter Property="Foreground" Value="{DynamicResource button:pressed.Foreground}"/></Trigger>
+      <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="face" Property="BorderBrush" Value="{DynamicResource button:focus.BorderBrush}"/><Setter TargetName="face" Property="BorderThickness" Value="2"/></Trigger>
+      <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="{DynamicResource button:disabled.Opacity}"/></Trigger>
+    </ControlTemplate.Triggers>
+  </ControlTemplate>
+  <ControlTemplate x:Key="Theme.CardTemplate" TargetType="ContentControl">
+    <Grid>
+      <ContentControl Focusable="False" IsHitTestVisible="False" Template="{DynamicResource Theme.MaterialTemplate}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Tag="{DynamicResource card.Radius}" Effect="{DynamicResource card.Shadow}"/>
+      <Border Background="{DynamicResource card.Overlay}" CornerRadius="{DynamicResource card.Radius}" IsHitTestVisible="False"/>
+      <Border BorderBrush="{DynamicResource card.Rim}" BorderThickness="{DynamicResource card.RimWidth}" CornerRadius="{DynamicResource card.Radius}" Margin="1" IsHitTestVisible="False"/>
+      <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+    </Grid>
+  </ControlTemplate>
+  <ControlTemplate x:Key="Theme.InputTemplate" TargetType="TextBox">
+    <Grid>
+      <ContentControl Focusable="False" IsHitTestVisible="False" Template="{DynamicResource Theme.MaterialTemplate}" x:Name="face" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Tag="{DynamicResource input.Radius}" Effect="{DynamicResource input.Shadow}"/>
+      <Border Background="{DynamicResource input.Overlay}" CornerRadius="{DynamicResource input.Radius}" IsHitTestVisible="False"/><Border x:Name="state" Background="Transparent" CornerRadius="{DynamicResource input.Radius}" IsHitTestVisible="False"/>
+      <TextBlock x:Name="hint" Text="{TemplateBinding Tag}" Foreground="{DynamicResource Text.Faint}" Margin="{TemplateBinding Padding}" VerticalAlignment="Center" IsHitTestVisible="False" Visibility="Collapsed"/>
+      <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+    </Grid>
+    <ControlTemplate.Triggers>
+      <Trigger Property="Text" Value=""><Setter TargetName="hint" Property="Visibility" Value="Visible"/></Trigger>
+      <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="state" Property="Background" Value="{DynamicResource input:hover.Background}"/></Trigger>
+      <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="face" Property="BorderBrush" Value="{DynamicResource input:focus.BorderBrush}"/><Setter TargetName="face" Property="BorderThickness" Value="2"/></Trigger>
+      <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="{DynamicResource input:disabled.Opacity}"/></Trigger>
+    </ControlTemplate.Triggers>
+  </ControlTemplate>
+<ControlTemplate x:Key="Theme.PrimaryButtonTemplate" TargetType="Button">
+    <Grid>
+      <ContentControl Focusable="False" IsHitTestVisible="False" Template="{DynamicResource Theme.MaterialTemplate}" x:Name="face" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Tag="{DynamicResource button-primary.Radius}" Effect="{DynamicResource button-primary.Shadow}"/>
+      <Border Background="{DynamicResource button-primary.Overlay}" CornerRadius="{DynamicResource button-primary.Radius}" IsHitTestVisible="False"/>
+      <Border BorderBrush="{DynamicResource button-primary.Rim}" BorderThickness="{DynamicResource button-primary.RimWidth}" CornerRadius="{DynamicResource button-primary.Radius}" Margin="1" IsHitTestVisible="False"/>
+      <Border x:Name="state" CornerRadius="{DynamicResource button-primary.Radius}" Background="Transparent" IsHitTestVisible="False"/>
+      <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+    </Grid>
+    <ControlTemplate.Triggers>
+      <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="state" Property="Background" Value="{DynamicResource button-primary:hover.Background}"/><Setter TargetName="face" Property="BorderBrush" Value="{DynamicResource button-primary:hover.BorderBrush}"/><Setter Property="Opacity" Value="{DynamicResource button-primary:hover.Opacity}"/><Setter TargetName="face" Property="Effect" Value="{DynamicResource button-primary:hover.Shadow}"/><Setter Property="Foreground" Value="{DynamicResource button-primary:hover.Foreground}"/></Trigger>
+      <Trigger Property="IsPressed" Value="True"><Setter TargetName="state" Property="Background" Value="{DynamicResource button-primary:pressed.Background}"/><Setter TargetName="face" Property="BorderBrush" Value="{DynamicResource button-primary:pressed.BorderBrush}"/><Setter Property="Opacity" Value="{DynamicResource button-primary:pressed.Opacity}"/><Setter TargetName="face" Property="Effect" Value="{DynamicResource button-primary:pressed.Shadow}"/><Setter Property="Foreground" Value="{DynamicResource button-primary:pressed.Foreground}"/></Trigger>
+      <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="face" Property="BorderBrush" Value="{DynamicResource button-primary:focus.BorderBrush}"/><Setter TargetName="face" Property="BorderThickness" Value="2"/></Trigger>
+      <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="{DynamicResource button-primary:disabled.Opacity}"/></Trigger>
+    </ControlTemplate.Triggers>
+  </ControlTemplate>
+</ResourceDictionary>

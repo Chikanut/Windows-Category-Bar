@@ -1,0 +1,32 @@
+[
+  {
+    "Id": "refraction",
+    "Label": "Заломлення скла",
+    "Type": "Number",
+    "Default": "0.025",
+    "Minimum": 0,
+    "Maximum": 0.08,
+    "Step": 0.005
+  },
+  {
+    "Id": "rim-light",
+    "Label": "Сила відблиску",
+    "Type": "Number",
+    "Default": "0.18",
+    "Minimum": 0,
+    "Maximum": 0.35,
+    "Step": 0.01
+  },
+  {
+    "Id": "show-rim",
+    "Label": "Світловий контур",
+    "Type": "Toggle",
+    "Default": "true"
+  },
+  {
+    "Id": "rim-color",
+    "Label": "Колір контуру",
+    "Type": "Color",
+    "Default": "#BBDFFF"
+  }
+]

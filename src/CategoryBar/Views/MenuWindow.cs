@@ -10,7 +10,10 @@ namespace CategoryBar.Views;
 /// </summary>
 internal sealed class MenuWindow : OverlayWindow
 {
-    private const double ShadowMargin = 24, Bridge = 8, MenuWidth = 264, RowHeight = 36;
+    private const double ShadowMargin = 24, Bridge = 8;
+    private static double MenuWidth => Theme.StyleSheet.Number("menu", "width", 264);
+    private static double RowHeight => Theme.StyleSheet.Number("menu-item", "height", 36);
+    private static double RowStride => RowHeight + Theme.StyleSheet.Spacing("menu-item", "margin", 0)[0] + Theme.StyleSheet.Spacing("menu-item", "margin", 0)[2] + Theme.StyleSheet.Number("menu", "gap", 0);
     private readonly Session session;
     private readonly BarWindow bar;
     private readonly Grid frame = new() { Margin = new Thickness(ShadowMargin, ShadowMargin, ShadowMargin, Bridge), Width = MenuWidth };
@@ -30,8 +33,9 @@ internal sealed class MenuWindow : OverlayWindow
     private int dragOriginIndex;
 
     internal Category? Category { get; private set; }
-    internal bool IsOpen => IsVisible;
-    internal bool ShowsOverflow => IsVisible && overflow is not null;
+    private bool closing;
+    internal bool IsOpen => IsVisible && !closing;
+    internal bool ShowsOverflow => IsOpen && overflow is not null;
     /// <summary>While pinned the menu ignores the pointer leaving it.</summary>
     internal bool Pinned => editing || dragging || busy > 0 || renaming is not null || search.IsKeyboardFocused;
     protected override bool NeedsKeyboard => editing || renaming is not null || search.IsKeyboardFocused;
@@ -43,9 +47,10 @@ internal sealed class MenuWindow : OverlayWindow
         var root = new Grid();
         // An almost transparent strip keeps the pointer "inside" while it crosses from the tab to the menu.
         root.Children.Add(new Rectangle { Height = Bridge + 2, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(ShadowMargin, 0, ShadowMargin, 0), Fill = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)) });
-        frame.Children.Add(new Border().Res(Border.BackgroundProperty, "Menu.Bg").Res(Border.CornerRadiusProperty, "Radius").Res(EffectProperty, "Shadow"));
-        frame.Children.Add(new Border { BorderThickness = new Thickness(1), Padding = new Thickness(6), Child = body }
-            .Res(Border.BackgroundProperty, "Menu.Bg").Res(Border.BorderBrushProperty, "Surface.Border").Res(Border.CornerRadiusProperty, "Radius"));
+        frame.Res(WidthProperty, "menu.Width");
+        frame.Children.Add(new Border().Res(Border.BackgroundProperty, "Menu.Bg").Res(Border.CornerRadiusProperty, "menu.Radius").Res(EffectProperty, "menu.Shadow"));
+        frame.Children.Add(new ContentControl { Content = body }.Res(StyleProperty, "Theme.Menu")
+            .Res(Control.BackgroundProperty, "Menu.Bg").Res(Control.BorderBrushProperty, "menu.BorderBrush").Res(Control.BorderThicknessProperty, "menu.Border").Res(Control.PaddingProperty, "menu.Padding"));
         root.Children.Add(frame);
         SetRoot(root);
 
@@ -96,10 +101,12 @@ internal sealed class MenuWindow : OverlayWindow
     {
         Rebuild();
         Reposition();
-        if (IsVisible) return;
+        var wasClosing = closing;
+        closing = false; frame.IsHitTestVisible = true;
+        if (IsVisible && !wasClosing) { Theming.ThemeMotion.Play(body, "Theme.Menu.Switch", offset: 4); return; }
         Show();
         Reposition();
-        Ui.FadeIn(frame, 0, 8, 120);
+        Ui.FadeIn(frame, 0, 8, 120, "Theme.Menu.Enter");
     }
 
     internal void Reanchor(PixelRect anchor, PixelRect monitor)
@@ -113,7 +120,9 @@ internal sealed class MenuWindow : OverlayWindow
         if (dragging) EndDrag(false);
         editing = false; renaming = null; pressed = null; busy = 0;
         ReleaseFocus();
-        if (IsVisible) Hide();
+        if (!IsVisible || closing) return;
+        closing = true; frame.IsHitTestVisible = false;
+        Theming.ThemeMotion.Play(frame, "Theme.Menu.Exit", () => { Hide(); closing = false; frame.IsHitTestVisible = true; }, offset: 4, milliseconds: 100, exit: true);
     }
 
     /// <summary>Rebuilds after the configuration changed. Returns false when the category no longer exists.</summary>
@@ -131,7 +140,7 @@ internal sealed class MenuWindow : OverlayWindow
         if (anchor.Width <= 0) return;
         var scale = Dpi * Theme.Scale;
         var available = (anchor.Top - monitor.Top) / scale - 190;
-        scroller.MaxHeight = Math.Max(RowHeight * 3, Math.Min(RowHeight * 10, Math.Floor(available / RowHeight) * RowHeight));
+        scroller.MaxHeight = Math.Max(RowStride * 3, Math.Min(RowStride * 10, Math.Floor(available / RowStride) * RowStride));
         var (width, height) = MeasurePixels();
         var shadow = (int)(ShadowMargin * scale);
         var x = (anchor.Left + anchor.Right) / 2 - width / 2;
@@ -287,7 +296,7 @@ internal sealed class MenuWindow : OverlayWindow
         : session.Status.IsBroken(shortcut) ? shortcut.Name + "\n" + L.T("Файл не знайдено")
         : session.Status.IsRunning(shortcut) ? shortcut.Name + "\n" + L.T("Запущено — клацніть, щоб перейти до вікна") : shortcut.Name;
 
-    private Border Row(Shortcut shortcut, bool highlighted)
+    private ContentControl Row(Shortcut shortcut, bool highlighted)
     {
         var line = new Grid();
         foreach (var width in new[] { GridLength.Auto, GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto, GridLength.Auto })
@@ -297,7 +306,7 @@ internal sealed class MenuWindow : OverlayWindow
             var grip = Ui.Icon(Icons.Grip, "Text.Faint"); grip.Margin = new Thickness(-4, 0, 6, 0);
             line.Children.Add(grip);
         }
-        line.Children.Add(IconWithStatus(shortcut, 24).At(1));
+        line.Children.Add(IconWithStatus(shortcut, Theme.StyleSheet.Number("menu-item", "icon-size", 24)).At(1));
         FrameworkElement name;
         if (renaming == shortcut) name = RenameBox(shortcut);
         else
@@ -313,29 +322,28 @@ internal sealed class MenuWindow : OverlayWindow
             remove.Width = remove.Height = remove.MinHeight = 24; remove.Margin = new Thickness(6, 0, -4, 0);
             line.Children.Add(remove.At(4));
         }
-        var row = new Border { Height = RowHeight, Padding = new Thickness(10, 0, 10, 0), Background = Brushes.Transparent, Child = line, Tag = shortcut, ToolTip = Tip(shortcut) }
-            .Res(Border.CornerRadiusProperty, "Radius.Small");
+        var row = new ContentControl { Height = RowHeight, Content = line, Tag = shortcut, ToolTip = Tip(shortcut) }.Res(StyleProperty, "Theme.MenuItem")
+            .Res(Control.PaddingProperty, "menu-item.Padding").Res(MarginProperty, "menu-item.Margin")
+            .Res(Control.BorderThicknessProperty, "menu-item.Border").Res(Control.BorderBrushProperty, "menu-item.BorderBrush");
         ToolTipService.SetInitialShowDelay(row, 700);
-        if (highlighted) row.SetResourceReference(Border.BackgroundProperty, "Selected");
+        Theming.ThemeVisual.SetIsSelected(row, highlighted);
         Wire(row, shortcut);
         return row;
     }
 
-    private Border Tile(Shortcut shortcut)
+    private ContentControl Tile(Shortcut shortcut)
     {
         var content = new StackPanel { Margin = new Thickness(2, 6, 2, 6) };
         content.Children.Add(IconWithStatus(shortcut, 28));
         var name = Ui.Text(shortcut.Name, 10, "Text.Muted"); name.TextAlignment = TextAlignment.Center; name.Margin = new Thickness(0, 0, 0, 0);
         content.Children.Add(name);
-        var tile = new Border { Width = (MenuWidth - 18) / 5, Background = Brushes.Transparent, Child = content, Tag = shortcut, ToolTip = Tip(shortcut) }.Res(Border.CornerRadiusProperty, "Radius.Small");
+        var tile = new ContentControl { Width = (MenuWidth - 18) / 5, Content = content, Tag = shortcut, ToolTip = Tip(shortcut) }.Res(StyleProperty, "Theme.MenuItem");
         Wire(tile, shortcut);
         return tile;
     }
 
-    private void Wire(Border row, Shortcut shortcut)
+    private void Wire(ContentControl row, Shortcut shortcut)
     {
-        row.MouseEnter += (_, _) => { if (!dragging) row.SetResourceReference(Border.BackgroundProperty, "Hover"); };
-        row.MouseLeave += (_, _) => { if (!dragging) row.Background = Brushes.Transparent; };
         row.MouseLeftButtonDown += (_, e) =>
         {
             if (renaming is not null) return;
@@ -485,7 +493,7 @@ internal sealed class MenuWindow : OverlayWindow
     // The shortcut moves live inside the model while it is dragged. On release the original position is
     // restored and the final move is applied as one saved, undoable change.
 
-    private void BeginDrag(Shortcut shortcut, Border row)
+    private void BeginDrag(Shortcut shortcut, ContentControl row)
     {
         if (search.Text.Trim().Length > 0 || Category is null) return;
         dragging = true; dragItem = shortcut; pressed = null;
@@ -495,12 +503,9 @@ internal sealed class MenuWindow : OverlayWindow
         Mouse.OverrideCursor = Cursors.SizeAll;
     }
 
-    private static void MarkDragged(Border row)
+    private static void MarkDragged(ContentControl row)
     {
-        row.SetResourceReference(Border.BackgroundProperty, "Accent.Soft");
-        row.SetResourceReference(Border.BorderBrushProperty, "Accent");
-        row.BorderThickness = new Thickness(1);
-        row.Padding = new Thickness(row.Padding.Left - 1, 0, row.Padding.Right - 1, 0);
+        Theming.ThemeVisual.SetIsDropTarget(row, true);
     }
 
     private void DragStep()
@@ -512,7 +517,7 @@ internal sealed class MenuWindow : OverlayWindow
             Category!.Shortcuts.Remove(item);
             over.Shortcuts.Add(item);
             bar.ShowCategory(over);
-            if (rows.Children.OfType<Border>().FirstOrDefault(r => r.Tag == item) is { } moved) { MarkDragged(moved); moved.BringIntoView(); }
+            if (rows.Children.OfType<ContentControl>().FirstOrDefault(r => r.Tag == item) is { } moved) { MarkDragged(moved); moved.BringIntoView(); }
             return;
         }
         var list = Category!.Shortcuts;
@@ -531,7 +536,7 @@ internal sealed class MenuWindow : OverlayWindow
         }
         else
         {
-            target = Math.Clamp((int)Math.Floor(pointer.Y / RowHeight), 0, list.Count - 1);
+            target = Math.Clamp((int)Math.Floor(pointer.Y / RowStride), 0, list.Count - 1);
             // Keep the list moving when the pointer is held near an edge of a long, scrolled list.
             var inView = Mouse.GetPosition(scroller).Y;
             if (inView < 14) scroller.ScrollToVerticalOffset(scroller.VerticalOffset - 12);

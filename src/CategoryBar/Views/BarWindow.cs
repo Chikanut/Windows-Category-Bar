@@ -15,16 +15,15 @@ internal sealed class BarWindow : OverlayWindow
     private sealed class Tab
     {
         public Category? Category;
-        public required Border Element;
+        public required ContentControl Element;
         public Grid NameHost = new();
-        public Border Line = new();
-        public bool Hover, DropTarget;
+        public bool DropTarget;
     }
 
     private readonly Session session;
     private readonly IntPtr boundTaskbar;
     private readonly StackPanel tabs = new() { Orientation = Orientation.Horizontal };
-    private readonly Border surface;
+    private readonly ContentControl surface;
     private readonly MenuWindow menu;
     private readonly DispatcherTimer tracker = new() { Interval = TimeSpan.FromMilliseconds(100) };
     private readonly DispatcherTimer openTimer = new(), closeTimer = new(), dropTimer = new() { Interval = TimeSpan.FromMilliseconds(600) };
@@ -36,7 +35,7 @@ internal sealed class BarWindow : OverlayWindow
     private PixelRect monitor, taskbar;
     private Native.Point pressPoint;
     private DateTime openedAt;
-    private bool renaming, reordering, expanded, sliding, escapeDown, contextOpen;
+    private bool renaming, reordering, expanded, sliding, escapeDown, contextOpen, dragHover;
     private int idleTicks, staleRenameTicks, lastX = int.MinValue, lastY, lastWidth, lastHeight;
 
     protected override bool NeedsKeyboard => renaming;
@@ -44,13 +43,21 @@ internal sealed class BarWindow : OverlayWindow
     internal IntPtr BoundTaskbar => boundTaskbar;
     internal bool HiddenByUser { get; set; }
 
-    internal BarWindow(Session session, IntPtr secondaryTaskbar = default)
+    internal BarWindow(Session session, IntPtr secondaryTaskbar = default, bool trackTaskbar = true)
     {
         this.session = session; boundTaskbar = secondaryTaskbar;
-        surface = new Border { Height = 34, Padding = new Thickness(3, 3, 3, 2), BorderThickness = new Thickness(1, 1, 1, 0), Child = tabs }
-            .Res(Border.BackgroundProperty, "Bar.Bg").Res(Border.BorderBrushProperty, "Surface.Border").Res(Border.CornerRadiusProperty, "Radius.Top");
+        surface = new ContentControl { Content = tabs }.Res(StyleProperty, "Theme.Bar")
+            .Res(Control.BackgroundProperty, "Bar.Bg").Res(Control.BorderBrushProperty, "bar.BorderBrush").Res(Control.PaddingProperty, "bar.Padding");
         SetRoot(surface);
         menu = new MenuWindow(session, this);
+        surface.AllowDrop = true;
+        surface.PreviewDragEnter += (_, e) => dragHover = MenuWindow.DroppedPaths(e.Data).Count > 0;
+        surface.PreviewDragOver += (_, e) => dragHover = MenuWindow.DroppedPaths(e.Data).Count > 0;
+        surface.PreviewDragLeave += (_, _) => dragHover = false;
+        surface.PreviewDrop += (_, _) => dragHover = false;
+        // The gaps reveal/keep the bar but do not accept a drop without a category.
+        surface.DragOver += (_, e) => { e.Effects = DragDropEffects.None; e.Handled = true; };
+        surface.Drop += (_, e) => { e.Effects = DragDropEffects.None; e.Handled = true; };
 
         surface.MouseRightButtonUp += (_, e) => { if (!e.Handled) OpenBarMenu(); };
         openTimer.Tick += (_, _) =>
@@ -68,11 +75,12 @@ internal sealed class BarWindow : OverlayWindow
         Theme.Changed += OnThemeChanged;
         Closed += (_, _) =>
         {
-            tracker.Stop(); session.Changed -= OnChanged; session.Status.Changed -= UpdateStates; Theme.Changed -= OnThemeChanged;
+            tracker.Stop(); openTimer.Stop(); closeTimer.Stop(); dropTimer.Stop();
+            session.Changed -= OnChanged; session.Status.Changed -= UpdateStates; Theme.Changed -= OnThemeChanged;
             reservation?.Dispose(); menu.Close(); toast?.Close();
         };
-        Track();
-        tracker.Start();
+        if (trackTaskbar) { Track(); tracker.Start(); }
+        else Rebuild();
     }
 
     private void OnThemeChanged() { lastX = int.MinValue; Dispatcher.BeginInvoke(Rebuild, DispatcherPriority.Loaded); }
@@ -94,7 +102,7 @@ internal sealed class BarWindow : OverlayWindow
         var window = IsPrimary ? Native.FindWindow("Shell_TrayWnd", null) : boundTaskbar;
         if (!IsPrimary && !Native.IsWindow(window)) { Close(); return; }
         var observed = Native.Observe(window);
-        var interacting = renaming || reordering || contextOpen || menu.IsOpen && (menu.Pinned || menu.ContainsCursor() || ContainsCursor());
+        var interacting = dragHover || renaming || reordering || contextOpen || menu.IsOpen && (menu.Pinned || menu.ContainsCursor() || ContainsCursor());
         if (VisibilityPolicy.ShouldShow(observed) && !HiddenByUser)
         {
             var moved = observed.Monitor != monitor || observed.Taskbar != taskbar;
@@ -105,7 +113,7 @@ internal sealed class BarWindow : OverlayWindow
                 Rebuild();
                 Show();
                 Arrange();
-                Ui.FadeIn(surface, 0, 6, 140);
+                Ui.FadeIn(surface, 0, 6, 140, "Theme.Bar.Enter");
             }
             else if (resized) Rebuild();
             else if (moved) Arrange();
@@ -159,15 +167,10 @@ internal sealed class BarWindow : OverlayWindow
     private void Slide(bool up, Action? then = null)
     {
         UpdateLayout();
-        var distance = Math.Max(surface.ActualHeight, 34);
-        var shift = new TranslateTransform(0, up ? distance : 0);
-        surface.RenderTransform = shift;
-        surface.Opacity = 1;
-        var animation = new System.Windows.Media.Animation.DoubleAnimation(up ? 0 : distance, TimeSpan.FromMilliseconds(up ? 180 : 140))
-        { EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = up ? System.Windows.Media.Animation.EasingMode.EaseOut : System.Windows.Media.Animation.EasingMode.EaseIn } };
+        var distance = Math.Max(surface.ActualHeight, Theme.StyleSheet.Number("bar", "height", 34));
         sliding = true;
-        animation.Completed += (_, _) => { sliding = false; then?.Invoke(); };
-        shift.BeginAnimation(TranslateTransform.YProperty, animation);
+        Theming.ThemeMotion.Play(surface, up ? "Theme.Bar.Expand" : "Theme.Bar.Collapse",
+            () => { sliding = false; then?.Invoke(); }, offset: distance, milliseconds: up ? 180 : 140, exit: !up);
     }
 
     private void ReleaseReservation() { reservation?.Dispose(); reservation = null; }
@@ -203,15 +206,26 @@ internal sealed class BarWindow : OverlayWindow
         tabs.Children.Clear(); views.Clear(); hidden = []; overflowTab = null; pending = null; renaming = false;
         var categories = session.Config.Categories;
         var tucked = session.Settings.MiniatureMode && !expanded;
-        surface.Height = tucked ? 16 : 34;
-        surface.Padding = tucked ? new Thickness(2, 2, 2, 0) : new Thickness(3, 3, 3, 2);
+        surface.Height = tucked ? 16 : Theme.StyleSheet.Number("bar", "height", 34);
+        surface.BorderThickness = new Thickness(Theme.StyleSheet.Number("bar", "border-width", 1));
+        if (tucked) surface.Padding = new Thickness(2, 2, 2, 0);
+        else surface.SetResourceReference(Control.PaddingProperty, "bar.Padding");
         if (tucked)
         {
             // Only a small arrow peeks out above the taskbar; the tabs stay tucked behind it.
             var handle = Chrome(Ui.Icon(Icons.ChevronUp, "Text.Muted", 12), null);
             handle.Element.Height = 13;
             handle.Element.Padding = new Thickness(22, 0, 22, 0);
-            handle.Element.MouseEnter += (_, _) => { if (sliding) return; expanded = true; idleTicks = 0; Rebuild(); Slide(true); };
+            handle.Element.MouseEnter += (_, _) => ExpandMiniature();
+            handle.Element.AllowDrop = true;
+            void RevealForDrag(object sender, DragEventArgs e)
+            {
+                e.Effects = ShortcutDragEffect(e);
+                e.Handled = true;
+                if (e.Effects != DragDropEffects.None) { dragHover = true; ExpandMiniature(); }
+            }
+            handle.Element.DragEnter += RevealForDrag;
+            handle.Element.DragOver += RevealForDrag;
             tabs.Children.Add(handle.Element);
             Arrange();
             return;
@@ -265,19 +279,37 @@ internal sealed class BarWindow : OverlayWindow
         Arrange();
     }
 
+    private void ExpandMiniature()
+    {
+        if (sliding || expanded || !session.Settings.MiniatureMode) return;
+        expanded = true;
+        idleTicks = 0;
+        Rebuild();
+        Slide(true);
+    }
+
+    private static DragDropEffects ShortcutDragEffect(DragEventArgs e)
+    {
+        if (MenuWindow.DroppedPaths(e.Data).Count == 0) return DragDropEffects.None;
+        if ((e.AllowedEffects & DragDropEffects.Link) != 0) return DragDropEffects.Link;
+        return (e.AllowedEffects & DragDropEffects.Copy) != 0 ? DragDropEffects.Copy : DragDropEffects.None;
+    }
+
     /// <summary>A tab-shaped element that is not a category: the add button, overflow and miniature handle.</summary>
     private Tab Chrome(UIElement content, string? tip)
     {
-        var element = new Border { Height = 28, Padding = new Thickness(12, 0, 12, 0), Background = Brushes.Transparent, Child = content, ToolTip = tip }.Res(Border.CornerRadiusProperty, "Radius.Small");
+        var element = new ContentControl { Content = content, ToolTip = tip }.Res(StyleProperty, "Theme.Tab")
+            .Res(HeightProperty, "tab.Height").Res(Control.PaddingProperty, "tab.Padding").Res(MarginProperty, "tab.Margin")
+            .Res(Control.BorderThicknessProperty, "tab.Border").Res(Control.BorderBrushProperty, "tab.BorderBrush");
         var tab = new Tab { Element = element };
-        element.MouseEnter += (_, _) => { tab.Hover = true; Paint(tab); };
-        element.MouseLeave += (_, _) => { tab.Hover = false; Paint(tab); };
+        element.Loaded += (_, _) => Theming.ThemeMotion.Play(element, "Theme.Tab.Enter", offset: 4);
         return tab;
     }
 
     private Tab CategoryTab(Category category)
     {
         var name = Ui.Text(category.Name); name.MaxWidth = 150;
+        name.Res(TextBlock.FontSizeProperty, "tab.FontSize").Res(TextBlock.FontWeightProperty, "tab.FontWeight");
         var host = new Grid { Children = { name } };
         var label = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
         label.Children.Add(host);
@@ -286,9 +318,8 @@ internal sealed class BarWindow : OverlayWindow
             var count = Ui.Text(category.Shortcuts.Count.ToString(), 11, "Text.Faint"); count.Margin = new Thickness(6, 1, 0, 0);
             label.Children.Add(count);
         }
-        var line = new Border { Height = 2, CornerRadius = new CornerRadius(1), VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 0, 1), Visibility = Visibility.Hidden }.Res(Border.BackgroundProperty, "Accent");
-        var tab = Chrome(new Grid { Children = { label, line } }, null);
-        tab.Category = category; tab.NameHost = host; tab.Line = line;
+        var tab = Chrome(label, null);
+        tab.Category = category; tab.NameHost = host;
         var element = tab.Element;
         element.MouseEnter += (_, _) =>
         {
@@ -321,16 +352,18 @@ internal sealed class BarWindow : OverlayWindow
         element.AllowDrop = true;
         element.DragEnter += (_, e) =>
         {
-            if (MenuWindow.DroppedPaths(e.Data).Count == 0) return;
+            e.Effects = ShortcutDragEffect(e); e.Handled = true;
+            if (e.Effects == DragDropEffects.None) return;
             tab.DropTarget = true; Paint(tab);
             dropTimer.Stop(); dropTimer.Start();
         };
-        element.DragOver += (_, e) => { e.Effects = MenuWindow.DroppedPaths(e.Data).Count > 0 ? DragDropEffects.Link : DragDropEffects.None; e.Handled = true; };
+        element.DragOver += (_, e) => { e.Effects = ShortcutDragEffect(e); e.Handled = true; };
         element.DragLeave += (_, _) => { tab.DropTarget = false; Paint(tab); dropTimer.Stop(); };
         element.Drop += (_, e) =>
         {
+            e.Effects = ShortcutDragEffect(e); e.Handled = true;
             tab.DropTarget = false; dropTimer.Stop(); Paint(tab);
-            session.AddPaths(category, MenuWindow.DroppedPaths(e.Data));
+            if (e.Effects != DragDropEffects.None) session.AddPaths(category, MenuWindow.DroppedPaths(e.Data));
         };
         return tab;
     }
@@ -345,14 +378,9 @@ internal sealed class BarWindow : OverlayWindow
     private void Paint(Tab tab)
     {
         var open = menu.IsOpen && (tab.Category is not null ? menu.Category == tab.Category : tab == overflowTab && menu.ShowsOverflow);
-        var key = tab.DropTarget || reordering && pressedTab == tab ? "Accent.Soft" : open ? "Selected" : tab.Hover ? "Hover" : null;
-        if (key is null) tab.Element.Background = Brushes.Transparent; else tab.Element.SetResourceReference(Border.BackgroundProperty, key);
-        if (tab.Category is null) return;
-        var running = session.Settings.ShowRunningIndicators && session.Status.AnyRunning(tab.Category);
-        tab.Line.Visibility = open || running ? Visibility.Visible : Visibility.Hidden;
-        tab.Line.Width = open ? double.NaN : 10;
-        tab.Line.HorizontalAlignment = open ? HorizontalAlignment.Stretch : HorizontalAlignment.Center;
-        tab.Line.Opacity = open ? 1 : .75;
+        Theming.ThemeVisual.SetIsSelected(tab.Element, open);
+        Theming.ThemeVisual.SetIsDropTarget(tab.Element, tab.DropTarget || reordering && pressedTab == tab);
+        Theming.ThemeVisual.SetIsRunning(tab.Element, tab.Category is not null && session.Settings.ShowRunningIndicators && session.Status.AnyRunning(tab.Category));
     }
 
     private void UpdateStates() { foreach (var tab in views) Paint(tab); }

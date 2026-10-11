@@ -1,0 +1,11 @@
+[
+  {
+    "Id": "navigation-width",
+    "Label": "Ширина навігації",
+    "Type": "Number",
+    "Default": "208",
+    "Minimum": 160,
+    "Maximum": 280,
+    "Step": 8
+  }
+]

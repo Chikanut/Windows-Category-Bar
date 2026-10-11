@@ -77,6 +77,7 @@ public partial class App : Application
         }
 
         L.Use(config.Settings.Language);
+        Theme.Initialize(store.Path);
         Theme.Apply(config.Settings);
         session = new Session(config, store);
         Updates = new Services.AppUpdates(session);
@@ -101,6 +102,10 @@ public partial class App : Application
         else ShowOnboarding();
         if (e.Args.Contains("--settings") && config.Settings.OnboardingCompleted) ShowSettings();
         if (store.RecoveryMessage is { } recovery) session.Toast(L.T("Налаштування відновлено"), recovery, ToastKind.Warning);
+        if (Theme.Library.LoadErrors.Count > 0)
+            session.Toast(L.T("Деякі теми не вдалося завантажити"), string.Join(Environment.NewLine, Theme.Library.LoadErrors), ToastKind.Warning);
+        if (Theme.Current.Id != config.Settings.ThemeId)
+            session.Toast(L.T("Тему не знайдено"), L.T("Використовується Fluent. Імпортуйте відсутню тему або виберіть іншу."), ToastKind.Warning);
     }
 
     private void StartBars()

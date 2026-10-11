@@ -6,11 +6,12 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets/App.ico</ApplicationIcon>
-    <Version>0.4.0</Version>
+    <Version>0.5.0</Version>
     <StartupObject>CategoryBar.Program</StartupObject>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
   <ItemGroup><ProjectReference Include="../CategoryBar.Core/CategoryBar.Core.csproj" /></ItemGroup>
+  <ItemGroup><InternalsVisibleTo Include="CategoryBar.ThemeTests" /></ItemGroup>
   <ItemGroup><Resource Include="Assets/*.ico" /><Resource Include="Assets/*.png" /></ItemGroup>
   <ItemGroup>
     <PackageReference Include="Velopack" Version="1.2.161" />

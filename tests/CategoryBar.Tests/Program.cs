@@ -49,6 +49,26 @@ try
     var rejected = false;
     try { store.Save(recovered); } catch (InvalidDataException) { rejected = true; }
     Check("Empty names cannot overwrite saved state", rejected);
+
+    var retryPath = Path.Combine(folder, "retry-config.json");
+    var retryStore = new ConfigurationStore(retryPath);
+    var retryConfig = new Configuration { Categories = [new Category { Name = "Before" }] };
+    retryStore.Save(retryConfig);
+    using (var blocker = new FileStream(retryPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+    {
+        var release = Task.Run(async () => { await Task.Delay(75); blocker.Dispose(); });
+        retryConfig.Categories[0].Name = "After";
+        retryStore.Save(retryConfig);
+        release.GetAwaiter().GetResult();
+    }
+    Check("Saving tolerates a brief Windows delete-sharing lock", retryStore.Load().Categories[0].Name == "After");
+    using (var blocker = new FileStream(retryPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+    {
+        retryConfig.Categories[0].Name = "Must not replace";
+        var failed = false;
+        try { retryStore.Save(retryConfig); } catch (IOException) { failed = true; }
+        Check("Persistent lock reports failure and retains the original configuration", failed && retryStore.Load().Categories[0].Name == "After" && !File.Exists(retryPath + ".tmp"));
+    }
 }
 finally
 {
@@ -110,6 +130,89 @@ Check("Set inside a set is rejected", Rejected(c => c.Categories[0].Shortcuts[0]
 Check("Step without a target is rejected", Rejected(c => c.Categories[0].Shortcuts[0].Steps[1].Target = ""));
 Check("Step sharing an identifier is rejected", Rejected(c => c.Categories[0].Shortcuts[0].Steps[1].Id = c.Categories[0].Shortcuts[0].Id));
 Check("Empty window placement is rejected", Rejected(c => c.Categories[0].Shortcuts[0].Steps[0].Placement!.Width = 0));
+// ---- Portable themes
+foreach (var theme in BuiltInThemes.All) theme.Validate();
+Check("Four built-in themes include glass", BuiltInThemes.All.Count == 4 && BuiltInThemes.All.Single(t => t.Id == "glass").Material == "Glass");
+Check("Distributable theme examples use the validated format", BuiltInThemes.All.All(t => ThemeFiles.Read(Path.Combine("Themes", "Examples", t.Id + ThemeFiles.Extension)).Id == t.Id));
+var themeFolder = Path.GetFullPath(Path.Combine(".local", "tests", "Themes-" + Guid.NewGuid()));
+Directory.CreateDirectory(themeFolder);
+try
+{
+    var themes = new ThemeStore(themeFolder);
+    var customTheme = BuiltInThemes.All[1].Copy(); customTheme.Id = "my-glass"; customTheme.Name = "Скло користувача";
+    themes.Install(customTheme);
+    customTheme.Dark["Text"] = "#000000";
+    Check("Theme install stores an independent copy", themes.Resolve("my-glass").Dark["Text"] != "#000000");
+    var reloaded = new ThemeStore(themeFolder); reloaded.Load();
+    Check("Installed themes survive restart with both palettes", reloaded.Custom.Count == 1 && reloaded.Resolve("my-glass").Name == "Скло користувача" && reloaded.Resolve("my-glass").Light.Count == ThemeDefinition.Tokens.Length);
+    Check("Missing theme falls back to Fluent", reloaded.Resolve("missing").Id == "fluent");
+    bool ThemeRejected(Action action) { try { action(); return false; } catch (InvalidDataException) { return true; } }
+    var css = ThemeStyleSheet.Parse(".theme { skin: glass; } .button { min-height: 50px; padding: 2px 8px 4px 10px; }");
+    Check("Custom CSS overrides sizes and inherits its native skin", css.Skin == "glass" && css.Number("button", "min-height", 0) == 50 && css.Number("menu", "width", 0) == 294 && css.Spacing("button", "padding", 0).SequenceEqual(new double[] { 2, 8, 4, 10 }));
+    Check("CSS rejects unknown selectors, properties and external payloads", ThemeRejected(() => ThemeStyleSheet.Parse(".unknown { height: 30px; }")) && ThemeRejected(() => ThemeStyleSheet.Parse(".button { background: url(https://example.com); }")));
+    Check("CSS rejects malformed, duplicate and out-of-range declarations", ThemeRejected(() => ThemeStyleSheet.Parse(".button { min-height: 90px; }")) && ThemeRejected(() => ThemeStyleSheet.Parse(".button { padding: 1px 2px 3px; }")) && ThemeRejected(() => ThemeStyleSheet.Parse(".button { border-radius: 2px; border-radius: 3px; }")));
+    Check("CSS geometry export preserves skin and effective corners", ThemeStyleSheet.Parse(css.WithGeometry(.5)).Number("button", "border-radius", 0) == css.Number("button", "border-radius", 0) / 2);
+    var painted = ThemeStyleSheet.Parse(".theme { skin: studio; } .card { background: linear-gradient(135deg, var(--card-bg), rgba(40,80,120,0.5)); box-shadow: 0px 6px 24px rgba(0,0,0,0.2); } .button:hover { background: rgba(100,180,255,0.15); }");
+    Check("File CSS supports gradients, alpha, shadows and interactive states", painted.Skin == "studio" && ThemePaint.IsBrush(painted.Value("card", "background", "")) && ThemePaint.Shadow(painted.Value("card", "box-shadow", ""))?.Blur == 24);
+    Check("Paint syntax rejects remote sources and unbounded effects", ThemeRejected(() => ThemeStyleSheet.Parse(".card { background: url(file:///secret); }")) && ThemeRejected(() => ThemeStyleSheet.Parse(".card { box-shadow: 0px 8px 500px #000000; }")));
+    var dictionaryHeader = "<ResourceDictionary xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" xmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\">";
+    Check("Visual markup rejects providers, code directives and external dictionaries", ThemeRejected(() => ThemeMarkup.Validate(dictionaryHeader + "<ObjectDataProvider/></ResourceDictionary>")) && ThemeRejected(() => ThemeMarkup.Validate(dictionaryHeader.Replace("xmlns:x=", "x:Class=\"Code\" xmlns:x=") + "</ResourceDictionary>")) && ThemeRejected(() => ThemeMarkup.Validate(dictionaryHeader + "<ResourceDictionary Source=\"https://example.com/style.xaml\"/></ResourceDictionary>")));
+    Check("Theme sidecars cannot escape their source directory", !ThemeMarkup.IsRelativeFile("../secret.xaml", ".xaml") && !ThemeMarkup.IsRelativeFile("C:/secret.ps", ".ps") && ThemeMarkup.IsRelativeFile("shaders/glow.ps", ".ps"));
+    var aurora = ThemeFiles.Read(Path.Combine("Themes", "Examples", "aurora-motion", "theme.categorybar-theme.json"));
+    Check("File theme resolves CSS, animated templates and shader sidecars", aurora.StyleResources.Contains("DoubleAnimation", StringComparison.Ordinal) && aurora.Shaders.Count == 1 && aurora.StyleSheetFile.Length == 0 && aurora.ShaderFiles.Count == 0);
+    var portableAurora = ThemeFiles.Parse(ThemeFiles.Serialize(aurora));
+    Check("Portable export includes templates and shader bytecode", portableAurora.StyleResources == aurora.StyleResources && portableAurora.Shaders["aurora"] == aurora.Shaders["aurora"]);
+    Check("Built-in and duplicate IDs cannot be overwritten", ThemeRejected(() => reloaded.Install(BuiltInThemes.All[0])) && ThemeRejected(() => reloaded.Install(reloaded.Custom[0])));
+    var bad = customTheme.Copy(); bad.Id = "../outside";
+    Check("Theme IDs reject path traversal", ThemeRejected(bad.Validate) && !ThemeDefinition.IsValidId(null) && !ThemeDefinition.IsValidId("C:\\temp"));
+    bad = customTheme.Copy(); bad.Light.Remove("Accent");
+    Check("Incomplete palettes are rejected", ThemeRejected(bad.Validate));
+    bad = customTheme.Copy(); bad.Dark["Accent"] = "red";
+    Check("Theme colors accept only hex data", ThemeRejected(bad.Validate));
+    bad = customTheme.Copy(); bad.FontName = "https://example.com/font/#Remote";
+    Check("Theme fonts cannot reference remote or local resources", ThemeRejected(bad.Validate));
+    bad = customTheme.Copy(); bad.SurfaceOpacity = double.NaN;
+    Check("Invalid numeric theme properties are rejected", ThemeRejected(bad.Validate));
+    var json = ThemeFiles.Serialize(reloaded.Custom[0]);
+    Check("Unknown theme fields reject executable/XAML payloads", ThemeRejected(() => ThemeFiles.Parse(json.Replace("\"Version\": 1", "\"Version\": 1, \"Xaml\": \"payload\""))));
+    Check("Duplicate JSON properties are rejected", ThemeRejected(() => ThemeFiles.Parse(json.Replace("\"Version\": 1", "\"Version\": 1, \"Version\": 1"))));
+    Check("Future theme formats are rejected", ThemeRejected(() => ThemeFiles.Parse(json.Replace("\"Version\": 1", "\"Version\": 99"))));
+    Check("Oversized theme files are rejected", ThemeRejected(() => ThemeFiles.Parse(new string(' ', ThemeFiles.MaximumBytes + 1))));
+    File.WriteAllText(Path.Combine(themeFolder, "broken" + ThemeFiles.Extension), "{broken");
+    reloaded.Load();
+    Check("Corrupt custom theme does not prevent valid themes loading", reloaded.Custom.Count == 1 && reloaded.LoadErrors.Count == 1);
+    var exportPath = Path.Combine(themeFolder, "export.json"); ThemeFiles.Write(exportPath, reloaded.Custom[0]);
+    Check("Export/import preserves both palettes, CSS and geometry", ThemeFiles.Read(exportPath).Dark.SequenceEqual(reloaded.Custom[0].Dark) && ThemeFiles.Read(exportPath).CornerRadius == 16 && ThemeFiles.Read(exportPath).StyleSheet == reloaded.Custom[0].StyleSheet);
+    var renamedTheme = Path.Combine(themeFolder, "renamed" + ThemeFiles.Extension);
+    File.Move(Path.Combine(themeFolder, "my-glass" + ThemeFiles.Extension), renamedTheme);
+    reloaded.Load(); reloaded.Remove("my-glass");
+    Check("Removal also handles renamed theme files and preserves other files", !File.Exists(renamedTheme) && File.Exists(exportPath) && reloaded.All.Count() == 4);
+    var themeSettings = JsonSerializer.Deserialize<Settings>("""{"ThemeId":"glass","AccentMode":"Theme"}""")!; themeSettings.Normalize();
+    Check("Selected theme and its accent mode round-trip", themeSettings.ThemeId == "glass" && themeSettings.AccentMode == "Theme");
+}
+finally { Directory.Delete(themeFolder, recursive: true); }
+// ---- Author-defined theme parameters
+var parameterTheme = BuiltInThemes.All.Single(t => t.Id == "glass").Copy();
+var refraction = parameterTheme.Parameters.Single(p => p.Id == "refraction");
+var tuned = new Settings(); refraction.Set(tuned, parameterTheme.Id, "0.045");
+Check("Theme parameters survive configuration serialization", refraction.Resolve(JsonSerializer.Deserialize<Settings>(JsonSerializer.Serialize(tuned))!, parameterTheme.Id) == "0.045");
+Check("Theme parameter values are scoped by theme ID", refraction.Resolve(tuned, "another-theme") == refraction.Default);
+tuned.ThemeParameters[parameterTheme.Id][refraction.Id] = "NaN";
+Check("Invalid persisted parameter recovers to author default", refraction.Resolve(tuned, parameterTheme.Id) == refraction.Default);
+Check("Numeric parameters reject culture-dependent and out-of-range values", !refraction.Accepts("0,04") && !refraction.Accepts("Infinity") && !refraction.Accepts("100"));
+var parameterCopy = ThemeFiles.Parse(ThemeFiles.Serialize(parameterTheme));
+Check("Parameter definitions round-trip in portable theme", parameterCopy.Parameters.Count == 4 && parameterCopy.Parameters[0].Step == refraction.Step);
+bool ParameterRejected(Action action) { try { action(); return false; } catch (InvalidDataException) { return true; } }
+parameterCopy.Parameters.Add(parameterCopy.Parameters[0]);
+Check("Duplicate parameter IDs are rejected", ParameterRejected(parameterCopy.Validate));
+parameterCopy = parameterTheme.Copy(); parameterCopy.Parameters[0].Default = "100";
+Check("Out-of-range parameter defaults are rejected", ParameterRejected(parameterCopy.Validate));
+parameterCopy = parameterTheme.Copy(); parameterCopy.Parameters[0].Step = 0;
+Check("Invalid slider step is rejected", ParameterRejected(parameterCopy.Validate));
+var choice = BuiltInThemes.All.Single(t => t.Id == "expressive").Parameters.Single();
+Check("Choice values must be declared by the theme", choice.Accepts("left") && !choice.Accepts("missing"));
+var sourcePackage = ThemeFiles.Read(Path.Combine("Themes", "Examples", "liquid-workspace", "theme.categorybar-theme.json"));
+Check("Liquid source package imports parameters and shader", sourcePackage.Parameters.Count == 4 && sourcePackage.Shaders.Count == 1);
 // ---- Languages
 var translated = L.Languages.Select(l => l.Code).Where(code => code != L.Source).ToList();
 var tables = translated.ToDictionary(code => code, L.Load);

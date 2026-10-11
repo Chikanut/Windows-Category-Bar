@@ -12,7 +12,7 @@ internal class ChromeWindow : Window
 {
     private readonly double baseWidth, baseHeight;
     internal Grid Body { get; } = new();
-    internal Grid TitleBar { get; } = new() { Height = 40 };
+    internal Theming.ThemeSurface TitleBar { get; } = new Theming.ThemeSurface().Res(StyleProperty, "Theme.Caption");
 
     internal ChromeWindow(string title, double width, double height, bool canMinimize = false)
     {
@@ -24,20 +24,21 @@ internal class ChromeWindow : Window
         UseLayoutRounding = true; SnapsToDevicePixels = true;
         this.Res(BackgroundProperty, "Window.Bg").Res(ForegroundProperty, "Text").Res(FontFamilyProperty, "Font");
         FontSize = 13;
-        WindowChrome.SetWindowChrome(this, new WindowChrome { CaptionHeight = 40, CornerRadius = new CornerRadius(0), GlassFrameThickness = new Thickness(1), ResizeBorderThickness = new Thickness(0), UseAeroCaptionButtons = false });
+        WindowChrome.SetWindowChrome(this, new WindowChrome { CaptionHeight = 0, CornerRadius = new CornerRadius(0), GlassFrameThickness = new Thickness(1), ResizeBorderThickness = new Thickness(0), UseAeroCaptionButtons = false });
+        TitleBar.Background = Brushes.Transparent;
+        // The header is a movable template slot, so drag hit testing follows its actual position.
+        TitleBar.MouseLeftButtonDown += (_, e) => { if (e.ButtonState == MouseButtonState.Pressed) { DragMove(); e.Handled = true; } };
 
-        var caption = Ui.Text(title, 12.5, "Text.Muted"); caption.Margin = new Thickness(14, 0, 0, 0);
-        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, 6, 0) };
+        var caption = Ui.Text(title, 12.5, "Text.Muted");
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal };
         if (canMinimize) buttons.Children.Add(CaptionButton(Icons.Minimize, L.T("Згорнути"), () => WindowState = WindowState.Minimized));
         buttons.Children.Add(CaptionButton(Icons.Close, L.T("Закрити"), Close));
-        TitleBar.Children.Add(caption); TitleBar.Children.Add(buttons);
+        TitleBar.Header = caption; TitleBar.Content = buttons;
 
-        var layout = new Grid();
-        layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        layout.RowDefinitions.Add(new RowDefinition());
-        layout.Children.Add(TitleBar); layout.Children.Add(Body.At(0, 1));
-        layout.SetResourceReference(LayoutTransformProperty, "Scale");
-        Content = new Border { BorderThickness = new Thickness(1), Child = layout }.Res(Border.BorderBrushProperty, "Surface.Border");
+        var shell = new Theming.ThemeSurface { Header = TitleBar, Content = Body }.Res(StyleProperty, "Theme.Window");
+        shell.SetResourceReference(LayoutTransformProperty, "Scale");
+        Content = shell;
+        Loaded += (_, _) => Theming.ThemeMotion.Play(shell, "Theme.Window.Enter", offset: 4);
 
         ApplyTheme();
         Theme.Changed += ApplyTheme;
@@ -60,7 +61,15 @@ internal class ChromeWindow : Window
         Width = baseWidth * Theme.Scale; Height = baseHeight * Theme.Scale;
         TextOptions.SetTextFormattingMode(this, Theme.Scale == 1 ? TextFormattingMode.Display : TextFormattingMode.Ideal);
         var handle = new WindowInteropHelper(this).Handle;
-        if (handle != IntPtr.Zero) Native.StyleFrame(handle, Theme.IsDark);
+        if (handle != IntPtr.Zero)
+        {
+            Native.StyleFrame(handle, Theme.IsDark, Theme.StyleSheet.Number("window", "border-radius", 8) > 0);
+            var backdrop = Native.ApplyBackdrop(handle, Theme.TransparencyEnabled ? Theme.Current.Backdrop : "None");
+            if (HwndSource.FromHwnd(handle)?.CompositionTarget is { } target)
+                target.BackgroundColor = backdrop ? Colors.Transparent : Theme.Parse((Theme.IsDark ? Theme.Current.Dark : Theme.Current.Light)["Window.Bg"]);
+            if (backdrop) Background = Brushes.Transparent;
+            else this.Res(BackgroundProperty, "Window.Bg");
+        }
     }
 
     /// <summary>Brings an already open window to the user instead of opening a second copy.</summary>

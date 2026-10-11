@@ -72,12 +72,17 @@ internal static class Ui
         return new Viewbox { Width = size, Height = size, Child = path, IsHitTestVisible = false };
     }
 
-    internal static TextBlock Text(string text, double size = 13, string brush = "Text", bool bold = false, bool wrap = false) => new TextBlock
+    internal static TextBlock Text(string text, double size = 13, string brush = "Text", bool bold = false, bool wrap = false)
     {
-        Text = text, FontSize = size, FontWeight = bold ? FontWeights.SemiBold : FontWeights.Normal,
-        TextTrimming = wrap ? TextTrimming.None : TextTrimming.CharacterEllipsis,
-        TextWrapping = wrap ? TextWrapping.Wrap : TextWrapping.NoWrap, VerticalAlignment = VerticalAlignment.Center
-    }.Res(TextBlock.ForegroundProperty, brush);
+        var role = size >= 28 ? "Display" : size >= 20 ? "Heading" : size >= 14 ? "Title" : size <= 11 ? "Caption" : size < 13 ? "Small" : "Body";
+        var label = new TextBlock
+        {
+            Text = text, TextTrimming = wrap ? TextTrimming.None : TextTrimming.CharacterEllipsis,
+            TextWrapping = wrap ? TextWrapping.Wrap : TextWrapping.NoWrap, VerticalAlignment = VerticalAlignment.Center
+        }.Res(FrameworkElement.StyleProperty, "Theme.Text." + role).Res(TextBlock.ForegroundProperty, brush);
+        if (bold) label.SetResourceReference(TextBlock.FontWeightProperty, "Typography.Emphasis");
+        return label;
+    }
 
     internal static Button Button(string text, Action click, string? style = "Button.Secondary", string? icon = null)
     {
@@ -99,6 +104,7 @@ internal static class Ui
     internal static Button IconButton(string icon, string tip, Action click, string brush = "Text.Muted")
     {
         var button = new Button { Content = Icon(icon, brush), ToolTip = tip }.Res(FrameworkElement.StyleProperty, "Button.Icon");
+        System.Windows.Automation.AutomationProperties.SetName(button, tip);
         button.Click += (_, _) => click();
         return button;
     }
@@ -178,15 +184,10 @@ internal static class Ui
         return new Viewbox { Width = size, Height = size, Child = arc, IsHitTestVisible = false };
     }
 
-    internal static void FadeIn(UIElement element, double from = 0, double offset = 6, int milliseconds = 130)
+    internal static void FadeIn(UIElement element, double from = 0, double offset = 6, int milliseconds = 130, string? transition = null)
     {
-        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-        var duration = TimeSpan.FromMilliseconds(milliseconds);
-        element.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(from, 1, duration) { EasingFunction = ease });
-        if (offset == 0) return;
-        var shift = new TranslateTransform();
-        element.RenderTransform = shift;
-        shift.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(offset, 0, duration) { EasingFunction = ease });
+        if (element is FrameworkElement host)
+            Theming.ThemeMotion.Play(host, transition ?? "Theme.Content.Enter", offset: offset, milliseconds: milliseconds);
     }
 
     /// <summary>Names offered when a new category is created, skipping ones already in use.</summary>

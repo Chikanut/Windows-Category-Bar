@@ -16,7 +16,7 @@ internal sealed class BoardView : Grid
     private readonly ScrollViewer scroller = new() { HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled };
     private readonly Canvas overlay = new() { IsHitTestVisible = false };
     private readonly Border marker = new Border { CornerRadius = new CornerRadius(1.5), Visibility = Visibility.Collapsed }.Res(Border.BackgroundProperty, "Accent");
-    private readonly Dictionary<Category, (Border Column, StackPanel Rows)> map = [];
+    private readonly Dictionary<Category, (ContentControl Column, StackPanel Rows)> map = [];
     private Border? ghost;
     private object? pressed;          // a Shortcut or a Category
     private FrameworkElement? pressedElement;
@@ -83,7 +83,7 @@ internal sealed class BoardView : Grid
         return button;
     }
 
-    private Border Column(Category category)
+    private ContentControl Column(Category category)
     {
         var rows = new StackPanel { MinHeight = 40 };
         foreach (var shortcut in category.Shortcuts) rows.Children.Add(Row(category, shortcut));
@@ -134,8 +134,7 @@ internal sealed class BoardView : Grid
             layout.Children.Add(add);
         }
         layout.Children.Add(list);
-        var column = new Border { Width = ColumnWidth, Margin = new Thickness(0, 0, 10, 0), Padding = new Thickness(4), BorderThickness = new Thickness(1), Child = layout, Tag = category }
-            .Res(Border.BackgroundProperty, "Card.Bg").Res(Border.BorderBrushProperty, "Surface.Border").Res(Border.CornerRadiusProperty, "Radius");
+        var column = new ContentControl { Width = ColumnWidth, Margin = new Thickness(0, 0, 10, 0), Content = layout, Tag = category }.Res(StyleProperty, "Theme.BoardColumn");
         map[category] = (column, rows);
         return column;
     }
@@ -147,7 +146,7 @@ internal sealed class BoardView : Grid
         return false;
     }
 
-    private Border Row(Category category, Shortcut shortcut)
+    private ContentControl Row(Category category, Shortcut shortcut)
     {
         var line = new Grid();
         line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -159,10 +158,10 @@ internal sealed class BoardView : Grid
         var remove = Ui.IconButton(Icons.Close, L.T("Прибрати з категорії"), () => commit(() => category.Shortcuts.Remove(shortcut), L.F("Прибрано «{0}»", shortcut.Name)), "Text.Faint");
         remove.Width = remove.Height = remove.MinHeight = 22; remove.Visibility = Visibility.Hidden; remove.Margin = new Thickness(4, 0, -4, 0);
         line.Children.Add(remove.At(2));
-        var row = new Border { Height = RowHeight, Padding = new Thickness(8, 0, 8, 0), Background = Brushes.Transparent, Child = line, Tag = shortcut, ToolTip = shortcut.Name }.Res(Border.CornerRadiusProperty, "Radius.Small");
+        var row = new ContentControl { Height = RowHeight, Content = line, Tag = shortcut, ToolTip = shortcut.Name }.Res(StyleProperty, "Theme.MenuItem");
         ToolTipService.SetInitialShowDelay(row, 900);
-        row.MouseEnter += (_, _) => { if (dragging) return; row.SetResourceReference(Border.BackgroundProperty, "Hover"); remove.Visibility = Visibility.Visible; };
-        row.MouseLeave += (_, _) => { row.Background = Brushes.Transparent; remove.Visibility = Visibility.Hidden; };
+        row.MouseEnter += (_, _) => { if (dragging) return; remove.Visibility = Visibility.Visible; };
+        row.MouseLeave += (_, _) => { remove.Visibility = Visibility.Hidden; };
         row.MouseLeftButtonDown += (_, e) => { if (e.OriginalSource is DependencyObject origin && IsInside<Button>(origin)) return; Press(shortcut, row, e); };
         row.MouseRightButtonUp += (_, e) => { e.Handled = true; OpenRowMenu(category, shortcut, row); };
         return row;

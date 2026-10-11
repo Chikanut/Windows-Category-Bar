@@ -1,0 +1,48 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:fx="clr-namespace:CategoryBar.Theming;assembly=CategoryBar">
+  <!-- Everything here is authored using the same file API available to users. -->
+  <Storyboard x:Key="Theme.Menu.Enter">
+    <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.24"/>
+    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" From="12" To="0" Duration="0:0:0.24"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
+  </Storyboard>
+  <ControlTemplate x:Key="Theme.ButtonTemplate" TargetType="Button">
+    <Grid x:Name="root" RenderTransformOrigin="0.5,0.5">
+      <Grid.RenderTransform><TranslateTransform x:Name="lift"/></Grid.RenderTransform>
+      <Border Background="{TemplateBinding Background}" CornerRadius="{DynamicResource button.Radius}"/>
+      <Border x:Name="light" Opacity="0" CornerRadius="{DynamicResource button.Radius}">
+        <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#406DCFFF"/><GradientStop Color="#007D70FF" Offset="1"/></LinearGradientBrush></Border.Background>
+      </Border>
+      <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+    </Grid>
+    <ControlTemplate.Triggers>
+      <Trigger Property="IsMouseOver" Value="True">
+        <Trigger.EnterActions><BeginStoryboard><Storyboard>
+          <DoubleAnimation Storyboard.TargetName="light" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.18"/>
+          <DoubleAnimation Storyboard.TargetName="lift" Storyboard.TargetProperty="Y" To="-2" Duration="0:0:0.18"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
+        </Storyboard></BeginStoryboard></Trigger.EnterActions>
+        <Trigger.ExitActions><BeginStoryboard><Storyboard>
+          <DoubleAnimation Storyboard.TargetName="light" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.2"/>
+          <DoubleAnimation Storyboard.TargetName="lift" Storyboard.TargetProperty="Y" To="0" Duration="0:0:0.2"/>
+        </Storyboard></BeginStoryboard></Trigger.ExitActions>
+      </Trigger>
+      <Trigger Property="IsPressed" Value="True"><Setter Property="Opacity" Value="0.72"/></Trigger>
+      <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="light" Property="Opacity" Value="1"/></Trigger>
+      <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4"/></Trigger>
+    </ControlTemplate.Triggers>
+  </ControlTemplate>
+  <ControlTemplate x:Key="Theme.CardTemplate" TargetType="ContentControl">
+    <Grid>
+      <Border x:Name="surface" CornerRadius="{DynamicResource card.Radius}" Background="{TemplateBinding Background}">
+        <Border.Effect><fx:ThemeShaderEffect Shader="aurora" P1="0.6"/></Border.Effect>
+      </Border>
+      <Border BorderBrush="#2070CFFF" BorderThickness="1" CornerRadius="{DynamicResource card.Radius}"/>
+      <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+    </Grid>
+    <ControlTemplate.Triggers>
+      <EventTrigger RoutedEvent="Loaded"><BeginStoryboard><Storyboard RepeatBehavior="Forever">
+        <DoubleAnimation Storyboard.TargetName="surface" Storyboard.TargetProperty="(UIElement.Effect).(fx:ThemeShaderEffect.P0)" From="0" To="6.283185" Duration="0:0:8"/>
+      </Storyboard></BeginStoryboard></EventTrigger>
+    </ControlTemplate.Triggers>
+  </ControlTemplate>
+</ResourceDictionary>

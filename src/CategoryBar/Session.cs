@@ -69,12 +69,13 @@ internal sealed class Session
     }
 
     /// <summary>Applies a settings tweak immediately; it does not replace the undo step.</summary>
-    internal void ChangeSettings(Action<Settings> change)
+    internal bool ChangeSettings(Action<Settings> change)
     {
         try { Editor.ChangeQuietly(() => change(Config.Settings)); }
-        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) { Toast(L.T("Не вдалося зберегти налаштування"), ex.Message, ToastKind.Error); }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) { Toast(L.T("Не вдалося зберегти налаштування"), ex.Message, ToastKind.Error); return false; }
         Theme.Apply(Config.Settings);
         Changed?.Invoke();
+        return true;
     }
 
     internal Category? AddCategory(string? name = null)

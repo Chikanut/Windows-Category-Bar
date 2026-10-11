@@ -12,6 +12,24 @@ internal static class Theme
     internal static bool IsDark { get; private set; } = true;
     internal static Color Accent { get; private set; } = Parse("#8EA8FF");
     internal static double Scale { get; private set; } = 1;
+    internal static bool TransparencyEnabled { get; private set; }
+    internal static ThemeStore Library { get; private set; } = new(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WindowsCategoryBar", "Themes"));
+    internal static ThemeDefinition Current { get; private set; } = BuiltInThemes.All[0];
+    internal static ThemeStyleSheet StyleSheet { get; private set; } = ThemeStyleSheet.Parse("");
+    private static ResourceDictionary? templates;
+    private static ResourceDictionary? authoredResources;
+    private static readonly HashSet<object> authoredKeys = [];
+    private static IReadOnlyList<string> parameterKeys = [];
+    internal static void Initialize(string configPath)
+    {
+        Library = new ThemeStore(Path.Combine(Path.GetDirectoryName(configPath)!, "Themes"));
+        Library.Load();
+        foreach (var theme in Library.Custom.ToArray())
+        {
+            try { _ = Theming.ThemeResourceLoader.Load(theme); }
+            catch (InvalidDataException ex) { Library.LoadErrors.Add(theme.Name + ": " + ex.Message); Library.Custom.Remove(theme); }
+        }
+    }
     internal static event Action? Changed;
 
     internal static readonly string[] AccentPresets =
@@ -38,31 +56,48 @@ internal static class Theme
 
     internal static void Apply(Settings settings)
     {
+        var requested = Library.Resolve(settings.ThemeId);
+        var authored = SystemParameters.HighContrast ? new ResourceDictionary() : Theming.ThemeResourceLoader.Load(requested);
+        Theming.ThemeMotion.FinishAll();
+        foreach (var key in authoredKeys) Application.Current.Resources.Remove(key);
+        authoredKeys.Clear();
         IsDark = settings.ThemeMode == "System" ? WindowsUsesDarkMode() : settings.ThemeMode == "Dark";
-        var raw = settings.AccentMode == "System" ? WindowsAccent() : Parse(settings.AccentColor);
+        Current = Library.Resolve(settings.ThemeId);
+        StyleSheet = ThemeStyleSheet.Parse(SystemParameters.HighContrast ? BuiltInThemes.All[0].StyleSheet : Current.StyleSheet);
+        var palette = IsDark ? Current.Dark : Current.Light;
+        var raw = settings.AccentMode == "System" ? WindowsAccent() : Parse(settings.AccentMode == "Theme" ? palette["Accent"] : settings.AccentColor);
         Accent = Readable(raw, IsDark);
         Scale = settings.InterfaceScale;
 
         var tint = settings.TintSurfaces ? (IsDark ? .12 : .08) : 0;
-        Color Surface(string dark, string light) => Mix(Parse(IsDark ? dark : light), raw, tint);
+        Color Surface(string key) => Mix(Parse(palette[key]), raw, tint);
         var ink = IsDark ? Colors.White : Colors.Black;
-        var translucent = (byte)Math.Round(settings.SurfaceOpacity * 255);
+        using var personalization = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+        var transparency = !SystemParameters.HighContrast && personalization?.GetValue("EnableTransparency") is not 0;
+        TransparencyEnabled = transparency;
+        var translucent = (byte)Math.Round((transparency ? settings.SurfaceOpacity : 1) * 255);
         Color Glass(Color c) => Color.FromArgb(translucent, c.R, c.G, c.B);
 
         var resources = Application.Current.Resources;
+        foreach (var key in parameterKeys) resources.Remove(key);
+        parameterKeys = Theming.ThemeParameterResources.Apply(resources, Current, settings);
         void Brush(string key, Color color) { var brush = new SolidColorBrush(color); brush.Freeze(); resources[key] = brush; }
 
-        Brush("Bar.Bg", Glass(Surface("#26262C", "#F4F4F7")));
-        Brush("Menu.Bg", Glass(Surface("#24242A", "#FAFAFC")));
-        Brush("Popup.Bg", Surface("#2C2C32", "#FFFFFF"));
-        Brush("Window.Bg", Surface("#1B1B1E", "#F3F3F5"));
-        Brush("Sidebar.Bg", Surface("#202024", "#E9E9EE"));
-        Brush("Card.Bg", Surface("#26262B", "#FFFFFF"));
-        Brush("Control.Bg", Surface("#2E2E34", "#FFFFFF"));
-        Brush("Text", Parse(IsDark ? "#ECECEF" : "#1C1C1F"));
-        Brush("Text.Muted", Parse(IsDark ? "#A6A6B0" : "#55555E"));
-        Brush("Text.Faint", Parse(IsDark ? "#8E8E98" : "#777782"));
-        Brush("Surface.Border", Alpha(ink, IsDark ? .10 : .13));
+        foreach (var key in ThemeDefinition.Tokens.Where(k => k != "Accent"))
+            Brush(key, key.EndsWith(".Bg", StringComparison.Ordinal) ? Surface(key) : Parse(palette[key]));
+        Brush("Bar.Bg", Glass(Surface("Bar.Bg")));
+        Brush("Menu.Bg", Glass(Surface("Menu.Bg")));
+        if (Current.Backdrop != "None" && transparency) Brush("Window.Bg", Glass(Surface("Window.Bg")));
+        if (Current.Material == "Glass" && transparency)
+        {
+            foreach (var key in new[] { "Bar.Bg", "Menu.Bg" })
+            {
+                var color = Surface(key);
+                var top = Mix(color, Colors.White, IsDark ? .16 : .45);
+                var brush = new LinearGradientBrush(key == "Card.Bg" ? top : Glass(top), key == "Card.Bg" ? color : Glass(color), 90);
+                brush.Freeze(); resources[key] = brush;
+            }
+        }
         Brush("Divider", Alpha(ink, IsDark ? .07 : .08));
         Brush("Hover", Alpha(ink, IsDark ? .07 : .06));
         Brush("Pressed", Alpha(ink, IsDark ? .12 : .10));
@@ -75,18 +110,66 @@ internal static class Theme
         Brush("Success", Parse(IsDark ? "#5CC98A" : "#1F8A4C"));
         Brush("Tooltip.Bg", Parse(IsDark ? "#F2F2F4" : "#2A2A30"));
         Brush("Tooltip.Fg", Parse(IsDark ? "#1C1C1F" : "#F2F2F4"));
+        Brush("Glass.Rim", SystemParameters.HighContrast ? Colors.Transparent : Alpha(Colors.White, IsDark ? .18 : .65));
+        var sheen = new LinearGradientBrush(SystemParameters.HighContrast ? Colors.Transparent : Alpha(Colors.White, IsDark ? .16 : .45), Colors.Transparent, 90);
+        sheen.Freeze(); resources["Glass.Sheen"] = sheen;
+        if (SystemParameters.HighContrast)
+        {
+            foreach (var key in ThemeDefinition.Tokens.Where(k => k.EndsWith(".Bg", StringComparison.Ordinal))) Brush(key, SystemColors.WindowColor);
+            foreach (var key in new[] { "Text", "Text.Muted", "Text.Faint", "Surface.Border", "Divider" }) Brush(key, SystemColors.WindowTextColor);
+            foreach (var key in new[] { "Accent", "Accent.Soft", "Selected", "Hover", "Pressed" }) Brush(key, SystemColors.HighlightColor);
+            Brush("Accent.Text", SystemColors.HighlightTextColor);
+        }
 
         double radius = settings.CornerRadius;
         resources["Radius"] = new CornerRadius(radius);
-        resources["Radius.Small"] = new CornerRadius(Math.Min(radius, 6));
+        resources["Radius.Small"] = new CornerRadius(Math.Min(radius, radius >= 14 ? 12 : 6));
+        resources["Theme.BarBorderThickness"] = new Thickness(Current.BorderWidth, Current.BorderWidth, Current.BorderWidth, 0);
         resources["Radius.Top"] = new CornerRadius(Math.Min(radius, 9), Math.Min(radius, 9), 0, 0);
+        resources["Theme.BorderThickness"] = new Thickness(Current.BorderWidth);
         resources["Font"] = new FontFamily(settings.FontName + ", Segoe UI Variable Text, Segoe UI");
         var scale = new ScaleTransform(settings.InterfaceScale, settings.InterfaceScale); scale.Freeze();
         resources["Scale"] = scale;
         var shadow = new DropShadowEffect { BlurRadius = 22, ShadowDepth = 5, Direction = 270, Color = Colors.Black, Opacity = IsDark ? .45 : .22 };
         shadow.Freeze();
         resources["Shadow"] = shadow;
+        ThemeStyleResources.Apply(resources, StyleSheet, Current.CornerRadius == 0 ? 1 : (double)settings.CornerRadius / Current.CornerRadius);
+        // Each skin provides actual control templates, not just palette substitutions.
+        if (templates is not null) resources.MergedDictionaries.Remove(templates);
+        if (authoredResources is not null) resources.MergedDictionaries.Remove(authoredResources);
+        templates = ThemeStyleResources.Templates(StyleSheet.Skin);
+        resources.MergedDictionaries.Add(templates);
+        authoredResources = authored;
+        resources.MergedDictionaries.Add(authoredResources);
+        foreach (var key in authoredResources.Keys.Cast<object>().ToArray()) { resources[key] = authoredResources[key]; authoredKeys.Add(key); }
         Changed?.Invoke();
+    }
+
+    internal static void Select(Settings settings, ThemeDefinition theme)
+    {
+        settings.ThemeId = theme.Id;
+        settings.AccentMode = "Theme";
+        settings.TintSurfaces = false;
+        settings.CornerRadius = theme.CornerRadius;
+        settings.SurfaceOpacity = theme.SurfaceOpacity;
+        settings.FontName = theme.FontName;
+    }
+
+    internal static ThemeDefinition Capture(Settings settings)
+    {
+        var copy = Current.Copy();
+        foreach (var parameter in copy.Parameters) parameter.Default = parameter.Resolve(settings, Current.Id);
+        copy.Id = "custom-" + Guid.NewGuid().ToString("N");
+        copy.StyleSheet = StyleSheet.WithGeometry(Current.CornerRadius == 0 ? 1 : (double)settings.CornerRadius / Current.CornerRadius);
+        copy.CornerRadius = settings.CornerRadius; copy.SurfaceOpacity = settings.SurfaceOpacity; copy.FontName = settings.FontName;
+        foreach (var (dark, palette) in new[] { (true, copy.Dark), (false, copy.Light) })
+        {
+            var raw = settings.AccentMode == "System" ? WindowsAccent() : Parse(settings.AccentMode == "Theme" ? palette["Accent"] : settings.AccentColor);
+            if (settings.TintSurfaces)
+                foreach (var key in ThemeDefinition.Tokens.Where(k => k.EndsWith(".Bg", StringComparison.Ordinal))) palette[key] = Hex(Mix(Parse(palette[key]), raw, dark ? .12 : .08));
+            palette["Accent"] = Hex(raw);
+        }
+        return copy;
     }
 
     /// <summary>Raises <see cref="Changed"/>-driven refreshes when Windows switches mode or accent colour.</summary>
