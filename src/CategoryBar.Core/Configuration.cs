@@ -21,6 +21,7 @@ public sealed class Configuration
         var ids = Categories.SelectMany(c => c.Shortcuts).SelectMany(s => s.Steps.Prepend(s)).Select(s => s.Id).ToList();
         if (ids.Distinct().Count() != ids.Count)
             throw new InvalidDataException(L.T("Повторювані ідентифікатори ярликів."));
+        foreach (var category in Categories.Where(c => c.Icon is not { Length: <= 64 })) category.Icon = "";
         Settings.Normalize();
     }
 
@@ -35,6 +36,12 @@ public sealed class Category
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Name { get; set; } = "";
+    /// <summary>
+    /// The category's icon on the Windows taskbar: empty for its first application, "app:&lt;shortcut id&gt;" for one
+    /// of its applications, "glyph:&lt;code&gt;:&lt;#RRGGBB&gt;" for a symbol from the built-in set, or
+    /// "text:&lt;up to three characters&gt;" for letters on a tile in the theme's accent colour.
+    /// </summary>
+    public string Icon { get; set; } = "";
     public List<Shortcut> Shortcuts { get; set; } = [];
 }
 
@@ -95,6 +102,12 @@ public sealed class Settings
     public bool AllMonitors { get; set; }
     public bool ReserveSpace { get; set; }
     public bool GridForLargeCategories { get; set; }
+    /// <summary>Categories are icons pinned to the Windows taskbar and the bar itself stays hidden.</summary>
+    public bool TaskbarIcons { get; set; }
+    /// <summary>A thin line is pinned after the category icons, between them and the user's own icons.</summary>
+    public bool TaskbarDivider { get; set; } = true;
+    /// <summary>Categories whose icon has been pinned once; an icon the user unpins is not pinned again.</summary>
+    public List<Guid> TaskbarPinned { get; set; } = [];
 
     public const string DefaultFont = "Segoe UI Variable Text";
 
@@ -111,6 +124,7 @@ public sealed class Settings
         if (ThemeMode is not ("System" or "Dark" or "Light")) ThemeMode = "System";
         if (AccentMode is not ("System" or "Theme" or "Custom")) AccentMode = "System";
         if (!ThemeDefinition.IsValidId(ThemeId)) ThemeId = "fluent";
+        TaskbarPinned ??= [];
         ThemeColors ??= [];
         ThemeColors = ThemeColors.Where(p => ThemeDefinition.IsValidId(p.Key) && p.Value is not null).Take(64)
             .ToDictionary(p => p.Key, p => p.Value.Where(v =>

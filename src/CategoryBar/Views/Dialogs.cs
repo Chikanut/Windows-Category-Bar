@@ -77,6 +77,70 @@ internal static class Dialogs
         window.ShowDialog();
     }
 
+    /// <summary>Chooses what a category looks like on the Windows taskbar. A click on an option applies it.</summary>
+    internal static void PickIcon(Session session, Category category)
+    {
+        var (window, content, buttons) = Frame(L.T("Значок на панелі завдань"), 470, 640);
+        content.Children.Add(Heading(category.Name));
+        void Apply(string icon) { window.Close(); session.Change(() => category.Icon = icon, L.F("Значок «{0}» змінено", category.Name)); }
+        Button Option(FrameworkElement picture, string? tip, string value)
+        {
+            var button = Ui.Button("", () => Apply(value), "Button.Secondary");
+            button.Content = picture; button.ToolTip = tip; button.Width = 44; button.Height = 44; button.Padding = new Thickness(0); button.Margin = new Thickness(0, 0, 6, 6);
+            return button;
+        }
+        FrameworkElement Caption(string text) { var caption = Ui.Text(text, 12, "Text.Muted"); caption.Margin = new Thickness(0, 14, 0, 8); return caption; }
+
+        content.Children.Add(Caption(L.T("Значок застосунку")));
+        var apps = new WrapPanel();
+        var automatic = Ui.Button(L.T("Перший застосунок"), () => Apply(""), category.Icon.Length == 0 ? "Button.Primary" : "Button.Secondary");
+        automatic.Height = 44; automatic.Margin = new Thickness(0, 0, 6, 6);
+        apps.Children.Add(automatic);
+        foreach (var shortcut in category.Shortcuts.Where(s => !LaunchTarget.IsLink(s.Target)).Take(23))
+            apps.Children.Add(Option(Ui.ShortcutIcon(shortcut, 28), shortcut.Name, "app:" + shortcut.Id));
+        content.Children.Add(apps);
+
+        content.Children.Add(Caption(L.T("Текст: до трьох символів на плитці кольору теми")));
+        var letters = new TextBox { MaxLength = 3, Width = 90, Height = 34, VerticalContentAlignment = VerticalAlignment.Center, Text = CategoryIcons.TryText(category.Icon, out var written) ? written : "" };
+        void ApplyText() { if (CategoryIcons.TryText("text:" + letters.Text, out var text)) Apply("text:" + text); }
+        letters.KeyDown += (_, e) => { if (e.Key == Key.Enter) { e.Handled = true; ApplyText(); } };
+        var useText = Ui.Button(L.T("Застосувати"), ApplyText); useText.Height = 34; useText.Margin = new Thickness(8, 0, 0, 0);
+        content.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { letters, useText } });
+
+        if (CategoryIcons.Font is { } font)
+        {
+            content.Children.Add(Caption(L.T("Символ")));
+            var chosen = CategoryIcons.TryGlyph(category.Icon, out _, out var used) ? $"#{used.R:X2}{used.G:X2}{used.B:X2}" : CategoryIcons.Colors[0];
+            var swatches = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 10) };
+            var glyphs = new WrapPanel();
+            void Fill()
+            {
+                swatches.Children.Clear(); glyphs.Children.Clear();
+                foreach (var color in CategoryIcons.Colors)
+                {
+                    var swatch = new Border { Width = 26, Height = 26, CornerRadius = new CornerRadius(13), Margin = new Thickness(0, 0, 8, 0), Cursor = Cursors.Hand, Background = new SolidColorBrush(Theme.Parse(color)), BorderThickness = new Thickness(color == chosen ? 3 : 0) }
+                        .Res(Border.BorderBrushProperty, "Text");
+                    swatch.MouseLeftButtonUp += (_, _) => { chosen = color; Fill(); };
+                    swatches.Children.Add(swatch);
+                }
+                foreach (var glyph in CategoryIcons.Glyphs)
+                {
+                    var tile = new Border
+                    {
+                        Width = 32, Height = 32, CornerRadius = new CornerRadius(7), Background = new SolidColorBrush(Theme.Parse(chosen)),
+                        Child = new TextBlock { Text = glyph, FontFamily = font, FontSize = 17, Foreground = Brushes.White, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center }
+                    };
+                    glyphs.Children.Add(Option(tile, null, CategoryIcons.Format(glyph, chosen)));
+                }
+            }
+            Fill();
+            content.Children.Add(swatches);
+            content.Children.Add(new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MaxHeight = 250, Content = glyphs });
+        }
+        buttons.Children.Add(Sized(Ui.Button(L.T("Скасувати"), window.Close), true));
+        window.ShowDialog();
+    }
+
     private static FrameworkElement Field(string label, TextBox box, Button? extra = null)
     {
         var caption = Ui.Text(label, 12, "Text.Muted"); caption.Margin = new Thickness(0, 12, 0, 5);

@@ -195,6 +195,7 @@ internal sealed class BoardView : Grid
         var menu = new ContextMenu { PlacementTarget = target, Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom };
         menu.Items.Add(Ui.Item(L.T("Перейменувати"), () => { renaming = category; Refresh(); }, Icons.Pencil));
         if (addApps is not null) menu.Items.Add(Ui.Item(L.T("Додати застосунки…"), () => addApps(category), Icons.Plus));
+        if (IconRequested is not null) menu.Items.Add(Ui.Item(L.T("Значок на панелі завдань…"), () => IconRequested(category), Icons.Palette));
         menu.Items.Add(Ui.Item(L.T("Перемістити ліворуч"), () => commit(() => ConfigurationEditor.Move(list, category, index - 1), null), Icons.ChevronLeft, enabled: index > 0));
         menu.Items.Add(Ui.Item(L.T("Перемістити праворуч"), () => commit(() => ConfigurationEditor.Move(list, category, index + 1), null), Icons.ChevronRight, enabled: index < list.Count - 1));
         menu.Items.Add(new Separator());
@@ -204,6 +205,7 @@ internal sealed class BoardView : Grid
 
     /// <summary>Lets the host decide how a category is deleted (confirmation, moving its shortcuts).</summary>
     internal Action<Category>? DeleteRequested { get; set; }
+    internal Action<Category>? IconRequested { get; set; }
 
     private void OpenRowMenu(Category category, Shortcut shortcut, UIElement target)
     {

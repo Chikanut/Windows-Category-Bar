@@ -21,7 +21,7 @@ internal sealed class OnboardingWindow : ChromeWindow
     private string mode;
     private string? draftMode;
     private int step;
-    private bool autostart = true;
+    private bool autostart = true, taskbarIcons;
     private BoardView? board;
 
     internal bool Finished { get; private set; }
@@ -279,6 +279,13 @@ internal sealed class OnboardingWindow : ChromeWindow
         left.Children.Add(new Border { Padding = new Thickness(14, 12, 14, 12), BorderThickness = new Thickness(1), Child = new StackPanel { Orientation = Orientation.Horizontal, Children = { toggle, startText } } }
             .Res(Border.BackgroundProperty, "Card.Bg").Res(Border.BorderBrushProperty, "Surface.Border").Res(Border.CornerRadiusProperty, "Radius"));
 
+        var icons = new CheckBox { IsChecked = taskbarIcons, VerticalAlignment = VerticalAlignment.Center }.Res(StyleProperty, "Toggle");
+        icons.Click += (_, _) => taskbarIcons = icons.IsChecked == true;
+        var iconsNote = Ui.Text(L.T("Категорії стануть значками на панелі завдань Windows замість окремої панелі."), 12, "Text.Muted", wrap: true); iconsNote.MaxWidth = 290;
+        var iconsText = new StackPanel { Margin = new Thickness(14, 0, 0, 0), Children = { Ui.Text(L.T("Значки на панелі завдань"), 13.5), iconsNote } };
+        left.Children.Add(new Border { Padding = new Thickness(14, 12, 14, 12), Margin = new Thickness(0, 8, 0, 0), BorderThickness = new Thickness(1), Child = new StackPanel { Orientation = Orientation.Horizontal, Children = { icons, iconsText } } }
+            .Res(Border.BackgroundProperty, "Card.Bg").Res(Border.BorderBrushProperty, "Surface.Border").Res(Border.CornerRadiusProperty, "Radius"));
+
         var layout = new Grid();
         layout.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         layout.ColumnDefinitions.Add(new ColumnDefinition());
@@ -341,6 +348,7 @@ internal sealed class OnboardingWindow : ChromeWindow
             session.Config.Categories.Clear();
             session.Config.Categories.AddRange(categories.Where(c => c.Name.Trim().Length > 0));
             session.Settings.OnboardingCompleted = true;
+            session.Settings.TaskbarIcons = taskbarIcons;
         });
         if (!saved) return;
         try { StartupRegistration.SetEnabled(autostart, App.Instance.CustomConfigPath); }

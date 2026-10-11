@@ -22,6 +22,7 @@ public partial class App : Application
     /// <summary>Set when the application was started with --config; autostart then keeps using that file.</summary>
     internal string? CustomConfigPath { get; private set; }
     internal Services.AppUpdates Updates { get; private set; } = null!;
+    internal Services.TaskbarGroups? Groups { get; private set; }
     internal string[] UpdateRestartArguments => CustomConfigPath is null ? ["--settings"] : ["--config", CustomConfigPath, "--settings"];
     private readonly DispatcherTimer updateTimer = new() { Interval = TimeSpan.FromSeconds(15) };
 
@@ -97,10 +98,13 @@ public partial class App : Application
 
         tray = new Tray { MenuFactory = TrayMenu };
         tray.Clicked += () => ShowSettings();
+        Groups = new Services.TaskbarGroups(session, (category, anchor) => bars.FirstOrDefault(b => b.IsPrimary)?.OpenOutside(category, anchor), () => ShowSettings());
 
         if (config.Settings.OnboardingCompleted) StartBars();
         else ShowOnboarding();
         if (e.Args.Contains("--settings") && config.Settings.OnboardingCompleted) ShowSettings();
+        // A pinned category icon was clicked while the application was not running.
+        if (config.Settings.OnboardingCompleted) Dispatcher.BeginInvoke(() => Groups?.Handle(e.Args), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
         if (store.RecoveryMessage is { } recovery) session.Toast(L.T("Налаштування відновлено"), recovery, ToastKind.Warning);
         if (Theme.Library.LoadErrors.Count > 0)
             session.Toast(L.T("Деякі теми не вдалося завантажити"), string.Join(Environment.NewLine, Theme.Library.LoadErrors), ToastKind.Warning);
@@ -126,7 +130,7 @@ public partial class App : Application
     private void SyncBars()
     {
         if (session is null || bars.Count == 0) return;
-        var wanted = session.Settings.AllMonitors
+        var wanted = session.Settings.AllMonitors && !session.Settings.TaskbarIcons
             ? Native.Taskbars().Where(t => Native.ClassName(t) == "Shell_SecondaryTrayWnd").ToList() : [];
         foreach (var bar in bars.Where(b => !b.IsPrimary && !wanted.Contains(b.BoundTaskbar)).ToList()) bar.Close();
         foreach (var taskbar in wanted.Where(t => bars.All(b => b.BoundTaskbar != t)))
@@ -141,7 +145,11 @@ public partial class App : Application
         menu.Items.Add(Ui.Item(L.T("Упорядкувати категорії…"), () => ShowSettings("Categories"), Icons.Apps));
         menu.Items.Add(Ui.Item(L.T("Перевірити оновлення"), () => { ShowSettings("General"); _ = Updates.Check(manual: true); }, Icons.Import));
         menu.Items.Add(new Separator());
-        menu.Items.Add(hidden ? Ui.Item(L.T("Показати панель"), ShowBars, Icons.ChevronUp) : Ui.Item(L.T("Сховати панель до перезапуску"), HideBars, Icons.ChevronDown));
+        var icons = session!.Settings.TaskbarIcons;
+        if (!icons) menu.Items.Add(hidden ? Ui.Item(L.T("Показати панель"), ShowBars, Icons.ChevronUp) : Ui.Item(L.T("Сховати панель до перезапуску"), HideBars, Icons.ChevronDown));
+        var mode = new MenuItem { Header = L.T("Значки на панелі завдань"), IsChecked = icons };
+        mode.Click += (_, _) => SetTaskbarIcons(!icons);
+        menu.Items.Add(mode);
         var startup = new MenuItem { Header = L.T("Запускати з Windows"), IsChecked = StartupRegistration.IsEnabled };
         startup.Click += (_, _) =>
         {
@@ -152,6 +160,12 @@ public partial class App : Application
         menu.Items.Add(new Separator());
         menu.Items.Add(Ui.Item(L.T("Вийти"), Quit, Icons.Close));
         return menu;
+    }
+
+    /// <summary>Switches between the bar and category icons on the Windows taskbar.</summary>
+    internal void SetTaskbarIcons(bool enabled)
+    {
+        if (session is not null && session.Settings.TaskbarIcons != enabled) session.ChangeSettings(s => s.TaskbarIcons = enabled);
     }
 
     internal void HideBars() { foreach (var bar in bars) bar.HiddenByUser = true; }
@@ -182,7 +196,9 @@ public partial class App : Application
             // Closing the wizard early still counts as a decision: start with what there is.
             if (!session.Settings.OnboardingCompleted) session.ChangeSettings(s => s.OnboardingCompleted = true);
             StartBars();
-            if (window.Finished)
+            if (window.Finished && session.Settings.TaskbarIcons)
+                session.Toast(L.T("Значки готові"), L.T("Наведіть курсор на значок категорії на панелі завдань Windows. Перенесені значки тепер можна відкріпити: клацніть значок правою кнопкою → «Відкріпити від панелі завдань»."), ToastKind.Success, true);
+            else if (window.Finished)
                 session.Toast(L.T("Панель готова"), L.T("Наведіть курсор на категорію над панеллю завдань. Перенесені значки тепер можна відкріпити: клацніть значок правою кнопкою → «Відкріпити від панелі завдань»."), ToastKind.Success, true);
         };
         window.Surface();
@@ -197,6 +213,7 @@ public partial class App : Application
         onboarding?.Close();
         tray?.Dispose();
         tray = null;
+        Groups?.Dispose();
         Shutdown();
     }
 

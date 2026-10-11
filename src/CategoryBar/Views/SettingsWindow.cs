@@ -20,7 +20,8 @@ internal sealed class SettingsWindow : ChromeWindow
     private readonly Dictionary<string, (ThemeDefinition Theme, ContentControl Host)> themePreviews = [];
     private Button? updateCheck;
     private Button? updateInstall;
-    private TextBlock? updateStatus;
+    private TextBlock? updateStatus, pinStatus;
+    private bool shownTaskbarIcons;
     private Settings Settings => session.Settings;
 
     internal SettingsWindow(Session session) : base(L.T("Панель категорій — Налаштування"), 900, 640, canMinimize: true)
@@ -29,12 +30,19 @@ internal sealed class SettingsWindow : ChromeWindow
         Body.Children.Add(new Theming.ThemeSurface { Header = navigation, Content = page }.Res(StyleProperty, "Theme.Workspace"));
         session.Changed += OnSessionChanged;
         App.Instance.Updates.Changed += RefreshUpdates;
+        if (App.Instance.Groups is { } groups) { groups.StateChanged += RefreshPins; Closed += (_, _) => groups.StateChanged -= RefreshPins; }
         Closed += (_, _) => { session.Changed -= OnSessionChanged; App.Instance.Updates.Changed -= RefreshUpdates; };
         Navigate("General");
     }
 
+    private void RefreshPins() { if (pinStatus is not null) pinStatus.Text = PinStatus(); }
+
+    private string PinStatus() => L.F("Закріплено {0} із {1}.", App.Instance.Groups?.PinnedCount ?? 0, session.Config.Categories.Count);
+
     private void OnSessionChanged()
     {
+        if (current == "Panel" && shownTaskbarIcons != Settings.TaskbarIcons) { Navigate("Panel"); return; }
+        RefreshPins();
         if (current == "Categories") board?.Refresh();
         if (current == "Appearance")
             foreach (var (theme, host) in themePreviews.Values) host.Content = ThemePreview.Create(theme, Theme.IsDark, Settings);
@@ -475,6 +483,21 @@ internal sealed class SettingsWindow : ChromeWindow
 
     private void PanelPage(StackPanel stack)
     {
+        Group(stack, L.T("Вигляд##mode"));
+        shownTaskbarIcons = Settings.TaskbarIcons; pinStatus = null;
+        var mode = new CheckBox { IsChecked = Settings.TaskbarIcons }.Res(StyleProperty, "Toggle");
+        mode.Click += (_, _) => App.Instance.SetTaskbarIcons(mode.IsChecked == true);
+        stack.Children.Add(Card(L.T("Значки на панелі завдань"), L.T("Категорії стають значками на панелі завдань Windows, а ця панель ховається. Меню відкривається наведенням або клацанням, права кнопка показує список застосунків."), mode));
+        if (Settings.TaskbarIcons && App.Instance.Groups is { } groups)
+        {
+            pinStatus = Ui.Text(PinStatus(), 12.5, "Text.Muted"); pinStatus.VerticalAlignment = VerticalAlignment.Center; pinStatus.Margin = new Thickness(0, 0, 12, 0);
+            stack.Children.Add(Card(L.T("Закріплення значків"), L.T("Значки категорій закріплюються самі й стають першими на панелі завдань; порядок між ними змінюється перетягуванням. Значок, який ви відкріпили вручну, повернеться лише після «Закріпити всі»."),
+                new StackPanel { Orientation = Orientation.Horizontal, Children = { pinStatus, Ui.Button(L.T("Закріпити всі"), groups.PinAll, icon: Icons.Check) } }));
+            stack.Children.Add(Card(L.T("Роздільник"), L.T("Тонка риска після значків категорій відділяє їх від ваших значків і запущених програм. Клацання по ній відкриває ці налаштування."), Toggle(Settings.TaskbarDivider, (s, v) => s.TaskbarDivider = v)));
+            stack.Children.Add(Card(L.T("Значки категорій"), L.T("Значок застосунку, символ на кольоровій плитці або до трьох літер. Зелена крапка на значку означає, що застосунок категорії запущено."),
+                Ui.Button(L.T("Упорядкувати категорії…"), () => Navigate("Categories"), icon: Icons.Apps)));
+        }
+
         Group(stack, L.T("Розташування"));
         stack.Children.Add(Card(L.T("Вирівнювання панелі"), L.T("«Як у Windows» повторює розташування кнопок панелі завдань."),
             Segments(Settings.Alignment, (s, v) => s.Alignment = v, ("Windows", L.T("Як у Windows")), ("Left", L.T("Ліворуч")), ("Center", L.T("По центру")), ("Right", L.T("Праворуч")))));
@@ -506,7 +529,7 @@ internal sealed class SettingsWindow : ChromeWindow
         top.Children.Add(titles); top.Children.Add(undo.At(1));
 
         board = new BoardView(() => session.Config.Categories, (change, title) => session.Change(change, title), category => AppPickerWindow.Open(session, category))
-        { Margin = new Thickness(28, 0, 0, 18), DeleteRequested = category => Dialogs.DeleteCategory(session, category) };
+        { Margin = new Thickness(28, 0, 0, 18), DeleteRequested = category => Dialogs.DeleteCategory(session, category), IconRequested = category => Dialogs.PickIcon(session, category) };
         var layout = new DockPanel();
         DockPanel.SetDock(top, Dock.Top);
         layout.Children.Add(top); layout.Children.Add(board);

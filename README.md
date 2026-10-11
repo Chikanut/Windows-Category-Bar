@@ -32,6 +32,7 @@ Once the taskbar fills up with pinned icons, the one you need gets hard to find.
 - **One move instead of a search.** Hover a tab and its apps appear in a column. A click starts the app.
 - **Set up in a minute.** The wizard imports the apps pinned to your taskbar and sorts them by type.
 - **Behaves like part of Windows.** The bar shows and hides together with the taskbar and follows the system theme and accent colour.
+- **Or right on the taskbar.** Switch to icon mode and every category becomes an icon on the Windows taskbar, pinned for you. See [Documentation/taskbar-icons.md](Documentation/taskbar-icons.md) (in Ukrainian).
 - **Nothing gets lost.** Every change can be undone, and settings are saved with five backup copies.
 - **Eight languages.** The app follows the Windows language, or you pick one in Settings → General.
 - **Easy installation and updates.** .NET is included; updates arrive through GitHub Releases.

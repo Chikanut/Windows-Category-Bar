@@ -55,7 +55,9 @@ internal static class Native
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] internal static extern int GetWindowText(IntPtr window, StringBuilder text, int length);
     [DllImport("user32.dll")] internal static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] internal static extern bool SetForegroundWindow(IntPtr window);
+    [DllImport("user32.dll")] internal static extern bool AllowSetForegroundWindow(int processId);
     [DllImport("user32.dll")] internal static extern IntPtr MonitorFromWindow(IntPtr window, uint flags);
+    [DllImport("user32.dll")] internal static extern IntPtr MonitorFromPoint(Point point, uint flags);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] internal static extern bool GetMonitorInfo(IntPtr monitor, ref MonitorInfo info);
     [DllImport("user32.dll")] internal static extern uint GetDpiForWindow(IntPtr window);
     [DllImport("user32.dll")] internal static extern IntPtr GetWindow(IntPtr window, uint command);
@@ -80,6 +82,9 @@ internal static class Native
     [DllImport("user32.dll")] internal static extern int ReleaseDC(IntPtr window, IntPtr dc);
 
     [DllImport("shell32.dll")] internal static extern UIntPtr SHAppBarMessage(uint message, ref AppBarData data);
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)] internal static extern int SetCurrentProcessExplicitAppUserModelID(string appId);
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)] internal static extern IntPtr ILCreateFromPathW(string path);
+    [DllImport("shell32.dll")] internal static extern void ILFree(IntPtr list);
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)] internal static extern bool Shell_NotifyIcon(uint message, ref NotifyIconData data);
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)] internal static extern int SHCreateItemFromParsingName(string path, IntPtr context, ref Guid iid, [MarshalAs(UnmanagedType.Interface)] out IShellItemImageFactory? item);
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)] internal static extern IntPtr SHGetFileInfo(string path, uint attributes, ref ShFileInfo info, uint size, uint flags);
@@ -104,6 +109,13 @@ internal static class Native
     }
 
     internal static Point Cursor() { GetCursorPos(out var p); return p; }
+
+    /// <summary>The bounds of the monitor nearest to a screen point.</summary>
+    internal static PixelRect MonitorAt(int x, int y)
+    {
+        var info = new MonitorInfo { Size = Marshal.SizeOf<MonitorInfo>() };
+        return GetMonitorInfo(MonitorFromPoint(new Point { X = x, Y = y }, 2), ref info) ? info.Monitor.Pixels : default;
+    }
 
     internal static void SetExStyle(IntPtr window, long add, long remove = 0)
     {

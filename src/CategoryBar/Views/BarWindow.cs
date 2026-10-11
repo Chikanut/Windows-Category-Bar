@@ -33,6 +33,8 @@ internal sealed class BarWindow : OverlayWindow
     private ToastWindow? toast;
     private AppBarReservation? reservation;
     private PixelRect monitor, taskbar;
+    /// <summary>The taskbar icon the open menu belongs to when it was not opened from a tab.</summary>
+    private PixelRect? outside;
     private Native.Point pressPoint;
     private DateTime openedAt;
     private bool renaming, reordering, expanded, sliding, escapeDown, contextOpen, dragHover, animateTabs;
@@ -96,7 +98,7 @@ internal sealed class BarWindow : OverlayWindow
         if (!menu.IsOpen) return;
         if (!menu.Refresh()) { CloseMenu(); return; }
         UpdateLayout();
-        if (menu.Category is { } category) menu.Reanchor(AnchorFor(category), monitor);
+        if (menu.Category is { } category) menu.Reanchor(outside ?? AnchorFor(category), monitor);
         UpdateStates();
     }
 
@@ -107,8 +109,10 @@ internal sealed class BarWindow : OverlayWindow
         var window = IsPrimary ? Native.FindWindow("Shell_TrayWnd", null) : boundTaskbar;
         if (!IsPrimary && !Native.IsWindow(window)) { Close(); return; }
         var observed = Native.Observe(window);
-        var interacting = dragHover || renaming || reordering || contextOpen || menu.IsOpen && (menu.Pinned || menu.ContainsCursor() || ContainsCursor());
-        if (VisibilityPolicy.ShouldShow(observed) && !HiddenByUser)
+        var interacting = dragHover || renaming || reordering || contextOpen || menu.IsOpen && (menu.Pinned || menu.ContainsCursor() || ContainsCursor() || OverOutside());
+        // With the categories on the Windows taskbar the bar itself stays away; its menus still open from the icons.
+        var hiddenByMode = session.Settings.TaskbarIcons;
+        if (VisibilityPolicy.ShouldShow(observed) && !HiddenByUser && !hiddenByMode)
         {
             var moved = observed.Monitor != monitor || observed.Taskbar != taskbar;
             var resized = observed.Monitor.Width != monitor.Width;
@@ -124,7 +128,7 @@ internal sealed class BarWindow : OverlayWindow
             else if (resized) Rebuild();
             else if (moved) Arrange();
         }
-        else if (IsVisible && !(interacting && observed.Exists && !observed.FullscreenForeground && !HiddenByUser))
+        else if (IsVisible && !(interacting && observed.Exists && !observed.FullscreenForeground && !HiddenByUser && !hiddenByMode))
         {
             // An auto-hidden taskbar slides away as soon as the pointer moves up into a menu; the bar stays
             // for as long as the user is working with it, and leaves together with the taskbar otherwise.
@@ -132,7 +136,7 @@ internal sealed class BarWindow : OverlayWindow
             Hide();
             toast?.Dismiss();
         }
-        if (!IsVisible) { ReleaseReservation(); return; }
+        if (!IsVisible) { ReleaseReservation(); if (outside is not null) TrackMenu(); return; }
 
         if (session.Settings.ReserveSpace)
         {
@@ -146,15 +150,7 @@ internal sealed class BarWindow : OverlayWindow
         staleRenameTicks = renaming && Native.GetForegroundWindow() != Handle ? staleRenameTicks + 1 : 0;
         if (staleRenameTicks > 4) { staleRenameTicks = 0; Rebuild(); }
 
-        var escape = (Native.GetAsyncKeyState(0x1B) & 0x8000) != 0;
-        if (escape && !escapeDown && menu.IsOpen && !menu.IsActive) CloseMenu();
-        escapeDown = escape;
-
-        if (menu.IsOpen && !menu.Pinned)
-        {
-            if (ContainsCursor() || menu.ContainsCursor()) closeTimer.Stop();
-            else if (!closeTimer.IsEnabled) { closeTimer.Interval = TimeSpan.FromMilliseconds(Math.Max(1, session.Settings.CloseDelayMs)); closeTimer.Start(); }
-        }
+        TrackMenu();
         if (session.Settings.MiniatureMode && expanded)
         {
             idleTicks = interacting || menu.IsOpen || ContainsCursor(6) ? 0 : idleTicks + 1;
@@ -166,6 +162,22 @@ internal sealed class BarWindow : OverlayWindow
             }
         }
     }
+
+    /// <summary>Closes the menu on Escape or shortly after the pointer has left it.</summary>
+    private void TrackMenu()
+    {
+        var escape = (Native.GetAsyncKeyState(0x1B) & 0x8000) != 0;
+        if (escape && !escapeDown && menu.IsOpen && !menu.IsActive) CloseMenu();
+        escapeDown = escape;
+
+        if (menu.IsOpen && !menu.Pinned)
+        {
+            if (ContainsCursor() || menu.ContainsCursor() || OverOutside()) closeTimer.Stop();
+            else if (!closeTimer.IsEnabled) { closeTimer.Interval = TimeSpan.FromMilliseconds(Math.Max(1, session.Settings.CloseDelayMs)); closeTimer.Start(); }
+        }
+    }
+
+    private bool OverOutside() => outside is { } rect && Native.Cursor() is var cursor && rect.Contains(cursor.X, cursor.Y);
 
     /// <summary>
     /// Moves the bar vertically inside its own window. The window ends at the top edge of the taskbar,
@@ -415,6 +427,7 @@ internal sealed class BarWindow : OverlayWindow
     private void Open(Tab tab, bool edit = false)
     {
         if (tab.Category is null) return;
+        outside = null;
         UpdateLayout();
         if (!menu.IsOpen || menu.Category != tab.Category) openedAt = DateTime.UtcNow;
         menu.ShowFor(tab.Category, AnchorFor(tab.Category), monitor, edit);
@@ -447,9 +460,21 @@ internal sealed class BarWindow : OverlayWindow
         else if (hidden.Contains(category)) { menu.ShowFor(category, AnchorFor(category), monitor, edit); UpdateStates(); }
     }
 
+    /// <summary>Opens a category above a rectangle that is not part of the bar: its icon on the Windows taskbar.</summary>
+    internal void OpenOutside(Category category, PixelRect anchor)
+    {
+        if (menu.Pinned) return;
+        var screen = Native.MonitorAt((anchor.Left + anchor.Right) / 2, anchor.Top);
+        if (screen.Width <= 0) return;
+        openTimer.Stop(); closeTimer.Stop(); pending = null;
+        outside = anchor;
+        menu.ShowFor(category, anchor, screen);
+        UpdateStates();
+    }
+
     internal void CloseMenu()
     {
-        openTimer.Stop(); closeTimer.Stop(); pending = null;
+        openTimer.Stop(); closeTimer.Stop(); pending = null; outside = null;
         if (menu.IsOpen) menu.HideMenu();
         UpdateStates();
     }
@@ -595,9 +620,12 @@ internal sealed class BarWindow : OverlayWindow
     /// <summary>Shows a toast above the bar. Returns false when the bar is hidden and Windows should notify instead.</summary>
     internal bool ShowToast(ToastRequest request)
     {
-        if (!IsVisible) return false;
+        if (IsVisible) { toast ??= new ToastWindow(); toast.Show(request, monitor, SurfaceBounds.Top); return true; }
+        // With the categories on the Windows taskbar there is no bar to sit on: the toast rests on the taskbar.
+        var observed = Native.Observe(Native.FindWindow("Shell_TrayWnd", null));
+        if (!session.Settings.TaskbarIcons || !observed.Exists || observed.FullscreenForeground) return false;
         toast ??= new ToastWindow();
-        toast.Show(request, monitor, SurfaceBounds.Top);
+        toast.Show(request, observed.Monitor, Math.Min(observed.Taskbar.Top, observed.Monitor.Bottom));
         return true;
     }
 }
