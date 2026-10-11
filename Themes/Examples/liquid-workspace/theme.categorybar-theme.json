@@ -1,0 +1,81 @@
+{
+  "Version": 1,
+  "Id": "liquid-workspace",
+  "Name": "Liquid Workspace",
+  "Author": "Category Bar",
+  "Description": "Editable shader material, window composition and transitions.",
+  "Material": "Glass",
+  "FontName": "Segoe UI Variable Text",
+  "CornerRadius": 16,
+  "SurfaceOpacity": 0.86,
+  "BorderWidth": 1,
+  "StyleSheet": "",
+  "StyleSheetFile": "styles.css",
+  "StyleResources": "",
+  "StyleResourcesFile": "styles.xaml",
+  "Shaders": {},
+  "ShaderFiles": {
+    "liquid": "liquid.ps"
+  },
+  "Dark": {
+    "Bar.Bg": "#273849",
+    "Menu.Bg": "#263645",
+    "Popup.Bg": "#304355",
+    "Window.Bg": "#172330",
+    "Sidebar.Bg": "#1D2D3D",
+    "Card.Bg": "#26394B",
+    "Control.Bg": "#31495E",
+    "Text": "#F4F9FF",
+    "Text.Muted": "#BBCDDF",
+    "Text.Faint": "#A7BED4",
+    "Surface.Border": "#68839D",
+    "Accent": "#80D8F7"
+  },
+  "Light": {
+    "Bar.Bg": "#E6F3FC",
+    "Menu.Bg": "#EFF8FF",
+    "Popup.Bg": "#F6FBFF",
+    "Window.Bg": "#EDF5FA",
+    "Sidebar.Bg": "#E2EEF6",
+    "Card.Bg": "#F6FBFF",
+    "Control.Bg": "#FFFFFF",
+    "Text": "#172D42",
+    "Text.Muted": "#405B73",
+    "Text.Faint": "#526E86",
+    "Surface.Border": "#A0B7CC",
+    "Accent": "#006899"
+  },
+  "Backdrop": "Acrylic",
+  "Parameters": [
+    {
+      "Id": "refraction",
+      "Label": "Заломлення скла",
+      "Type": "Number",
+      "Default": "0.025",
+      "Minimum": 0,
+      "Maximum": 0.08,
+      "Step": 0.005
+    },
+    {
+      "Id": "rim-light",
+      "Label": "Сила відблиску",
+      "Type": "Number",
+      "Default": "0.18",
+      "Minimum": 0,
+      "Maximum": 0.35,
+      "Step": 0.01
+    },
+    {
+      "Id": "show-rim",
+      "Label": "Світловий контур",
+      "Type": "Toggle",
+      "Default": "true"
+    },
+    {
+      "Id": "rim-color",
+      "Label": "Колір контуру",
+      "Type": "Color",
+      "Default": "#BBDFFF"
+    }
+  ]
+}

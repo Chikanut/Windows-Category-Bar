@@ -8,6 +8,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
     dotnet run --project tests\CategoryBar.Tests -c Release --no-build
     if ($LASTEXITCODE -ne 0) { throw 'Checks failed.' }
+    dotnet run --project tests\CategoryBar.ThemeTests -c Release --no-build
+    if ($LASTEXITCODE -ne 0) { throw 'Native theme checks failed.' }
     if ($SelfContained) {
         dotnet publish src\CategoryBar -c Release -r win-x64 --self-contained true -o artifacts\portable -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -nologo -v q
         if ($LASTEXITCODE -ne 0) { throw 'Publish failed.' }

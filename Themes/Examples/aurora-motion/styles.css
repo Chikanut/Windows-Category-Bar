@@ -1,0 +1,10 @@
+/* Frosted layers, edge light and diffuse elevation; no raised bevels. */
+.theme { skin: studio; }
+.bar { height: 48px; padding: 6px; gap: 5px; border-radius: 24px; border-width: 0px; }
+.tab { height: 34px; padding: 0px 16px; margin: 0px 3px; border-radius: 20px; border-width: 0px; font-size: 13px; font-weight: semibold; indicator: dot; selected-background: accent-soft; }
+.menu { width: 294px; padding: 12px; gap: 3px; border-radius: 24px; border-width: 0px; box-shadow: 0px 8px 32px rgba(0,0,0,0.24); }
+.menu-item { height: 42px; padding: 0px 12px; margin: 2px 0px; border-radius: 18px; border-width: 0px; icon-size: 26px; }
+.button { min-height: 36px; padding: 6px 16px; border-radius: 24px; border-width: 0px; font-size: 13px; font-weight: semibold; overlay: linear-gradient(155deg, rgba(255,255,255,0.035), transparent); box-shadow: 0px 2px 8px rgba(0,0,0,0.1); }
+.input { min-height: 36px; padding: 6px 14px; border-radius: 16px; border-width: 0px; }
+.card { padding: 20px 24px; gap: 14px; border-radius: 22px; border-width: 0px; overlay: linear-gradient(145deg, rgba(255,255,255,0.035), transparent); rim-color: rgba(255,255,255,0.12); rim-width: 1px; box-shadow: 0px 6px 20px rgba(0,0,0,0.08); }
+.sidebar-item { height: 40px; padding: 0px 14px; margin: 3px 0px; border-radius: 22px; }

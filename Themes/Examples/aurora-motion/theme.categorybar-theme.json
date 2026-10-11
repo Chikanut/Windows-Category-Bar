@@ -1,0 +1,48 @@
+{
+  "Version": 1,
+  "Id": "aurora-motion",
+  "Name": "Aurora Motion",
+  "Author": "",
+  "Description": "Custom file-authored templates, animated light, floating buttons and a GPU surface shader.",
+  "Material": "Glass",
+  "FontName": "Segoe UI Variable Text",
+  "CornerRadius": 16,
+  "SurfaceOpacity": 0.86,
+  "BorderWidth": 1,
+  "StyleSheet": "",
+  "StyleSheetFile": "styles.css",
+  "StyleResources": "",
+  "StyleResourcesFile": "styles.xaml",
+  "Shaders": {},
+  "ShaderFiles": {
+    "aurora": "aurora.ps"
+  },
+  "Dark": {
+    "Bar.Bg": "#273849",
+    "Menu.Bg": "#263645",
+    "Popup.Bg": "#304355",
+    "Window.Bg": "#172330",
+    "Sidebar.Bg": "#1D2D3D",
+    "Card.Bg": "#26394B",
+    "Control.Bg": "#31495E",
+    "Text": "#F4F9FF",
+    "Text.Muted": "#BBCDDF",
+    "Text.Faint": "#A7BED4",
+    "Surface.Border": "#68839D",
+    "Accent": "#80D8F7"
+  },
+  "Light": {
+    "Bar.Bg": "#E6F3FC",
+    "Menu.Bg": "#EFF8FF",
+    "Popup.Bg": "#F6FBFF",
+    "Window.Bg": "#EDF5FA",
+    "Sidebar.Bg": "#E2EEF6",
+    "Card.Bg": "#F6FBFF",
+    "Control.Bg": "#FFFFFF",
+    "Text": "#172D42",
+    "Text.Muted": "#405B73",
+    "Text.Faint": "#526E86",
+    "Surface.Border": "#A0B7CC",
+    "Accent": "#006899"
+  }
+}
