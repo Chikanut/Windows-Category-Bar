@@ -14,11 +14,11 @@
   </Style>
 
   <!-- Buttons -->
-  <Style TargetType="Button">
+  <Style x:Key="Button.Base" TargetType="Button">
     <Setter Property="Foreground" Value="{DynamicResource Text}"/>
     <Setter Property="Background" Value="Transparent"/>
     <Setter Property="BorderBrush" Value="Transparent"/>
-    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="BorderThickness" Value="{DynamicResource Theme.BorderThickness}"/>
     <Setter Property="Padding" Value="12,0"/>
     <Setter Property="MinHeight" Value="30"/>
     <Setter Property="FontSize" Value="13"/>
@@ -43,7 +43,8 @@
       </Setter.Value>
     </Setter>
   </Style>
-  <Style x:Key="Button.Secondary" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+  <Style TargetType="Button" BasedOn="{StaticResource Button.Base}"/>
+  <Style x:Key="Button.Secondary" TargetType="Button" BasedOn="{StaticResource Button.Base}">
     <Setter Property="Background" Value="{DynamicResource Control.Bg}"/>
     <Setter Property="BorderBrush" Value="{DynamicResource Surface.Border}"/>
   </Style>
@@ -66,7 +67,7 @@
   </Style>
 
   <!-- Text input -->
-  <Style TargetType="TextBox">
+  <Style x:Key="Input.Base" TargetType="TextBox">
     <Setter Property="Foreground" Value="{DynamicResource Text}"/>
     <Setter Property="Background" Value="{DynamicResource Control.Bg}"/>
     <Setter Property="BorderBrush" Value="{DynamicResource Surface.Border}"/>
@@ -97,6 +98,7 @@
   </Style>
 
   <!-- Scroll bars: a thin thumb that does not fight the content for attention -->
+  <Style TargetType="TextBox" BasedOn="{StaticResource Input.Base}"/>
   <Style x:Key="ScrollThumb" TargetType="Thumb">
     <Setter Property="Template">
       <Setter.Value>
@@ -279,7 +281,7 @@
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="CheckBox">
-          <Border x:Name="track" Width="38" Height="20" CornerRadius="10" Background="{DynamicResource Pressed}" BorderBrush="{DynamicResource Surface.Border}" BorderThickness="1">
+          <Border x:Name="track" Width="38" Height="20" CornerRadius="{DynamicResource Toggle.Radius}" Background="{DynamicResource Pressed}" BorderBrush="{DynamicResource Surface.Border}" BorderThickness="1">
             <Ellipse x:Name="knob" Width="12" Height="12" Fill="{DynamicResource Text.Muted}" HorizontalAlignment="Left" Margin="3,0,0,0">
               <Ellipse.RenderTransform><TranslateTransform x:Name="shift"/></Ellipse.RenderTransform>
             </Ellipse>
@@ -371,7 +373,7 @@
   <Style TargetType="ComboBox">
     <Setter Property="Foreground" Value="{DynamicResource Text}"/>
     <Setter Property="FontSize" Value="13"/>
-    <Setter Property="Height" Value="30"/>
+    <Setter Property="Height" Value="{DynamicResource input.MinHeight}"/>
     <Setter Property="MaxDropDownHeight" Value="320"/>
     <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}"/>
     <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
@@ -383,7 +385,7 @@
             <ToggleButton IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" Focusable="False" ClickMode="Press">
               <ToggleButton.Template>
                 <ControlTemplate TargetType="ToggleButton">
-                  <Border x:Name="face" Background="{DynamicResource Control.Bg}" BorderBrush="{DynamicResource Surface.Border}" BorderThickness="1" CornerRadius="{DynamicResource Radius.Small}">
+                  <Border x:Name="face" Background="{DynamicResource Control.Bg}" BorderBrush="{DynamicResource Surface.Border}" BorderThickness="{DynamicResource input.Border}" CornerRadius="{DynamicResource input.Radius}">
                     <Path Data="M4 6l4 4 4-4" Stroke="{DynamicResource Text.Faint}" StrokeThickness="1.5" Width="16" Height="16" HorizontalAlignment="Right" Margin="0,0,8,0" VerticalAlignment="Center"/>
                   </Border>
                   <ControlTemplate.Triggers>

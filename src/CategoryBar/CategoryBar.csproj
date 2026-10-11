@@ -10,5 +10,6 @@
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
   <ItemGroup><ProjectReference Include="../CategoryBar.Core/CategoryBar.Core.csproj" /></ItemGroup>
+  <ItemGroup><InternalsVisibleTo Include="CategoryBar.ThemeTests" /></ItemGroup>
   <ItemGroup><Resource Include="Assets/*.ico" /><Resource Include="Assets/*.png" /></ItemGroup>
 </Project>

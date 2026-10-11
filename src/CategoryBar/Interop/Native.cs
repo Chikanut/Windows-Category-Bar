@@ -127,12 +127,27 @@ internal static class Native
     }
 
     /// <summary>Dark title bar and rounded corners for regular (non-layered) windows.</summary>
-    internal static void StyleFrame(IntPtr window, bool dark)
+    internal static void StyleFrame(IntPtr window, bool dark, bool rounded = true)
     {
         var value = dark ? 1 : 0;
         _ = DwmSetWindowAttribute(window, 20, ref value, sizeof(int)); // DWMWA_USE_IMMERSIVE_DARK_MODE
-        var round = 2;
+        var round = rounded ? 2 : 1;
         _ = DwmSetWindowAttribute(window, 33, ref round, sizeof(int)); // DWMWA_WINDOW_CORNER_PREFERENCE = ROUND
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct FrameMargins { public int Left, Right, Top, Bottom; }
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmExtendFrameIntoClientArea(IntPtr window, ref FrameMargins margins);
+
+    internal static bool ApplyBackdrop(IntPtr window, string backdrop)
+    {
+        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22621)) return false;
+        var type = backdrop switch { "Acrylic" => 3, "Mica" => 2, _ => 1 };
+        var enabled = DwmSetWindowAttribute(window, 38, ref type, sizeof(int)) >= 0 && type != 1;
+        var margins = enabled ? new FrameMargins { Left = -1, Right = -1, Top = -1, Bottom = -1 } : new FrameMargins();
+        if (DwmExtendFrameIntoClientArea(window, ref margins) < 0) return false;
+        return enabled;
     }
 
     internal static List<IntPtr> Taskbars()

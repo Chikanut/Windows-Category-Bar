@@ -1,0 +1,12 @@
+[
+  {
+    "Id": "navigation",
+    "Label": "Розташування навігації",
+    "Type": "Choice",
+    "Default": "top",
+    "Options": {
+      "top": "Згори",
+      "left": "Ліворуч"
+    }
+  }
+]

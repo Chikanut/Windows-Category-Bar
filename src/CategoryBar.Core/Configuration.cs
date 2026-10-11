@@ -71,8 +71,10 @@ public sealed class Settings
     public string Language { get; set; } = "";             // System | uk | en | de | es | fr | pt | zh | ja
 
     // Appearance
+    public string ThemeId { get; set; } = "fluent";
+    public Dictionary<string, Dictionary<string, string>> ThemeParameters { get; set; } = [];
     public string ThemeMode { get; set; } = "System";      // System | Dark | Light
-    public string AccentMode { get; set; } = "System";     // System | Custom
+    public string AccentMode { get; set; } = "System";     // System | Theme | Custom
     public string AccentColor { get; set; } = "#8EA8FF";
     public bool TintSurfaces { get; set; }
     public string FontName { get; set; } = DefaultFont;
@@ -106,7 +108,11 @@ public sealed class Settings
         // A configuration saved before languages existed belongs to someone used to the Ukrainian interface.
         if (Language != "System" && L.Languages.All(l => l.Code != Language)) Language = OnboardingCompleted ? L.Source : "System";
         if (ThemeMode is not ("System" or "Dark" or "Light")) ThemeMode = "System";
-        if (AccentMode is not ("System" or "Custom")) AccentMode = "System";
+        if (AccentMode is not ("System" or "Theme" or "Custom")) AccentMode = "System";
+        if (!ThemeDefinition.IsValidId(ThemeId)) ThemeId = "fluent";
+        ThemeParameters ??= [];
+        ThemeParameters = ThemeParameters.Where(p => ThemeDefinition.IsValidId(p.Key) && p.Value is not null).Take(64)
+            .ToDictionary(p => p.Key, p => p.Value.Where(v => ThemeDefinition.IsValidId(v.Key) && v.Value is { Length: <= 128 }).Take(24).ToDictionary(v => v.Key, v => v.Value));
         if (Alignment is not ("Windows" or "Left" or "Center" or "Right")) Alignment = "Windows";
         if (!IsHexColor(AccentColor)) AccentColor = "#8EA8FF";
         if (string.IsNullOrWhiteSpace(FontName)) FontName = DefaultFont;

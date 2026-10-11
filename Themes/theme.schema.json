@@ -1,0 +1,306 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Category Bar theme v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "Id",
+    "Name",
+    "Dark",
+    "Light"
+  ],
+  "properties": {
+    "Version": {
+      "type": "integer",
+      "const": 1
+    },
+    "Id": {
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"
+    },
+    "Name": {
+      "type": "string",
+      "maxLength": 80,
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "Author": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "Description": {
+      "type": "string",
+      "maxLength": 300
+    },
+    "Material": {
+      "enum": [
+        "Solid",
+        "Glass"
+      ]
+    },
+    "FontName": {
+      "type": "string",
+      "maxLength": 100,
+      "minLength": 1,
+      "allOf": [
+        {
+          "pattern": "\\S"
+        },
+        {
+          "pattern": "^[^:/\\\\#,\\x00-\\x1F\\x7F-\\x9F]*$"
+        }
+      ]
+    },
+    "CornerRadius": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 16
+    },
+    "SurfaceOpacity": {
+      "type": "number",
+      "minimum": 0.5,
+      "maximum": 1
+    },
+    "BorderWidth": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 3
+    },
+    "StyleSheet": {
+      "type": "string",
+      "maxLength": 12000
+    },
+    "Dark": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "Bar.Bg",
+        "Menu.Bg",
+        "Popup.Bg",
+        "Window.Bg",
+        "Sidebar.Bg",
+        "Card.Bg",
+        "Control.Bg",
+        "Text",
+        "Text.Muted",
+        "Text.Faint",
+        "Surface.Border",
+        "Accent"
+      ],
+      "properties": {
+        "Bar.Bg": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "Menu.Bg": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "Popup.Bg": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "Window.Bg": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "Sidebar.Bg": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "Card.Bg": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "Control.Bg": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "Text": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "Text.Muted": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "Text.Faint": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "Surface.Border": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "Accent": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        }
+      }
+    },
+    "Light": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "Bar.Bg",
+        "Menu.Bg",
+        "Popup.Bg",
+        "Window.Bg",
+        "Sidebar.Bg",
+        "Card.Bg",
+        "Control.Bg",
+        "Text",
+        "Text.Muted",
+        "Text.Faint",
+        "Surface.Border",
+        "Accent"
+      ],
+      "properties": {
+        "Bar.Bg": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "Menu.Bg": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "Popup.Bg": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "Window.Bg": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "Sidebar.Bg": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "Card.Bg": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "Control.Bg": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "Text": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "Text.Muted": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "Text.Faint": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "Surface.Border": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "Accent": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        }
+      }
+    },
+    "StyleSheetFile": {
+      "type": "string"
+    },
+    "StyleResources": {
+      "type": "string"
+    },
+    "StyleResourcesFile": {
+      "type": "string"
+    },
+    "Shaders": {
+      "type": "object",
+      "maxProperties": 8,
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "ShaderFiles": {
+      "type": "object",
+      "maxProperties": 8,
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "Backdrop": {
+      "enum": [
+        "None",
+        "Acrylic",
+        "Mica"
+      ]
+    },
+    "Parameters": {
+      "type": "array",
+      "maxItems": 24,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "Id",
+          "Label",
+          "Type",
+          "Default"
+        ],
+        "properties": {
+          "Id": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
+            "maxLength": 64
+          },
+          "Label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "Description": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "Type": {
+            "enum": [
+              "Number",
+              "Toggle",
+              "Color",
+              "Choice"
+            ]
+          },
+          "Default": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "Minimum": {
+            "type": "number",
+            "minimum": -10000,
+            "maximum": 10000
+          },
+          "Maximum": {
+            "type": "number",
+            "minimum": -10000,
+            "maximum": 10000
+          },
+          "Step": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "Options": {
+            "type": "object",
+            "maxProperties": 16,
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            }
+          }
+        }
+      }
+    }
+  }
+}

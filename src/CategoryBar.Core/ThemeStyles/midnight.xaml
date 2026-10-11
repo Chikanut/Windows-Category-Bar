@@ -1,0 +1,38 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:fx="clr-namespace:CategoryBar.Theming;assembly=CategoryBar">
+<ControlTemplate x:Key="Theme.WorkspaceTemplate" TargetType="fx:ThemeSurface">
+<Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/></Grid.ColumnDefinitions>
+<ContentControl Width="{DynamicResource Theme.Parameter.navigation-width}" Style="{DynamicResource Theme.Sidebar}" Margin="0" Content="{TemplateBinding Header}"/>
+<ContentControl Grid.Column="1" Style="{DynamicResource Theme.Page}" Content="{TemplateBinding Content}"/><Border Grid.Column="1" Width="1" HorizontalAlignment="Left" Background="{DynamicResource Theme.Parameter.rail-color}" Visibility="{DynamicResource Theme.Parameter.show-rail.Visibility}" IsHitTestVisible="False"/>
+</Grid></ControlTemplate>
+<Style x:Key="Theme.NavigationPanel" TargetType="StackPanel"><Setter Property="Orientation" Value="Vertical"/><Setter Property="Margin" Value="10,6,10,10"/></Style>
+<Storyboard x:Key="Theme.Window.Enter" FillBehavior="Stop">
+<DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.1"/>
+<DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" From="0" To="0" Duration="0:0:0.1"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
+</Storyboard>
+<Storyboard x:Key="Theme.Page.Enter" FillBehavior="Stop">
+<DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.1"/>
+<DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" From="0" To="0" Duration="0:0:0.1"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
+</Storyboard>
+<Storyboard x:Key="Theme.Tab.Enter" FillBehavior="Stop">
+<DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.1"/>
+<DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" From="0" To="0" Duration="0:0:0.1"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
+</Storyboard>
+<Storyboard x:Key="Theme.Menu.Enter" FillBehavior="Stop">
+<DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.1"/>
+<DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" From="0" To="0" Duration="0:0:0.1"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
+</Storyboard>
+<Storyboard x:Key="Theme.Bar.Enter" FillBehavior="Stop">
+<DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.1"/>
+<DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" From="0" To="0" Duration="0:0:0.1"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
+</Storyboard>
+<Storyboard x:Key="Theme.Toast.Enter" FillBehavior="Stop">
+<DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.1"/>
+<DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" From="0" To="0" Duration="0:0:0.1"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
+</Storyboard>
+<Storyboard x:Key="Theme.Content.Enter" FillBehavior="Stop">
+<DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.1"/>
+<DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" From="0" To="0" Duration="0:0:0.1"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
+</Storyboard>
+<Storyboard x:Key="Theme.Menu.Exit" FillBehavior="HoldEnd"><DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.10"/><DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" To="4" Duration="0:0:0.10"/></Storyboard>
+<Storyboard x:Key="Theme.Menu.Switch" FillBehavior="Stop"><DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.35" To="1" Duration="0:0:0.14"/></Storyboard>
+</ResourceDictionary>
