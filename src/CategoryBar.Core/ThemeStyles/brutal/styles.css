@@ -1,0 +1,32 @@
+/* Neo-Brutal: flat colour, thick ink outlines and hard offset shadows. Nothing is blurred and nothing fades.
+   The bar has no surface of its own: every category is a separate block standing on its shadow. */
+.bar { height: 54px; padding: 2px 10px 10px 2px; gap: 8px; border-radius: 0px; offset: var(--p-float); background: transparent; }
+.tab { height: 40px; padding: 0px 16px; border-radius: var(--p-corner); border-width: var(--p-border); border-color: var(--border); background: var(--card-bg);
+       font-size: 13px; font-weight: bold; indicator: none; stagger: var(--p-stagger); box-shadow: var(--p-shadow)px var(--p-shadow)px 0px var(--var(--p-shadow-tone)); }
+.tab:hover { background: transparent; }
+.tab:selected { background: var(--accent-fill); color: var(--accent-fill-text); box-shadow: none; }
+.menu { width: 300px; padding: 6px; gap: 0px; border-radius: var(--p-corner); border-width: var(--p-border); border-color: var(--border); offset: 14px;
+        box-shadow: 6px 6px 0px var(--var(--p-shadow-tone)); }
+.menu-item { height: 42px; padding: 0px 10px; border-radius: 0px; icon-size: 24px; font-weight: semibold; stagger: var(--p-stagger); }
+.menu-item:hover { background: var(--text); color: var(--window-bg); }
+.menu-item:selected { background: var(--text); color: var(--window-bg); }
+.button { min-height: 36px; padding: 5px 16px; border-radius: var(--p-corner); border-width: var(--p-border); border-color: var(--border); background: var(--control-bg);
+          font-size: 13px; font-weight: bold; box-shadow: 3px 3px 0px var(--var(--p-shadow-tone)); }
+.button:hover { background: var(--accent-fill); color: var(--accent-fill-text); }
+.button:pressed { background: var(--accent-fill); color: var(--accent-fill-text); box-shadow: none; }
+.button:focus { border-color: var(--border); }
+.button-primary { background: var(--accent-fill); color: var(--accent-fill-text); }
+.button-primary:hover { background: var(--text); color: var(--window-bg); }
+.button-primary:pressed { background: var(--text); color: var(--window-bg); box-shadow: none; }
+.input { min-height: 36px; padding: 5px 12px; border-radius: var(--p-corner); border-width: var(--p-border); border-color: var(--border); }
+.input:hover { background: transparent; }
+.card { padding: 18px 20px; gap: 14px; border-radius: var(--p-corner); border-width: var(--p-border); border-color: var(--border); stagger: var(--p-stagger);
+        box-shadow: var(--p-shadow)px var(--p-shadow)px 0px var(--var(--p-shadow-tone)); }
+.window { border-radius: 0px; border-width: var(--p-border); border-color: var(--border); }
+.titlebar { height: 44px; background: var(--accent-fill); color: var(--accent-fill-text); }
+.sidebar { width: 224px; padding: 8px 4px 8px 6px; border-radius: 0px; background: var(--window-bg); }
+.sidebar-item { height: 42px; padding: 0px 14px; margin: 4px 8px 6px 2px; border-radius: var(--p-corner); border-width: var(--p-border); border-color: transparent; font-weight: bold; }
+.sidebar-item:hover { background: var(--accent-soft); }
+.sidebar-item:selected { background: var(--accent-fill); color: var(--accent-fill-text); icon-color: var(--accent-fill-text); border-color: var(--border);
+                         box-shadow: 3px 3px 0px var(--var(--p-shadow-tone)); }
+.toast { border-radius: var(--p-corner); border-width: var(--p-border); border-color: var(--border); box-shadow: 6px 6px 0px var(--var(--p-shadow-tone)); }

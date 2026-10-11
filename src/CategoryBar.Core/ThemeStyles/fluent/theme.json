@@ -1,0 +1,21 @@
+{
+  "Version": 1,
+  "Id": "fluent",
+  "Name": "Fluent",
+  "Description": "Спокійні поверхні й знайомий стиль Windows.",
+  "CornerRadius": 10,
+  "SurfaceOpacity": 0.96,
+  "Dark": { "Bar.Bg": "#26262C", "Menu.Bg": "#24242A", "Popup.Bg": "#2C2C32", "Window.Bg": "#1B1B1E", "Sidebar.Bg": "#202024", "Card.Bg": "#26262B", "Control.Bg": "#2E2E34", "Text": "#ECECEF", "Text.Muted": "#A6A6B0", "Text.Faint": "#9797A2", "Surface.Border": "#414148", "Accent": "#8EA8FF" },
+  "Light": { "Bar.Bg": "#F4F4F7", "Menu.Bg": "#FAFAFC", "Popup.Bg": "#FFFFFF", "Window.Bg": "#F3F3F5", "Sidebar.Bg": "#E9E9EE", "Card.Bg": "#FFFFFF", "Control.Bg": "#FFFFFF", "Text": "#1C1C1F", "Text.Muted": "#55555E", "Text.Faint": "#686872", "Surface.Border": "#D1D1D9", "Accent": "#365EC9" },
+  "StyleSheetFile": "styles.css",
+  "StyleResourcesFile": "styles.xaml",
+  "Parameters": [
+    { "Id": "tab-indicator", "Group": "Панель", "Label": "Позначка відкритої категорії", "Type": "Choice", "Default": "underline", "Options": { "underline": "Лінія знизу", "dot": "Крапка", "rail": "Риска збоку", "none": "Лише фон" } },
+    { "Id": "bar-offset", "Group": "Панель", "Label": "Відстань панелі від панелі завдань", "Type": "Number", "Default": "0", "Minimum": 0, "Maximum": 16, "Step": 1 },
+    { "Id": "menu-width", "Group": "Меню", "Label": "Ширина меню", "Type": "Number", "Default": "282", "Minimum": 240, "Maximum": 400, "Step": 2 },
+    { "Id": "row-height", "Group": "Меню", "Label": "Висота рядка меню", "Type": "Number", "Default": "38", "Minimum": 30, "Maximum": 52, "Step": 1 },
+    { "Id": "navigation-width", "Group": "Вікна", "Label": "Ширина навігації", "Type": "Number", "Default": "208", "Minimum": 160, "Maximum": 280, "Step": 8 },
+    { "Id": "motion", "Group": "Анімація", "Label": "Анімації появи", "Type": "Toggle", "Default": "true" },
+    { "Id": "motion-speed", "Group": "Анімація", "Label": "Швидкість анімацій", "Type": "Number", "Default": "1", "Minimum": 0.5, "Maximum": 2, "Step": 0.25, "Description": "1 — звичайний темп; більше — швидше." }
+  ]
+}

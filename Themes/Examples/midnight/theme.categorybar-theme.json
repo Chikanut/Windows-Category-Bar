@@ -1,0 +1,62 @@
+{
+  "Version": 1,
+  "Id": "midnight",
+  "Name": "Midnight",
+  "Description": "Графітові поверхні, чіткі контури й м’ятний акцент.",
+  "CornerRadius": 6,
+  "SurfaceOpacity": 1,
+  "BorderWidth": 1.5,
+  "Dark": {
+    "Bar.Bg": "#191F24",
+    "Menu.Bg": "#171D22",
+    "Popup.Bg": "#222A31",
+    "Window.Bg": "#101519",
+    "Sidebar.Bg": "#151B20",
+    "Card.Bg": "#1B2329",
+    "Control.Bg": "#232D35",
+    "Text": "#EEF5F6",
+    "Text.Muted": "#ADBFC5",
+    "Text.Faint": "#9AACB5",
+    "Surface.Border": "#455762",
+    "Accent": "#73E3C0"
+  },
+  "Light": {
+    "Bar.Bg": "#E6EEEF",
+    "Menu.Bg": "#F5F9F9",
+    "Popup.Bg": "#FFFFFF",
+    "Window.Bg": "#EDF3F3",
+    "Sidebar.Bg": "#E0EAEA",
+    "Card.Bg": "#FFFFFF",
+    "Control.Bg": "#F8FBFB",
+    "Text": "#172C2C",
+    "Text.Muted": "#435F60",
+    "Text.Faint": "#536D6E",
+    "Surface.Border": "#A0B7B8",
+    "Accent": "#006B51"
+  },
+  "StyleSheetFile": "styles.css",
+  "StyleResourcesFile": "styles.xaml",
+  "Parameters": [
+    {
+      "Id": "navigation-width",
+      "Label": "Ширина навігації",
+      "Type": "Number",
+      "Default": "186",
+      "Minimum": 160,
+      "Maximum": 260,
+      "Step": 2
+    },
+    {
+      "Id": "show-rail",
+      "Label": "Акцентна лінія",
+      "Type": "Toggle",
+      "Default": "true"
+    },
+    {
+      "Id": "rail-color",
+      "Label": "Колір лінії",
+      "Type": "Color",
+      "Default": "#455762"
+    }
+  ]
+}

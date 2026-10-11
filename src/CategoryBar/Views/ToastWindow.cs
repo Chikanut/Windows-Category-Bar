@@ -9,11 +9,13 @@ internal sealed class ToastWindow : OverlayWindow
     private const int ShadowMargin = 20;
     private readonly DispatcherTimer life = new();
     private Border progress = new();
+    private Grid card = new();
     private bool sticky;
 
     internal ToastWindow()
     {
         life.Tick += (_, _) => Dismiss();
+        UseBackdrop(card, "toast");
         MouseEnter += (_, _) => { life.Stop(); progress.BeginAnimation(WidthProperty, null); progress.Width = 340; };
         MouseLeave += (_, _) => StartLife();
     }
@@ -60,10 +62,11 @@ internal sealed class ToastWindow : OverlayWindow
         layout.Children.Add(badge); layout.Children.Add(text.At(1)); layout.Children.Add(close.At(2));
 
         progress = new Border { Height = 2, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Bottom, CornerRadius = new CornerRadius(1) }.Res(Border.BackgroundProperty, "Accent");
-        var card = new Grid { Width = 340, Margin = new Thickness(ShadowMargin) };
-        card.Children.Add(new Border().Res(Border.BackgroundProperty, "Popup.Bg").Res(Border.CornerRadiusProperty, "Radius").Res(EffectProperty, "Shadow"));
+        card = new Grid { Width = 340, Margin = new Thickness(ShadowMargin) };
+        Theming.ThemeTransform.SetOrigin(card, new Point(1, 1));
         var surface = new ContentControl { Content = new Grid { Children = { layout, progress } } }.Res(StyleProperty, "Theme.Toast");
         card.Children.Add(surface);
+        MoveBackdrop(surface);
         progress.Visibility = sticky ? Visibility.Collapsed : Visibility.Visible;
         progress.Margin = new Thickness(10, 0, 10, 0);
         SetRoot(card);
@@ -89,8 +92,6 @@ internal sealed class ToastWindow : OverlayWindow
     {
         life.Stop();
         if (!IsVisible) return;
-        var fade = new DoubleAnimation(0, TimeSpan.FromMilliseconds(140));
-        fade.Completed += (_, _) => { if (Root.Opacity < .05) Hide(); };
-        Root.BeginAnimation(OpacityProperty, fade);
+        Theming.ThemeMotion.Play(card, "Theme.Toast.Exit", Hide, offset: 6, milliseconds: 140, exit: true);
     }
 }

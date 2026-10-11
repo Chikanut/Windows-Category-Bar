@@ -30,7 +30,7 @@ internal static class ArchitectureChecks
             {
                 var config = new Configuration(); Theme.Select(config.Settings, theme); config.Settings.ThemeMode = dark ? "Dark" : "Light"; config.Settings.InterfaceScale = scale;
                 Theme.Apply(config.Settings);
-                workspaceLayouts.Add(XamlWriter.Save(app.Resources["Theme.WorkspaceTemplate"]));
+                workspaceLayouts.Add(XamlWriter.Save(app.Resources["Theme.TabTemplate"]) + XamlWriter.Save(((Style)app.Resources["Theme.Workspace"]).Setters.OfType<Setter>().Count()));
                 var window = new SettingsWindow(new Session(config, new ConfigurationStore(configPath)));
                 window.Navigate("Appearance");
                 var root = (FrameworkElement)window.Content;
@@ -48,7 +48,7 @@ internal static class ArchitectureChecks
                 window.Close();
             }
         }
-        Check(workspaceLayouts.Count == 4, "four authored workspace compositions; gallery renders at 100/125/150/200%, light and dark");
+        Check(workspaceLayouts.Count == 4, "four authored compositions; gallery renders at 100/125/150/200%, light and dark");
 
         Theme.Apply(new Settings());
         var tab = new ContentControl { Content = "Category", Width = 160, Height = 40 }.Res(FrameworkElement.StyleProperty, "Theme.Tab");

@@ -49,7 +49,7 @@ internal static class InteractionChecks
         if (((SolidColorBrush)Application.Current.Resources["Card.Bg"]).Color != Theme.Parse("#135724")) throw new Exception("Card override does not reach actual theme resources.");
         var exported = ThemeFiles.Parse(ThemeFiles.Serialize(Theme.Capture(settings)));
         if (exported.Dark["Card.Bg"] != "#135724" || exported.Light["Card.Bg"] != "#FEDCBA") throw new Exception("Export dropped independent color overrides.");
-        Theme.Select(settings, BuiltInThemes.All.Single(t => t.Id == "midnight")); Theme.Apply(settings);
+        Theme.Select(settings, BuiltInThemes.All.Single(t => t.Id == "brutal")); Theme.Apply(settings);
         if (((SolidColorBrush)Application.Current.Resources["Card.Bg"]).Color == Theme.Parse("#135724")) throw new Exception("Color overrides leaked into another theme.");
         Theme.Select(settings, BuiltInThemes.All[0]); settings.ThemeMode = "Light"; Theme.Apply(settings);
         if (((SolidColorBrush)Application.Current.Resources["Card.Bg"]).Color != Theme.Parse("#FEDCBA")) throw new Exception("Light and dark overrides are mixed.");
@@ -66,7 +66,7 @@ internal static class InteractionChecks
                 || ((SolidColorBrush)Application.Current.Resources["button.Background"]).Color != Theme.Parse("#123456"))
                 throw new Exception("Palette editor does not persist or override authored control backgrounds.");
             var controlExport = Theme.Capture(settings);
-            if (ThemeStyleSheet.Parse(controlExport.StyleSheet).Value("input", "background", "") != "var(--control-bg)" || controlExport.Dark["Control.Bg"] != "#123456")
+            if (controlExport.Sheet().Value("input", "background", "") != "var(--control-bg)" || controlExport.Dark["Control.Bg"] != "#123456")
                 throw new Exception("Export does not preserve control color overrides over authored CSS backgrounds.");
         }
         finally { editor.Close(); }

@@ -66,7 +66,10 @@ internal static class Ui
             Data = Geometry.Parse(data), Width = 16, Height = 16, StrokeThickness = data == Icons.Grip || data == Icons.More ? 2 : thickness,
             StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round, StrokeLineJoin = PenLineJoin.Round,
             IsHitTestVisible = false, SnapsToDevicePixels = false
-        }.Res(Shape.StrokeProperty, brush);
+        };
+        // "inherit" follows the text colour of whatever the icon sits in, so templates can recolour it by state.
+        if (brush == "inherit") path.SetBinding(Shape.StrokeProperty, new System.Windows.Data.Binding { RelativeSource = System.Windows.Data.RelativeSource.Self, Path = new PropertyPath(System.Windows.Documents.TextElement.ForegroundProperty) });
+        else path.SetResourceReference(Shape.StrokeProperty, brush);
         if (data == Icons.Windows) { path.StrokeThickness = 0; path.SetResourceReference(Shape.FillProperty, brush); }
         if (size == 16) return path;
         return new Viewbox { Width = size, Height = size, Child = path, IsHitTestVisible = false };
@@ -79,7 +82,8 @@ internal static class Ui
         {
             Text = text, TextTrimming = wrap ? TextTrimming.None : TextTrimming.CharacterEllipsis,
             TextWrapping = wrap ? TextWrapping.Wrap : TextWrapping.NoWrap, VerticalAlignment = VerticalAlignment.Center
-        }.Res(FrameworkElement.StyleProperty, "Theme.Text." + role).Res(TextBlock.ForegroundProperty, brush);
+        }.Res(FrameworkElement.StyleProperty, "Theme.Text." + role);
+        if (brush != "inherit") label.SetResourceReference(TextBlock.ForegroundProperty, brush);
         if (bold) label.SetResourceReference(TextBlock.FontWeightProperty, "Typography.Emphasis");
         return label;
     }
@@ -104,6 +108,8 @@ internal static class Ui
     internal static Button IconButton(string icon, string tip, Action click, string brush = "Text.Muted")
     {
         var button = new Button { Content = Icon(icon, brush), ToolTip = tip }.Res(FrameworkElement.StyleProperty, "Button.Icon");
+        // An inheriting icon button takes the text colour of the surface it sits on, whatever the theme paints there.
+        if (brush == "inherit") button.SetBinding(Control.ForegroundProperty, new System.Windows.Data.Binding("Foreground") { RelativeSource = new System.Windows.Data.RelativeSource(System.Windows.Data.RelativeSourceMode.FindAncestor, typeof(Control), 1) });
         System.Windows.Automation.AutomationProperties.SetName(button, tip);
         button.Click += (_, _) => click();
         return button;

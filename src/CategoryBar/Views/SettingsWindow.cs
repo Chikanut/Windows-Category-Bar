@@ -48,9 +48,13 @@ internal sealed class SettingsWindow : ChromeWindow
         {
             var active = pageKey == current;
             var content = new StackPanel { Orientation = Orientation.Horizontal };
-            var glyph = Ui.Icon(icon, active ? "Accent" : "Text.Muted"); glyph.Margin = new Thickness(0, 0, 11, 0);
+            // The entry's own colours come from ".sidebar-item" and its ":selected" state in the theme's stylesheet.
+            var glyph = Ui.Icon(icon, active ? "sidebar-item:selected.Icon" : "sidebar-item.Icon"); glyph.Margin = new Thickness(0, 0, 11, 0);
             content.Children.Add(glyph);
-            content.Children.Add(Ui.Text(title, 13, active ? "Text" : "Text.Muted", bold: active));
+            var label = Ui.Text(title, 13, "inherit", bold: active);
+            if (!active) label.Opacity = .82;
+            label.SetResourceReference(TextBlock.FontSizeProperty, "sidebar-item.FontSize");
+            content.Children.Add(label);
             var item = Ui.Button(title, () => Navigate(pageKey), "Navigation.Item");
             item.Content = content; item.Tag = active ? "selected" : null;
             System.Windows.Automation.AutomationProperties.SetName(item, title);
@@ -71,7 +75,16 @@ internal sealed class SettingsWindow : ChromeWindow
             case "Panel": PanelPage(stack); break;
             default: About(stack); break;
         }
+        // Buttons placed straight on the page keep their natural width instead of stretching across it.
+        foreach (var button in stack.Children.OfType<Button>()) { button.HorizontalAlignment = HorizontalAlignment.Left; button.Margin = new Thickness(0, 4, 0, 8); }
         page.Children.Add(new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = stack });
+        // Cards may cascade in when the theme defines "Theme.Card.Enter"; only the first screenful is worth animating.
+        var order = 0;
+        foreach (var card in stack.Children.OfType<Theming.ThemeSurface>().Take(8))
+        {
+            var index = order++;
+            card.Loaded += (_, _) => Theming.ThemeMotion.Play(card, "Theme.Card.Enter", fallback: false, delay: index * Theming.ThemeMotion.Stagger(card, "card"));
+        }
     }
 
     // ---- Building blocks -------------------------------------------------------------------------
@@ -276,7 +289,8 @@ internal sealed class SettingsWindow : ChromeWindow
         var prefix = Theme.IsDark ? "Dark:" : "Light:";
         var palette = Theme.Palette(Settings, theme, Theme.IsDark);
         Group(stack, L.T("Кольори поверхонь"));
-        stack.Children.Add(Ui.Text(L.T("Зберігаються окремо для кожної теми та світлого або темного режиму."), 12, "Text.Muted", wrap: true));
+        var note = Ui.Text(L.T("Зберігаються окремо для кожної теми та світлого або темного режиму."), 12, "Text.Muted", wrap: true); note.Margin = new Thickness(2, 0, 0, 10);
+        stack.Children.Add(note);
         foreach (var (token, label) in new[] {
             ("Window.Bg", L.T("Фон вікна")), ("Sidebar.Bg", L.T("Фон навігації")),
             ("Bar.Bg", L.T("Фон панелі")), ("Menu.Bg", L.T("Фон меню")),
@@ -285,7 +299,7 @@ internal sealed class SettingsWindow : ChromeWindow
         {
             var row = new StackPanel { Orientation = Orientation.Horizontal };
             var swatch = new Border { Width = 24, Height = 24, CornerRadius = new CornerRadius(6), Margin = new Thickness(0, 0, 10, 0), Background = new SolidColorBrush(Theme.Parse(palette[token])) };
-            var input = new TextBox { Text = palette[token], Width = 100, MaxLength = 7, FontFamily = new FontFamily("Consolas"), ToolTip = L.T("Власний колір у форматі #RRGGBB") };
+            var input = new TextBox { Text = palette[token], Width = 112, MaxLength = 7, FontFamily = new FontFamily("Consolas"), ToolTip = L.T("Власний колір у форматі #RRGGBB") };
             void ApplyColor()
             {
                 var value = input.Text.Trim(); if (!value.StartsWith('#')) value = "#" + value;
@@ -317,9 +331,15 @@ internal sealed class SettingsWindow : ChromeWindow
     {
         var theme = Theme.Current;
         if (theme.Parameters.Count == 0) return;
-        Group(stack, L.T("Параметри теми"));
+        // Parameters keep the author's order; a new group name starts a new heading.
+        string? heading = null;
         foreach (var parameter in theme.Parameters)
         {
+            if (parameter.Group != heading)
+            {
+                heading = parameter.Group;
+                Group(stack, heading.Length == 0 ? L.T("Параметри теми") : L.T("Параметри теми") + " · " + L.T(heading));
+            }
             var value = parameter.Resolve(Settings, theme.Id);
             FrameworkElement control;
             void Set(Settings settings, string next) => parameter.Set(settings, theme.Id, next);
@@ -343,8 +363,8 @@ internal sealed class SettingsWindow : ChromeWindow
                     control = choices;
                     break;
                 default:
-                    var color = new TextBox { Text = value, Width = 98, MaxLength = 7, ToolTip = L.T("Власний колір у форматі #RRGGBB") };
-                    var swatch = new Border { Width = 24, Height = 24, Margin = new Thickness(0, 0, 8, 0), CornerRadius = new CornerRadius(5) }
+                    var color = new TextBox { Text = value, Width = 112, MaxLength = 7, FontFamily = new FontFamily("Consolas"), ToolTip = L.T("Власний колір у форматі #RRGGBB") };
+                    var swatch = new Border { Width = 24, Height = 24, CornerRadius = new CornerRadius(6) }
                         .Res(Border.BackgroundProperty, "Theme.Parameter." + parameter.Id);
                     void CommitColor()
                     {
@@ -357,7 +377,14 @@ internal sealed class SettingsWindow : ChromeWindow
                     color.KeyDown += (_, e) => { if (e.Key == Key.Enter) { CommitColor(); e.Handled = true; } };
                     color.LostKeyboardFocus += (_, _) => CommitColor();
                     System.Windows.Automation.AutomationProperties.SetName(color, L.T(parameter.Label));
-                    control = new StackPanel { Orientation = Orientation.Horizontal, Children = { swatch, color } };
+                    var picker = Ui.Button("", () =>
+                    {
+                        if (Services.ColorPicker.Show(this, Theme.Parse(parameter.Resolve(Settings, theme.Id))) is not { } picked) return;
+                        color.Text = Theme.Hex(picked); CommitColor();
+                    }, "Button.Icon");
+                    picker.Content = swatch; picker.Width = 36; picker.Height = 36; picker.Margin = new Thickness(0, 0, 8, 0);
+                    picker.ToolTip = L.T("Вибрати колір"); System.Windows.Automation.AutomationProperties.SetName(picker, L.T(parameter.Label) + ": " + L.T("Вибрати колір"));
+                    control = new StackPanel { Orientation = Orientation.Horizontal, Children = { picker, color } };
                     break;
             }
             System.Windows.Automation.AutomationProperties.SetName(control, L.T(parameter.Label));
@@ -387,14 +414,7 @@ internal sealed class SettingsWindow : ChromeWindow
             var preview = new ContentControl { Content = ThemePreview.Create(theme, Theme.IsDark, Settings), IsHitTestVisible = false };
             themePreviews[theme.Id] = (theme, preview); sample.Children.Add(preview);
             var title = Ui.Text(theme.Name + (selected ? "  ✓" : ""), 14, bold: true); title.Margin = new Thickness(0, 10, 0, 4); sample.Children.Add(title);
-            var description = theme.Id switch
-            {
-                "fluent" => L.T("Спокійні поверхні й знайомий стиль Windows."),
-                "glass" => L.T("Напівпрозоре скло, світлі контури й м’які відблиски."),
-                "expressive" => L.T("Виразні бузкові тони й округлі кольорові поверхні."),
-                "midnight" => L.T("Графітові поверхні, чіткі контури й м’ятний акцент."),
-                _ => theme.Description
-            };
+            var description = L.T(theme.Description);
             sample.Children.Add(Ui.Text(description, 12, "Text.Muted", wrap: true));
             var button = Ui.Button("", () => { session.ChangeSettings(s => Theme.Select(s, theme)); Navigate("Appearance"); }, "Button.Secondary");
             button.Content = sample; button.Padding = new Thickness(12); button.HorizontalContentAlignment = HorizontalAlignment.Stretch;

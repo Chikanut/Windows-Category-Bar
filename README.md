@@ -112,9 +112,15 @@ A set is one icon that starts several apps together. The icon shows up to four o
 
 ### Appearance
 
-- Theme: same as Windows, dark or light. "Same as Windows" switches together with the system.
+- Design: four built-in themes — **Fluent**, **Liquid Glass**, **Expressive** and **Neo-Brutal**. They differ in structure, not just colour: the shape of the bar, the composition of windows, the motion. Each has its own parameters (distance from the taskbar, roundness, strength of the glass highlights, motion style and speed, and more).
+- Your own themes: a theme can be imported, exported together with your tuning, or written from scratch — CSS, XAML templates, entrance animations and GPU shaders. See [Documentation/themes.md](Documentation/themes.md) (Ukrainian).
+- Mode: same as Windows, dark or light. "Same as Windows" switches together with the system.
 - Accent: the Windows colour or your own (presets or `#RRGGBB`), optionally tinting the surfaces.
 - Font, 80–150 % scale, opacity, corner radius. Everything applies immediately.
+
+<p align="center">
+  <img src="Documentation/screenshots/designs.png" width="760" alt="The four built-in designs: Fluent, Liquid Glass, Expressive, Neo-Brutal">
+</p>
 
 <p align="center">
   <img src="Documentation/screenshots/settings-appearance-light.png" width="760" alt="Appearance settings in the light theme">

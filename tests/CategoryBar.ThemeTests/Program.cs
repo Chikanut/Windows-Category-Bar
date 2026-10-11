@@ -18,7 +18,7 @@ internal static class Program
         protected override void OnStartup(StartupEventArgs e) { }
     }
     [STAThread]
-    private static void Main()
+    private static void Main(string[] args)
     {
         Velopack.VelopackApp.Build().Run();
         var app = new RenderApp { ShutdownMode = ShutdownMode.OnExplicitShutdown };
@@ -28,6 +28,18 @@ internal static class Program
         var configPath = Path.Combine(folder, "config.json"); Theme.Initialize(configPath);
         typeof(App).GetProperty("Updates", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
             .SetValue(app, new CategoryBar.Services.AppUpdates(new Session(new Configuration(), new ConfigurationStore(configPath))));
+        if (args.Contains("--lab"))
+        {
+            Lab.Run(args.Where(a => !a.StartsWith("--")).ToArray());
+            if (args.Contains("--showcase")) Lab.Showcase();
+            app.Shutdown(); return;
+        }
+        if (args.Contains("--export-examples"))
+        {
+            // The shareable single-file form of every built-in theme, kept next to the hand-written examples.
+            foreach (var theme in BuiltInThemes.All) ThemeFiles.Write(Path.Combine("Themes", "Examples", theme.Id + ThemeFiles.Extension), theme);
+            app.Shutdown(); return;
+        }
         MiniatureDragChecks.Run(configPath);
         InteractionChecks.Colors(configPath);
         foreach (var id in new[] { "architecture-test", "native-css-check", "aurora-motion" }) Theme.Library.Remove(id);
@@ -41,7 +53,7 @@ internal static class Program
             var button = Ui.Button("Preview", () => { }); button.ApplyTemplate();
             if (button.Template != app.Resources["Theme.ButtonTemplate"] || button.MinHeight != Theme.StyleSheet.Number("button", "min-height", 30))
                 throw new Exception(theme.Name + " did not apply its component stylesheet.");
-            if (dark) templateIdentities.Add(button.Template);
+            if (dark) templateIdentities.Add((ControlTemplate)app.Resources["Theme.TabTemplate"]);
             var session = new Session(config, new ConfigurationStore(configPath));
             var window = new SettingsWindow(session); window.Navigate("General");
             var root = (FrameworkElement)window.Content;
@@ -55,9 +67,9 @@ internal static class Program
             Console.WriteLine("PASS: native " + theme.Id + (dark ? " dark" : " light") + " templates, layout and render");
         }
         if (templateIdentities.Count != 4 || BuiltInThemes.All.Select(t => t.StyleSheet).Distinct().Count() != 4) throw new Exception("Theme styles are not independently loaded.");
-        Console.WriteLine("PASS: four independent file-defined component styles");
+        Console.WriteLine("PASS: four independent file-defined designs, each with its own tab composition");
         var custom = BuiltInThemes.All[1].Copy(); custom.Id = "native-css-check";
-        custom.StyleSheet = ".theme { skin: glass; } .button { min-height: 50px; border-radius: 0px; }";
+        custom.StyleSheet = ".theme { skin: glass; } .button { min-height: 50px; border-radius: 0px; } .card { border-radius: var(--p-roundness); }";
         var customPath = Path.Combine(folder, "custom.json"); ThemeFiles.Write(customPath, custom);
         Theme.Library.Remove(custom.Id); Theme.Library.Install(ThemeFiles.Read(customPath));
         var customSettings = new Settings(); Theme.Select(customSettings, custom); Theme.Apply(customSettings);
@@ -65,7 +77,9 @@ internal static class Program
         if (customButton.MinHeight != 50 || ((CornerRadius)app.Resources["button.Radius"]).TopLeft != 0) throw new Exception("Imported custom stylesheet did not change native geometry.");
         customSettings.CornerRadius = 8; Theme.Apply(customSettings);
         var captured = Theme.Capture(customSettings); Theme.Select(customSettings, captured);
-        if (ThemeStyleSheet.Parse(captured.StyleSheet).Number("card", "border-radius", 0) != 11) throw new Exception("Export lost the user's corner override.");
+        Theme.Library.Install(captured); Theme.Apply(customSettings);
+        if (captured.RadiusScale != .5 || !captured.StyleSheet.Contains("var(--p-roundness)") || ((CornerRadius)app.Resources["card.Radius"]).TopLeft != 12.5) throw new Exception("Export lost the user's corner override or the stylesheet's parameters.");
+        Theme.Library.Remove(captured.Id);
         Theme.Library.Remove(custom.Id);
         Console.WriteLine("PASS: imported custom CSS changes controls and exported overrides survive");
         var aurora = ThemeFiles.Read(Path.Combine("Themes", "Examples", "aurora-motion", "theme.categorybar-theme.json"));

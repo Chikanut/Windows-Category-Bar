@@ -1,0 +1,189 @@
+{
+  "Version": 1,
+  "Id": "glass",
+  "Name": "Liquid Glass",
+  "Description": "Прозора скляна капсула: фон під нею розмивається й заломлюється на краях, відкрита категорія — лінза, рух пружний.",
+  "Material": "Glass",
+  "Backdrop": "Acrylic",
+  "CornerRadius": 16,
+  "SurfaceOpacity": 1,
+  "Dark": {
+    "Bar.Bg": "#26313B",
+    "Menu.Bg": "#28333D",
+    "Popup.Bg": "#303B45",
+    "Window.Bg": "#19232D",
+    "Sidebar.Bg": "#202B35",
+    "Card.Bg": "#2A3540",
+    "Control.Bg": "#34404C",
+    "Text": "#F4F9FF",
+    "Text.Muted": "#BBCDDF",
+    "Text.Faint": "#A7BED4",
+    "Surface.Border": "#68839D",
+    "Accent": "#80D8F7"
+  },
+  "Light": {
+    "Bar.Bg": "#E6F3FC",
+    "Menu.Bg": "#EFF8FF",
+    "Popup.Bg": "#F6FBFF",
+    "Window.Bg": "#EDF5FA",
+    "Sidebar.Bg": "#E2EEF6",
+    "Card.Bg": "#F6FBFF",
+    "Control.Bg": "#FFFFFF",
+    "Text": "#172D42",
+    "Text.Muted": "#405B73",
+    "Text.Faint": "#526E86",
+    "Surface.Border": "#A0B7CC",
+    "Accent": "#006899"
+  },
+  "StyleSheetFile": "styles.css",
+  "StyleResourcesFile": "styles.xaml",
+  "ShaderFiles": {
+    "liquid": "liquid.ps"
+  },
+  "Parameters": [
+    {
+      "Id": "backdrop",
+      "Group": "Скло",
+      "Label": "Фон під склом",
+      "Type": "Choice",
+      "Default": "live",
+      "Options": {
+        "live": "Заломлення й розмиття",
+        "none": "Лише прозорість"
+      },
+      "Description": "Панель, меню й сповіщення показують те, що за ними, крізь скло."
+    },
+    {
+      "Id": "blur",
+      "Group": "Скло",
+      "Label": "Розмиття фону",
+      "Type": "Number",
+      "Default": "10",
+      "Minimum": 0,
+      "Maximum": 30,
+      "Step": 1,
+      "Description": "0 — прозоре скло, більше — матове."
+    },
+    {
+      "Id": "refraction",
+      "Group": "Скло",
+      "Label": "Заломлення на краях",
+      "Type": "Number",
+      "Default": "16",
+      "Minimum": 0,
+      "Maximum": 40,
+      "Step": 1,
+      "Description": "Наскільки край скла, як лінза, згинає зображення за ним."
+    },
+    {
+      "Id": "bevel",
+      "Group": "Скло",
+      "Label": "Ширина скляного краю",
+      "Type": "Number",
+      "Default": "18",
+      "Minimum": 4,
+      "Maximum": 40,
+      "Step": 1,
+      "Description": "Смуга вздовж краю, де скло працює як лінза."
+    },
+    {
+      "Id": "dispersion",
+      "Group": "Скло",
+      "Label": "Райдужна кайма",
+      "Type": "Number",
+      "Default": "0.25",
+      "Minimum": 0,
+      "Maximum": 1,
+      "Step": 0.05,
+      "Description": "Розклад кольорів у заломленому краї."
+    },
+    {
+      "Id": "tint",
+      "Group": "Скло",
+      "Label": "Густина скла",
+      "Type": "Number",
+      "Default": "0.5",
+      "Minimum": 0.15,
+      "Maximum": 0.95,
+      "Step": 0.05,
+      "Description": "Скільки власного кольору скла лежить поверх фону."
+    },
+    {
+      "Id": "specular",
+      "Group": "Скло",
+      "Label": "Світло на краях",
+      "Type": "Number",
+      "Default": "0.2",
+      "Minimum": 0,
+      "Maximum": 0.6,
+      "Step": 0.02
+    },
+    {
+      "Id": "rim",
+      "Group": "Скло",
+      "Label": "Світловий контур",
+      "Type": "Number",
+      "Default": "0.7",
+      "Minimum": 0,
+      "Maximum": 1,
+      "Step": 0.05
+    },
+    {
+      "Id": "rim-color",
+      "Group": "Скло",
+      "Label": "Колір контуру",
+      "Type": "Color",
+      "Default": "#FFFFFF"
+    },
+    {
+      "Id": "roundness",
+      "Group": "Форма",
+      "Label": "Округлість панелі та вкладок",
+      "Type": "Number",
+      "Default": "25",
+      "Minimum": 6,
+      "Maximum": 25,
+      "Step": 1,
+      "Description": "25 — капсула, менше — заокруглений прямокутник."
+    },
+    {
+      "Id": "float",
+      "Group": "Форма",
+      "Label": "Відстань панелі від панелі завдань",
+      "Type": "Number",
+      "Default": "8",
+      "Minimum": 0,
+      "Maximum": 20,
+      "Step": 1
+    },
+    {
+      "Id": "motion",
+      "Group": "Анімація",
+      "Label": "Анімації появи",
+      "Type": "Toggle",
+      "Default": "true"
+    },
+    {
+      "Id": "motion-style",
+      "Group": "Анімація",
+      "Label": "Характер руху",
+      "Type": "Choice",
+      "Default": "liquid",
+      "Options": {
+        "liquid": "Пружний, як крапля",
+        "calm": "Спокійне проявлення"
+      }
+    },
+    {
+      "Id": "motion-speed",
+      "Group": "Анімація",
+      "Label": "Швидкість анімацій",
+      "Type": "Number",
+      "Default": "1",
+      "Minimum": 0.5,
+      "Maximum": 2,
+      "Step": 0.25,
+      "Description": "1 — звичайний темп; більше — швидше."
+    }
+  ]
+}

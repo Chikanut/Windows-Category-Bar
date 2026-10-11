@@ -19,26 +19,42 @@ internal static class ParameterChecks
         void Check(bool condition, string message) { if (!condition) throw new Exception(message); Console.WriteLine("PASS: " + message); }
         var glass = BuiltInThemes.All.Single(t => t.Id == "glass");
         var settings = new Settings(); Theme.Select(settings, glass);
-        glass.Parameters.Single(p => p.Id == "refraction").Set(settings, glass.Id, "0.06");
-        glass.Parameters.Single(p => p.Id == "show-rim").Set(settings, glass.Id, "false");
+        glass.Parameters.Single(p => p.Id == "specular").Set(settings, glass.Id, "0.3");
+        glass.Parameters.Single(p => p.Id == "motion").Set(settings, glass.Id, "false");
         glass.Parameters.Single(p => p.Id == "rim-color").Set(settings, glass.Id, "#D04080");
+        glass.Parameters.Single(p => p.Id == "roundness").Set(settings, glass.Id, "10");
         Theme.Apply(settings);
         var material = new ContentControl { Background = Brushes.SlateGray, Tag = new CornerRadius(12), Width = 240, Height = 80 }
             .Res(Control.TemplateProperty, "Theme.MaterialTemplate");
         var window = new Window { Content = material };
         material.ApplyTemplate(); material.Measure(new Size(240, 80)); material.Arrange(new Rect(0, 0, 240, 80)); material.UpdateLayout();
-        var face = (Border)material.Template.FindName("liquid", material);
-        Check(face.Effect is ThemeShaderEffect { P0: .06 }, "theme number drives a live GPU shader constant");
-        Check((Visibility)app.Resources["Theme.Parameter.show-rim.Visibility"] == Visibility.Collapsed
+        var face = Descendants(material).OfType<Border>().First(border => border.Effect is ThemeShaderEffect);
+        Check(face.Effect is ThemeShaderEffect { P0: .3, P2: 240, P3: 80 }, "theme number and element size drive live GPU shader constants");
+        Check((Visibility)app.Resources["Theme.Parameter.motion.Visibility"] == Visibility.Collapsed
             && ((SolidColorBrush)app.Resources["Theme.Parameter.rim-color"]).Color == Theme.Parse("#D04080"), "toggle and color parameters produce typed resources");
+        Check(((CornerRadius)app.Resources["tab.Radius"]).TopLeft == 10 && ((CornerRadius)app.Resources["bar.Radius"]).TopLeft == 10, "a parameter used by the stylesheet reshapes the bar and its tabs");
+        var silent = new Border(); var completedAtOnce = false;
+        ThemeMotion.Play(silent, "Theme.Menu.Enter", () => completedAtOnce = true);
+        Check(completedAtOnce && !silent.HasAnimatedProperties, "the theme's motion toggle switches lifecycle transitions off");
         var exported = ThemeFiles.Parse(ThemeFiles.Serialize(Theme.Capture(settings)));
-        Check(exported.Parameters.Single(p => p.Id == "refraction").Default == "0.06" && exported.Parameters.Single(p => p.Id == "show-rim").Default == "false", "export captures current per-theme tuning as portable defaults");
+        Check(exported.Parameters.Single(p => p.Id == "specular").Default == "0.3" && exported.Parameters.Single(p => p.Id == "motion").Default == "false"
+            && exported.Sheet().Number("tab", "border-radius", 0) == 10, "export captures current per-theme tuning as portable defaults");
         Theme.Select(settings, BuiltInThemes.All[0]); Theme.Apply(settings);
-        Check(!app.Resources.Contains("Theme.Parameter.refraction"), "switching themes removes previous parameter resources");
+        Check(!app.Resources.Contains("Theme.Parameter.specular"), "switching themes removes previous parameter resources");
         Theme.Select(settings, glass); Theme.Apply(settings);
-        Check((double)app.Resources["Theme.Parameter.refraction"] == .06, "returning to a theme restores its independent tuning");
+        Check((double)app.Resources["Theme.Parameter.specular"] == .3, "returning to a theme restores its independent tuning");
         settings.ThemeParameters.Remove(glass.Id); Theme.Apply(settings);
-        Check((double)app.Resources["Theme.Parameter.refraction"] == .025, "reset restores author defaults");
+        Check((double)app.Resources["Theme.Parameter.specular"] == .2, "reset restores author defaults");
+        material.ApplyTemplate(); material.UpdateLayout();
+        Check(app.Resources["bar.Backdrop"] is true && (double)app.Resources["menu.BackdropBlur"] == 10 && (double)app.Resources["Theme.Backdrop.Enabled"] == 0
+            && Descendants(material).OfType<Border>().First(border => border.Effect is ThemeShaderEffect).Effect is ThemeShaderEffect { Auxiliary: ImageBrush, P5: 0 }, "glass asks for a live backdrop and stays plain glass until a window supplies one");
+        glass.Parameters.Single(p => p.Id == "backdrop").Set(settings, glass.Id, "none"); Theme.Apply(settings);
+        Check(app.Resources["bar.Backdrop"] is false, "the user can switch the live backdrop off");
+        settings.ThemeParameters.Remove(glass.Id); Theme.Apply(settings);
+        var flat = new byte[40 * 20 * 4]; for (var i = 0; i < flat.Length; i += 4) { flat[i] = 200; flat[i + 1] = 100; flat[i + 2] = 50; flat[i + 3] = 255; }
+        flat[4 * (40 * 10 + 20)] = 0;
+        var (soft, softWidth, softHeight) = CategoryBar.Interop.ScreenBackdrop.Soften(flat, 40, 20, 160, 12);
+        Check(softWidth == 10 && softHeight == 5 && soft.Length == 200 && soft[1] == 100 && soft[2] == 50 && soft[0] is > 190 and < 200 && soft[3] == 255, "backdrop pictures are shrunk and blurred without darkening their edges");
         window.Close();
 
         var expressive = BuiltInThemes.All.Single(t => t.Id == "expressive");
@@ -46,7 +62,21 @@ internal static class ParameterChecks
         expressive.Parameters.Single(p => p.Id == "navigation").Set(settings, expressive.Id, "left"); Theme.Apply(settings);
         var workspace = new ThemeSurface { Header = "Navigation", Content = "Page" }.Res(FrameworkElement.StyleProperty, "Theme.Workspace");
         workspace.ApplyTemplate();
-        Check(ReferenceEquals(workspace.Template, app.Resources["Expressive.SidebarWorkspace"]), "choice parameter switches the workspace composition");
+        Check(ReferenceEquals(workspace.Template, app.Resources["Expressive.RailWorkspace"]), "choice parameter switches the workspace composition");
+        if (ThemeMotion.Enabled)
+        {
+            expressive.Parameters.Single(p => p.Id == "motion-style").Set(settings, expressive.Id, "smooth"); Theme.Apply(settings);
+            var smooth = new Border(); ThemeMotion.Play(smooth, "Theme.Menu.Enter");
+            Check(ThemeTransform.GetScaleY(smooth) == 1 && smooth.HasAnimatedProperties, "motion-style picks the theme's alternative transition");
+            ThemeMotion.Stop(smooth);
+        }
+        var brutal = BuiltInThemes.All.Single(t => t.Id == "brutal");
+        Theme.Select(settings, brutal); settings.ThemeMode = "Light";
+        brutal.Parameters.Single(p => p.Id == "shadow").Set(settings, brutal.Id, "6");
+        brutal.Parameters.Single(p => p.Id == "shadow-tone").Set(settings, brutal.Id, "accent-fill"); Theme.Apply(settings);
+        var hard = (System.Windows.Media.Effects.DropShadowEffect)app.Resources["card.Shadow"];
+        Check(hard.BlurRadius == 0 && Math.Abs(hard.ShadowDepth - Math.Sqrt(72)) < .001 && hard.Color == ((SolidColorBrush)app.Resources["Accent.Fill"]).Color, "number and choice parameters compose a hard shadow in the stylesheet");
+        Check(((Thickness)app.Resources["bar.Frame"]).Bottom == 6 && ((Thickness)app.Resources["menu.Frame"]).Bottom == 14, "layout rules place the bar above the taskbar and the menu above the bar");
         Theme.Select(settings, glass); settings.ThemeMode = "Dark"; Theme.Apply(settings);
         var config = new Configuration { Settings = settings };
         var configPath = Path.Combine(folder, "parameter-ui-config.json");
@@ -54,11 +84,11 @@ internal static class ParameterChecks
         editor.Navigate("Appearance");
         var root = (FrameworkElement)editor.Content;
         root.Measure(new Size(900, 640)); root.Arrange(new Rect(0, 0, 900, 640)); root.UpdateLayout();
-        var slider = Descendants(root).OfType<Slider>().Single(control => System.Windows.Automation.AutomationProperties.GetName(control) == L.T("Викривлення відблиску"));
-        slider.Value = .055;
+        var slider = Descendants(root).OfType<Slider>().Single(control => System.Windows.Automation.AutomationProperties.GetName(control) == L.T("Світло на краях"));
+        slider.Value = .4;
         slider.RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, 0) { RoutedEvent = Mouse.LostMouseCaptureEvent });
-        Check(Math.Abs((double)app.Resources["Theme.Parameter.refraction"] - .055) < .00001
-            && Math.Abs(double.Parse(new ConfigurationStore(configPath).Load().Settings.ThemeParameters[glass.Id]["refraction"], System.Globalization.CultureInfo.InvariantCulture) - .055) < .00001,
+        Check(Math.Abs((double)app.Resources["Theme.Parameter.specular"] - .4) < .00001
+            && Math.Abs(double.Parse(new ConfigurationStore(configPath).Load().Settings.ThemeParameters[glass.Id]["specular"], System.Globalization.CultureInfo.InvariantCulture) - .4) < .00001,
             "generated slider applies and persists authored parameter through the real settings flow");
         root.Measure(new Size(900, 640)); root.Arrange(new Rect(0, 0, 900, 640)); root.UpdateLayout();
         var scroller = Descendants(root).OfType<ScrollViewer>().First(view => view.ScrollableHeight > 400);

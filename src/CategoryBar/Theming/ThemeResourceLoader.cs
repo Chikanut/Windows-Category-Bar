@@ -34,6 +34,15 @@ internal static class ThemeResourceLoader
                 if (shader is null || !shaderNames.TryGetValue(shader.Value, out var resolved)) throw new InvalidDataException("Shader is not included in this theme.");
                 shader.Value = resolved;
             }
+            // Transitions written for the first format moved the host through its own TranslateTransform.
+            var prefix = markup.Root!.GetPrefixOfNamespace(ThemeMarkup.Effects);
+            foreach (var attribute in markup.Descendants().Attributes().Where(a => a.Name.LocalName == "Storyboard.TargetProperty").ToArray())
+                foreach (var axis in new[] { "X", "Y" })
+                    if (attribute.Value.Replace(" ", "") == "(UIElement.RenderTransform).(TranslateTransform." + axis + ")")
+                    {
+                        if (prefix is null) markup.Root.SetAttributeValue(XNamespace.Xmlns + (prefix = "fx"), ThemeMarkup.Effects);
+                        attribute.Value = "(" + prefix + ":ThemeTransform." + axis + ")";
+                    }
             using var reader = XmlReader.Create(new StringReader(markup.ToString()), new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null });
             var result = (ResourceDictionary)XamlReader.Load(reader);
             // Force deferred resources to materialize now, before persisting or applying a theme.
@@ -45,10 +54,10 @@ internal static class ThemeResourceLoader
                     throw new InvalidDataException("Theme.Parameter resources are generated from Parameters and cannot be overridden by markup.");
                 var target = name switch
                 {
-                    "Theme.WindowTemplate" or "Theme.WorkspaceTemplate" or "Theme.SettingTemplate" or "Theme.SettingStackedTemplate" or "Theme.CaptionTemplate" => typeof(ThemeSurface),
+                    "Theme.WindowTemplate" or "Theme.WorkspaceTemplate" or "Theme.SettingTemplate" or "Theme.SettingStackedTemplate" or "Theme.CaptionTemplate" or "Theme.MenuHeaderTemplate" => typeof(ThemeSurface),
                     "Theme.ButtonTemplate" or "Theme.PrimaryButtonTemplate" or "Navigation.Template" or "Button.IconTemplate" => typeof(Button),
                     "Theme.InputTemplate" => typeof(TextBox),
-                    "Theme.MaterialTemplate" or "Theme.CardTemplate" or "Theme.BarTemplate" or "Theme.TabTemplate" or "Theme.MenuTemplate" or "Theme.MenuItemTemplate"
+                    "Theme.MaterialTemplate" or "Theme.ControlMaterialTemplate" or "Theme.CardTemplate" or "Theme.BarTemplate" or "Theme.TabTemplate" or "Theme.MenuTemplate" or "Theme.MenuItemTemplate"
                         or "Theme.SidebarTemplate" or "Theme.TitleBarTemplate" or "Theme.PageTemplate" or "Theme.ToastTemplate" => typeof(ContentControl),
                     _ => null
                 };
@@ -56,7 +65,7 @@ internal static class ThemeResourceLoader
                     throw new InvalidDataException(name + " must be a ControlTemplate for " + target.Name + ".");
                 if (ThemeDefinition.Tokens.Contains(name) && value is not Brush)
                     throw new InvalidDataException(name + " must be a Brush.");
-                if (name.StartsWith("Theme.", StringComparison.Ordinal) && (name.EndsWith(".Enter", StringComparison.Ordinal) || name.EndsWith(".Exit", StringComparison.Ordinal) || name.EndsWith(".Switch", StringComparison.Ordinal) || name.EndsWith(".Expand", StringComparison.Ordinal) || name.EndsWith(".Collapse", StringComparison.Ordinal)))
+                if (name.StartsWith("Theme.", StringComparison.Ordinal) && (new[] { ".Enter", ".Exit", ".Switch", ".Expand", ".Collapse" }.Any(phase => name.EndsWith(phase, StringComparison.Ordinal) || name.Contains(phase + ".", StringComparison.Ordinal))))
                 {
                     if (value is not Storyboard transition) throw new InvalidDataException(name + " must be a Storyboard.");
                     ValidateTransition(transition);

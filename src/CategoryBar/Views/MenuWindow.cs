@@ -10,13 +10,14 @@ namespace CategoryBar.Views;
 /// </summary>
 internal sealed class MenuWindow : OverlayWindow
 {
-    private const double ShadowMargin = 24, Bridge = 8;
+    private const double ShadowMargin = 24;
     private static double MenuWidth => Theme.StyleSheet.Number("menu", "width", 264);
     private static double RowHeight => Theme.StyleSheet.Number("menu-item", "height", 36);
     private static double RowStride => RowHeight + Theme.StyleSheet.Spacing("menu-item", "margin", 0)[0] + Theme.StyleSheet.Spacing("menu-item", "margin", 0)[2] + Theme.StyleSheet.Number("menu", "gap", 0);
     private readonly Session session;
     private readonly BarWindow bar;
-    private readonly Grid frame = new() { Margin = new Thickness(ShadowMargin, ShadowMargin, ShadowMargin, Bridge), Width = MenuWidth };
+    private readonly Grid frame = new() { Width = MenuWidth };
+    private bool animateRows;
     private readonly StackPanel body = new();
     private readonly ScrollViewer scroller = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
     private readonly Border listHost = new();
@@ -46,11 +47,14 @@ internal sealed class MenuWindow : OverlayWindow
         this.session = session; this.bar = bar;
         var root = new Grid();
         // An almost transparent strip keeps the pointer "inside" while it crosses from the tab to the menu.
-        root.Children.Add(new Rectangle { Height = Bridge + 2, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(ShadowMargin, 0, ShadowMargin, 0), Fill = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)) });
-        frame.Res(WidthProperty, "menu.Width");
-        frame.Children.Add(new Border().Res(Border.BackgroundProperty, "Menu.Bg").Res(Border.CornerRadiusProperty, "menu.Radius").Res(EffectProperty, "menu.Shadow"));
-        frame.Children.Add(new ContentControl { Content = body }.Res(StyleProperty, "Theme.Menu")
-            .Res(Control.BackgroundProperty, "Menu.Bg").Res(Control.BorderBrushProperty, "menu.BorderBrush").Res(Control.BorderThicknessProperty, "menu.Border").Res(Control.PaddingProperty, "menu.Padding"));
+        // It spans the largest distance a theme may put between the bar and its menu.
+        root.Children.Add(new Rectangle { Height = 26, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(ShadowMargin, 0, ShadowMargin, 0), Fill = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)) });
+        frame.Res(WidthProperty, "menu.Width").Res(MarginProperty, "menu.Frame");
+        var surface = new ContentControl { Content = body }.Res(StyleProperty, "Theme.Menu");
+        frame.Children.Add(surface);
+        UseBackdrop(surface, "menu");
+        // Menus grow out of the bar below them.
+        Theming.ThemeTransform.SetOrigin(frame, new Point(.5, 1));
         root.Children.Add(frame);
         SetRoot(root);
 
@@ -99,7 +103,9 @@ internal sealed class MenuWindow : OverlayWindow
 
     private void Present()
     {
+        animateRows = true;
         Rebuild();
+        animateRows = false;
         Reposition();
         var wasClosing = closing;
         closing = false; frame.IsHitTestVisible = true;
@@ -155,26 +161,24 @@ internal sealed class MenuWindow : OverlayWindow
         body.Children.Clear();
         if (overflow is not null) { BuildOverflow(); return; }
         var category = Category!;
-        var header = new Grid { Margin = new Thickness(10, 4, 4, 6), Height = 24 };
-        header.ColumnDefinitions.Add(new ColumnDefinition());
-        header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        header.Children.Add(Ui.Text(category.Name.ToUpper() + (editing ? "  ·  " + L.T("РЕДАГУВАННЯ") : ""), 11, editing ? "Accent" : "Text.Faint", bold: true));
+        var header = new Theming.ThemeSurface { Header = category.Name + (editing ? "  ·  " + L.T("РЕДАГУВАННЯ").ToLower() : ""), Tag = category.Name.ToUpper() + (editing ? "  ·  " + L.T("РЕДАГУВАННЯ") : "") }
+            .Res(StyleProperty, "Theme.MenuHeader");
         if (editing)
         {
             var done = Ui.Button(L.T("Готово"), () => { editing = false; ReleaseFocus(); Rebuild(); Reposition(); }, "Button.Primary");
             done.MinHeight = 22; done.Height = 22; done.FontSize = 11.5; done.Padding = new Thickness(9, 0, 9, 0); done.Focusable = false;
-            header.Children.Add(done.At(1));
+            header.Content = done;
         }
         else
         {
             var tools = new StackPanel { Orientation = Orientation.Horizontal };
-            var count = Ui.Text(category.Shortcuts.Count.ToString(), 11, "Text.Faint"); count.Margin = new Thickness(0, 0, 4, 0);
+            var count = Ui.Text(category.Shortcuts.Count.ToString(), 11, "inherit"); count.Margin = new Thickness(0, 0, 4, 0); count.Opacity = .8;
             tools.Children.Add(count);
-            var edit = Ui.IconButton(Icons.Pencil, L.T("Редагувати ярлики"), () => { editing = true; TakeFocus(); Rebuild(); Reposition(); }, "Text.Faint");
+            var edit = Ui.IconButton(Icons.Pencil, L.T("Редагувати ярлики"), () => { editing = true; TakeFocus(); Rebuild(); Reposition(); }, "inherit");
             edit.Width = edit.Height = edit.MinHeight = 22;
             ((FrameworkElement)edit.Content).LayoutTransform = new ScaleTransform(.8, .8);
             tools.Children.Add(edit);
-            header.Children.Add(tools.At(1));
+            header.Content = tools;
         }
         body.Children.Add(header);
 
@@ -195,38 +199,38 @@ internal sealed class MenuWindow : OverlayWindow
         body.Children.Add(ActionRow(Icons.Apps, L.T("Створити набір"), () => { var target = category; bar.CloseMenu(); SetWindow.Open(session, target); }));
     }
 
-    private Border ActionRow(string icon, string text, Action click)
+    /// <summary>A secondary row drawn by the theme's own row template: the actions under the list and the overflow entries.</summary>
+    private static ContentControl PlainRow(UIElement content, Action click)
     {
-        var content = new StackPanel { Orientation = Orientation.Horizontal };
-        var glyph = Ui.Icon(icon, "Text.Muted", 14); glyph.Margin = new Thickness(5, 0, 15, 0);
-        content.Children.Add(glyph);
-        content.Children.Add(Ui.Text(text, 12.5, "Text.Muted"));
-        var row = new Border { Height = 32, Padding = new Thickness(10, 0, 10, 0), Background = Brushes.Transparent, Child = content }.Res(Border.CornerRadiusProperty, "Radius.Small");
-        row.MouseEnter += (_, _) => row.SetResourceReference(Border.BackgroundProperty, "Hover");
-        row.MouseLeave += (_, _) => row.Background = Brushes.Transparent;
+        content.Opacity = .78;
+        var row = new ContentControl { Height = Math.Min(RowHeight, 34), Content = content }.Res(StyleProperty, "Theme.MenuItem");
         row.MouseLeftButtonUp += (_, _) => click();
         return row;
     }
 
+    private static ContentControl ActionRow(string icon, string text, Action click)
+    {
+        var content = new StackPanel { Orientation = Orientation.Horizontal };
+        var glyph = Ui.Icon(icon, "inherit", 14); glyph.Margin = new Thickness(3, 0, 13, 0);
+        content.Children.Add(glyph);
+        content.Children.Add(Ui.Text(text, 12.5, "inherit"));
+        return PlainRow(content, click);
+    }
+
     private void BuildOverflow()
     {
-        var header = Ui.Text(L.T("ІНШІ КАТЕГОРІЇ"), 11, "Text.Faint", bold: true); header.Margin = new Thickness(10, 8, 10, 10);
-        body.Children.Add(header);
+        body.Children.Add(new Theming.ThemeSurface { Header = L.T("Інші категорії"), Tag = L.T("ІНШІ КАТЕГОРІЇ") }.Res(StyleProperty, "Theme.MenuHeader"));
         foreach (var category in overflow!)
         {
             var line = new Grid();
             line.ColumnDefinitions.Add(new ColumnDefinition());
             line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            line.Children.Add(Ui.Text(category.Name));
-            var count = Ui.Text(category.Shortcuts.Count.ToString(), 11, "Text.Faint"); count.Margin = new Thickness(8, 0, 6, 0);
+            line.Children.Add(Ui.Text(category.Name, 13, "inherit"));
+            var count = Ui.Text(category.Shortcuts.Count.ToString(), 11, "inherit"); count.Margin = new Thickness(8, 0, 6, 0); count.Opacity = .6;
             line.Children.Add(count.At(1));
-            line.Children.Add(Ui.Icon(Icons.ChevronRight, "Text.Faint", 10).At(2));
-            var row = new Border { Height = 32, Padding = new Thickness(10, 0, 10, 0), Background = Brushes.Transparent, Child = line }.Res(Border.CornerRadiusProperty, "Radius.Small");
-            row.MouseEnter += (_, _) => row.SetResourceReference(Border.BackgroundProperty, "Hover");
-            row.MouseLeave += (_, _) => row.Background = Brushes.Transparent;
-            row.MouseLeftButtonUp += (_, _) => bar.OpenHidden(category);
-            body.Children.Add(row);
+            line.Children.Add(Ui.Icon(Icons.ChevronRight, "inherit", 10).At(2));
+            body.Children.Add(PlainRow(line, () => bar.OpenHidden(category)));
         }
     }
 
@@ -262,7 +266,15 @@ internal sealed class MenuWindow : OverlayWindow
             return;
         }
         rows = UseGrid ? new WrapPanel { Margin = new Thickness(2, 0, 2, 0) } : new StackPanel();
-        for (var i = 0; i < items.Count; i++) rows.Children.Add(UseGrid ? Tile(items[i]) : Row(items[i], i == selected));
+        for (var i = 0; i < items.Count; i++)
+        {
+            var row = UseGrid ? Tile(items[i]) : Row(items[i], i == selected);
+            rows.Children.Add(row);
+            // Rows cascade only when the menu opens or switches category; a theme without the transition shows them at once.
+            if (!animateRows || i > 14) continue;
+            var order = i;
+            row.Loaded += (_, _) => Theming.ThemeMotion.Play(row, "Theme.MenuItem.Enter", fallback: false, delay: order * Theming.ThemeMotion.Stagger(row, "menu-item"));
+        }
         scroller.Content = rows;
         listHost.Child = scroller;
         scroller.ScrollToVerticalOffset(offset);
@@ -311,7 +323,8 @@ internal sealed class MenuWindow : OverlayWindow
         if (renaming == shortcut) name = RenameBox(shortcut);
         else
         {
-            name = Ui.Text(shortcut.Name, 13, session.Status.IsBroken(shortcut) ? "Text.Faint" : "Text");
+            name = Ui.Text(shortcut.Name, 13, session.Status.IsBroken(shortcut) ? "Text.Faint" : "inherit");
+            name.SetResourceReference(TextBlock.FontSizeProperty, "menu-item.FontSize");
             name.Margin = new Thickness(10, 0, 0, 0);
         }
         line.Children.Add(name.At(2));
@@ -322,9 +335,7 @@ internal sealed class MenuWindow : OverlayWindow
             remove.Width = remove.Height = remove.MinHeight = 24; remove.Margin = new Thickness(6, 0, -4, 0);
             line.Children.Add(remove.At(4));
         }
-        var row = new ContentControl { Height = RowHeight, Content = line, Tag = shortcut, ToolTip = Tip(shortcut) }.Res(StyleProperty, "Theme.MenuItem")
-            .Res(Control.PaddingProperty, "menu-item.Padding").Res(MarginProperty, "menu-item.Margin")
-            .Res(Control.BorderThicknessProperty, "menu-item.Border").Res(Control.BorderBrushProperty, "menu-item.BorderBrush");
+        var row = new ContentControl { Height = RowHeight, Content = line, Tag = shortcut, ToolTip = Tip(shortcut) }.Res(StyleProperty, "Theme.MenuItem").Res(MarginProperty, "menu-item.Margin");
         ToolTipService.SetInitialShowDelay(row, 700);
         Theming.ThemeVisual.SetIsSelected(row, highlighted);
         Wire(row, shortcut);
@@ -335,9 +346,10 @@ internal sealed class MenuWindow : OverlayWindow
     {
         var content = new StackPanel { Margin = new Thickness(2, 6, 2, 6) };
         content.Children.Add(IconWithStatus(shortcut, 28));
-        var name = Ui.Text(shortcut.Name, 10, "Text.Muted"); name.TextAlignment = TextAlignment.Center; name.Margin = new Thickness(0, 0, 0, 0);
+        var name = Ui.Text(shortcut.Name, 10, "inherit"); name.TextAlignment = TextAlignment.Center; name.Opacity = .8;
         content.Children.Add(name);
-        var tile = new ContentControl { Width = (MenuWidth - 18) / 5, Content = content, Tag = shortcut, ToolTip = Tip(shortcut) }.Res(StyleProperty, "Theme.MenuItem");
+        var padding = Theme.StyleSheet.Spacing("menu", "padding", 10);
+        var tile = new ContentControl { Width = Math.Floor((MenuWidth - padding[1] - padding[3] - 6) / 5), Padding = new Thickness(0), Content = content, Tag = shortcut, ToolTip = Tip(shortcut) }.Res(StyleProperty, "Theme.MenuItem");
         Wire(tile, shortcut);
         return tile;
     }

@@ -1,0 +1,24 @@
+{
+  "Version": 1,
+  "Id": "brutal",
+  "Name": "Neo-Brutal",
+  "Description": "Необруталізм: пласкі кольори, товсті контури, жорсткі тіні без розмиття та різкі анімації.",
+  "CornerRadius": 0,
+  "SurfaceOpacity": 1,
+  "BorderWidth": 2,
+  "Dark": { "Bar.Bg": "#1F1F26", "Menu.Bg": "#1F1F26", "Popup.Bg": "#1F1F26", "Window.Bg": "#121216", "Sidebar.Bg": "#121216", "Card.Bg": "#1F1F26", "Control.Bg": "#2A2A33", "Text": "#F7F5EE", "Text.Muted": "#CFCBC0", "Text.Faint": "#9C988E", "Surface.Border": "#F7F5EE", "Accent": "#B8FF3C" },
+  "Light": { "Bar.Bg": "#FFFFFF", "Menu.Bg": "#FFFFFF", "Popup.Bg": "#FFFFFF", "Window.Bg": "#FFF4D9", "Sidebar.Bg": "#FFF4D9", "Card.Bg": "#FFFFFF", "Control.Bg": "#FFFFFF", "Text": "#111111", "Text.Muted": "#33312D", "Text.Faint": "#6A665E", "Surface.Border": "#111111", "Accent": "#FFD23F" },
+  "StyleSheetFile": "styles.css",
+  "StyleResourcesFile": "styles.xaml",
+  "Parameters": [
+    { "Id": "border", "Group": "Контури й тіні", "Label": "Товщина контуру", "Type": "Number", "Default": "2", "Minimum": 1, "Maximum": 4, "Step": 0.5 },
+    { "Id": "shadow", "Group": "Контури й тіні", "Label": "Зсув жорсткої тіні", "Type": "Number", "Default": "4", "Minimum": 0, "Maximum": 8, "Step": 1 },
+    { "Id": "shadow-tone", "Group": "Контури й тіні", "Label": "Колір тіні", "Type": "Choice", "Default": "border", "Options": { "border": "Колір контуру", "accent-fill": "Акцент", "text-faint": "Приглушений" } },
+    { "Id": "corner", "Group": "Форма", "Label": "Заокруглення блоків", "Type": "Number", "Default": "0", "Minimum": 0, "Maximum": 14, "Step": 1 },
+    { "Id": "tilt", "Group": "Форма", "Label": "Нахил блока під курсором", "Type": "Number", "Default": "1.5", "Minimum": 0, "Maximum": 4, "Step": 0.5, "Description": "У градусах; 0 — без нахилу." },
+    { "Id": "float", "Group": "Панель", "Label": "Відстань панелі від панелі завдань", "Type": "Number", "Default": "6", "Minimum": 0, "Maximum": 20, "Step": 1 },
+    { "Id": "motion", "Group": "Анімація", "Label": "Анімації появи", "Type": "Toggle", "Default": "true" },
+    { "Id": "stagger", "Group": "Анімація", "Label": "Затримка між елементами", "Type": "Number", "Default": "36", "Minimum": 0, "Maximum": 90, "Step": 2, "Description": "Вкладки, рядки меню й картки з’являються одна за одною." },
+    { "Id": "motion-speed", "Group": "Анімація", "Label": "Швидкість анімацій", "Type": "Number", "Default": "1", "Minimum": 0.5, "Maximum": 2, "Step": 0.25, "Description": "1 — звичайний темп; більше — швидше." }
+  ]
+}

@@ -14,10 +14,16 @@ internal static class ThemeParameterResources
             var key = "Theme.Parameter." + parameter.Id;
             switch (parameter.Type)
             {
-                case "Number": Put(key, double.Parse(value, CultureInfo.InvariantCulture)); break;
+                case "Number":
+                    var number = double.Parse(value, CultureInfo.InvariantCulture);
+                    Put(key, number);
+                    // The same number in the shapes that layout properties expect.
+                    if (number >= 0) { Put(key + ".Thickness", new Thickness(number)); Put(key + ".CornerRadius", new CornerRadius(number)); Put(key + ".Length", new GridLength(number)); }
+                    break;
                 case "Toggle":
                     Put(key, value == "true");
                     Put(key + ".Visibility", value == "true" ? Visibility.Visible : Visibility.Collapsed);
+                    Put(key + ".Opacity", value == "true" ? 1d : 0d);
                     break;
                 case "Color":
                     var color = Theme.Parse(value); var brush = new SolidColorBrush(color); brush.Freeze();

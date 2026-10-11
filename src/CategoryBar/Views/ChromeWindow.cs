@@ -26,10 +26,12 @@ internal class ChromeWindow : Window
         FontSize = 13;
         WindowChrome.SetWindowChrome(this, new WindowChrome { CaptionHeight = 0, CornerRadius = new CornerRadius(0), GlassFrameThickness = new Thickness(1), ResizeBorderThickness = new Thickness(0), UseAeroCaptionButtons = false });
         TitleBar.Background = Brushes.Transparent;
+        // The caption is a logical child of the window, so the title bar's text colour has to be handed to it.
+        TitleBar.SetResourceReference(ForegroundProperty, "titlebar.Foreground");
         // The header is a movable template slot, so drag hit testing follows its actual position.
         TitleBar.MouseLeftButtonDown += (_, e) => { if (e.ButtonState == MouseButtonState.Pressed) { DragMove(); e.Handled = true; } };
 
-        var caption = Ui.Text(title, 12.5, "Text.Muted");
+        var caption = Ui.Text(title, 12.5, "inherit"); caption.Opacity = .8;
         var buttons = new StackPanel { Orientation = Orientation.Horizontal };
         if (canMinimize) buttons.Children.Add(CaptionButton(Icons.Minimize, L.T("Згорнути"), () => WindowState = WindowState.Minimized));
         buttons.Children.Add(CaptionButton(Icons.Close, L.T("Закрити"), Close));
@@ -51,7 +53,7 @@ internal class ChromeWindow : Window
 
     private Button CaptionButton(string icon, string tip, Action click)
     {
-        var button = Ui.IconButton(icon, tip, click);
+        var button = Ui.IconButton(icon, tip, click, "inherit");
         WindowChrome.SetIsHitTestVisibleInChrome(button, true);
         return button;
     }

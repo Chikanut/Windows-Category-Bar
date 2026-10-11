@@ -28,6 +28,13 @@ public sealed class ThemeShaderEffect : ShaderEffect
     public double P5 { get => (double)GetValue(P5Property); set => SetValue(P5Property, value); }
     public double P6 { get => (double)GetValue(P6Property); set => SetValue(P6Property, value); }
     public double P7 { get => (double)GetValue(P7Property); set => SetValue(P7Property, value); }
+    /// <summary>Transparent pixels added around the element before the shader runs, so it can see the element's own edge.</summary>
+    public static readonly DependencyProperty BleedProperty = DependencyProperty.Register(nameof(Bleed), typeof(double), typeof(ThemeShaderEffect), new PropertyMetadata(0d, (o, e) =>
+    {
+        var effect = (ThemeShaderEffect)o; var bleed = Math.Clamp((double)e.NewValue, 0, 32);
+        effect.PaddingLeft = effect.PaddingTop = effect.PaddingRight = effect.PaddingBottom = bleed;
+    }));
+    public double Bleed { get => (double)GetValue(BleedProperty); set => SetValue(BleedProperty, value); }
     private static DependencyProperty Constant(string name, int register) => DependencyProperty.Register(name, typeof(double), typeof(ThemeShaderEffect), new UIPropertyMetadata(0d, PixelShaderConstantCallback(register)));
     public ThemeShaderEffect()
     {

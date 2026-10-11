@@ -35,7 +35,8 @@ internal sealed class BarWindow : OverlayWindow
     private PixelRect monitor, taskbar;
     private Native.Point pressPoint;
     private DateTime openedAt;
-    private bool renaming, reordering, expanded, sliding, escapeDown, contextOpen, dragHover;
+    private bool renaming, reordering, expanded, sliding, escapeDown, contextOpen, dragHover, animateTabs;
+    private int entering = -1;
     private int idleTicks, staleRenameTicks, lastX = int.MinValue, lastY, lastWidth, lastHeight;
 
     protected override bool NeedsKeyboard => renaming;
@@ -46,9 +47,10 @@ internal sealed class BarWindow : OverlayWindow
     internal BarWindow(Session session, IntPtr secondaryTaskbar = default, bool trackTaskbar = true)
     {
         this.session = session; boundTaskbar = secondaryTaskbar;
-        surface = new ContentControl { Content = tabs }.Res(StyleProperty, "Theme.Bar")
-            .Res(Control.BackgroundProperty, "Bar.Bg").Res(Control.BorderBrushProperty, "bar.BorderBrush").Res(Control.PaddingProperty, "bar.Padding");
-        SetRoot(surface);
+        surface = new ContentControl { Content = tabs }.Res(StyleProperty, "Theme.Bar");
+        // The frame leaves room for the theme's shadow and its distance to the taskbar; clicks pass through it.
+        SetRoot(new Grid { Children = { surface } });
+        UseBackdrop(surface, "bar");
         menu = new MenuWindow(session, this);
         surface.AllowDrop = true;
         surface.PreviewDragEnter += (_, e) => dragHover = MenuWindow.DroppedPaths(e.Data).Count > 0;
@@ -83,7 +85,10 @@ internal sealed class BarWindow : OverlayWindow
         else Rebuild();
     }
 
-    private void OnThemeChanged() { lastX = int.MinValue; Dispatcher.BeginInvoke(Rebuild, DispatcherPriority.Loaded); }
+    private void OnThemeChanged() { lastX = int.MinValue; animateTabs = true; Dispatcher.BeginInvoke(Rebuild, DispatcherPriority.Loaded); }
+
+    /// <summary>The visible bar in screen pixels, without the transparent frame around it.</summary>
+    private PixelRect SurfaceBounds => IsVisible && surface.IsVisible && surface.ActualWidth > 0 ? ScreenRect(surface) : Bounds;
 
     private void OnChanged()
     {
@@ -110,6 +115,7 @@ internal sealed class BarWindow : OverlayWindow
             monitor = observed.Monitor; taskbar = observed.Taskbar;
             if (!IsVisible)
             {
+                animateTabs = true;
                 Rebuild();
                 Show();
                 Arrange();
@@ -131,7 +137,8 @@ internal sealed class BarWindow : OverlayWindow
         if (session.Settings.ReserveSpace)
         {
             reservation ??= new AppBarReservation();
-            reservation.Update(monitor, Bounds.Height, taskbar.Top);
+            // Measured from layout, so a bar that is sliding in or out does not resize the reserved strip.
+            reservation.Update(monitor, (int)Math.Round((surface.ActualHeight + surface.Margin.Bottom) * Dpi * Theme.Scale), taskbar.Top);
         }
         else ReleaseReservation();
 
@@ -167,7 +174,8 @@ internal sealed class BarWindow : OverlayWindow
     private void Slide(bool up, Action? then = null)
     {
         UpdateLayout();
-        var distance = Math.Max(surface.ActualHeight, Theme.StyleSheet.Number("bar", "height", 34));
+        // A floating bar also has to cross its own distance to the taskbar before it is out of sight.
+        var distance = Math.Max(surface.ActualHeight, Theme.StyleSheet.Number("bar", "height", 34)) + Theme.StyleSheet.Number("bar", "offset", 0);
         sliding = true;
         Theming.ThemeMotion.Play(surface, up ? "Theme.Bar.Expand" : "Theme.Bar.Collapse",
             () => { sliding = false; then?.Invoke(); }, offset: distance, milliseconds: up ? 180 : 140, exit: !up);
@@ -207,13 +215,14 @@ internal sealed class BarWindow : OverlayWindow
         var categories = session.Config.Categories;
         var tucked = session.Settings.MiniatureMode && !expanded;
         surface.Height = tucked ? 16 : Theme.StyleSheet.Number("bar", "height", 34);
-        surface.BorderThickness = new Thickness(Theme.StyleSheet.Number("bar", "border-width", 1));
-        if (tucked) surface.Padding = new Thickness(2, 2, 2, 0);
-        else surface.SetResourceReference(Control.PaddingProperty, "bar.Padding");
+        // Tucked away, the bar is only a handle resting on the taskbar; otherwise the theme decides its frame.
+        if (tucked) { surface.Padding = new Thickness(2, 2, 2, 0); surface.Margin = new Thickness(0); }
+        else { surface.ClearValue(Control.PaddingProperty); surface.SetResourceReference(MarginProperty, "bar.Frame"); }
+        var animate = animateTabs; animateTabs = false; entering = animate ? 0 : -1;
         if (tucked)
         {
             // Only a small arrow peeks out above the taskbar; the tabs stay tucked behind it.
-            var handle = Chrome(Ui.Icon(Icons.ChevronUp, "Text.Muted", 12), null);
+            var handle = Chrome(Ui.Icon(Icons.ChevronUp, "inherit", 12), null);
             handle.Element.Height = 13;
             handle.Element.Padding = new Thickness(22, 0, 22, 0);
             handle.Element.MouseEnter += (_, _) => ExpandMiniature();
@@ -259,7 +268,7 @@ internal sealed class BarWindow : OverlayWindow
         {
             var more = new StackPanel { Orientation = Orientation.Horizontal };
             more.Children.Add(Ui.Text(L.F("Ще {0}", hidden.Count), 13, "Text.Muted"));
-            var chevron = Ui.Icon(Icons.ChevronUp, "Text.Muted", 12); chevron.Margin = new Thickness(6, 0, -2, 0);
+            var chevron = Ui.Icon(Icons.ChevronUp, "inherit", 12); chevron.Margin = new Thickness(6, 0, -2, 0); chevron.Opacity = .7;
             more.Children.Add(chevron);
             overflowTab = Chrome(more, null);
             var tab = overflowTab;
@@ -272,7 +281,8 @@ internal sealed class BarWindow : OverlayWindow
             };
             views.Add(tab); tabs.Children.Add(tab.Element);
         }
-        var add = Chrome(Ui.Icon(Icons.Plus, "Text.Faint", 13), L.T("Нова категорія"));
+        var addIcon = Ui.Icon(Icons.Plus, "inherit", 13); addIcon.Opacity = .65;
+        var add = Chrome(addIcon, L.T("Нова категорія"));
         add.Element.Padding = new Thickness(8, 0, 8, 0);
         add.Element.MouseLeftButtonUp += (_, _) => CreateCategory();
         tabs.Children.Add(add.Element);
@@ -283,7 +293,7 @@ internal sealed class BarWindow : OverlayWindow
     private void ExpandMiniature()
     {
         if (sliding || expanded || !session.Settings.MiniatureMode) return;
-        expanded = true;
+        expanded = true; animateTabs = true;
         idleTicks = 0;
         Rebuild();
         Slide(true);
@@ -300,23 +310,28 @@ internal sealed class BarWindow : OverlayWindow
     private Tab Chrome(UIElement content, string? tip)
     {
         var element = new ContentControl { Content = content, ToolTip = tip }.Res(StyleProperty, "Theme.Tab")
-            .Res(HeightProperty, "tab.Height").Res(Control.PaddingProperty, "tab.Padding").Res(MarginProperty, "tab.Margin")
-            .Res(Control.BorderThicknessProperty, "tab.Border").Res(Control.BorderBrushProperty, "tab.BorderBrush");
+            .Res(HeightProperty, "tab.Height").Res(MarginProperty, "tab.Margin");
+        Theming.ThemeTransform.SetOrigin(element, new Point(.5, 1));
         var tab = new Tab { Element = element };
-        element.Loaded += (_, _) => Theming.ThemeMotion.Play(element, "Theme.Tab.Enter", offset: 4);
+        // Tabs arrive one after another when the bar appears, not every time a category changes.
+        if (entering >= 0)
+        {
+            var order = entering++;
+            element.Loaded += (_, _) => Theming.ThemeMotion.Play(element, "Theme.Tab.Enter", offset: 4, delay: order * Theming.ThemeMotion.Stagger(element, "tab"));
+        }
         return tab;
     }
 
     private Tab CategoryTab(Category category)
     {
-        var name = Ui.Text(category.Name); name.MaxWidth = 150;
+        var name = Ui.Text(category.Name, 13, "inherit"); name.MaxWidth = 150;
         name.Res(TextBlock.FontSizeProperty, "tab.FontSize").Res(TextBlock.FontWeightProperty, "tab.FontWeight");
         var host = new Grid { Children = { name } };
         var label = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
         label.Children.Add(host);
         if (session.Settings.ShowCounts)
         {
-            var count = Ui.Text(category.Shortcuts.Count.ToString(), 11, "Text.Faint"); count.Margin = new Thickness(6, 1, 0, 0);
+            var count = Ui.Text(category.Shortcuts.Count.ToString(), 11, "inherit"); count.Margin = new Thickness(6, 1, 0, 0); count.Opacity = .6;
             label.Children.Add(count);
         }
         var tab = Chrome(label, null);
@@ -391,7 +406,7 @@ internal sealed class BarWindow : OverlayWindow
     private PixelRect AnchorFor(Category category)
     {
         var tab = views.FirstOrDefault(v => v.Category == category) ?? overflowTab;
-        var bounds = Bounds;
+        var bounds = SurfaceBounds;
         if (tab is null || !tab.Element.IsVisible) return bounds;
         var rect = ScreenRect(tab.Element);
         return new(rect.Left, bounds.Top, rect.Right, bounds.Bottom);
@@ -414,7 +429,8 @@ internal sealed class BarWindow : OverlayWindow
         var rect = ScreenRect(overflowTab.Element);
         if (!menu.ShowsOverflow) openedAt = DateTime.UtcNow;
         closeTimer.Stop();
-        menu.ShowOverflow(hidden, new(rect.Left, Bounds.Top, rect.Right, Bounds.Bottom), monitor);
+        var bounds = SurfaceBounds;
+        menu.ShowOverflow(hidden, new(rect.Left, bounds.Top, rect.Right, bounds.Bottom), monitor);
         UpdateStates();
     }
 
@@ -581,7 +597,7 @@ internal sealed class BarWindow : OverlayWindow
     {
         if (!IsVisible) return false;
         toast ??= new ToastWindow();
-        toast.Show(request, monitor, Bounds.Top);
+        toast.Show(request, monitor, SurfaceBounds.Top);
         return true;
     }
 }

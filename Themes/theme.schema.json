@@ -65,11 +65,11 @@
     "BorderWidth": {
       "type": "number",
       "minimum": 0,
-      "maximum": 3
+      "maximum": 4
     },
     "StyleSheet": {
       "type": "string",
-      "maxLength": 12000
+      "maxLength": 16000
     },
     "Dark": {
       "type": "object",
@@ -239,7 +239,7 @@
     },
     "Parameters": {
       "type": "array",
-      "maxItems": 24,
+      "maxItems": 40,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -298,9 +298,20 @@
               "minLength": 1,
               "maxLength": 80
             }
+          },
+          "Group": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "Heading that gathers related parameters in the settings."
           }
         }
       }
+    },
+    "RadiusScale": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 4,
+      "description": "Multiplies every radius of the stylesheet. Exports store the user's corner setting here."
     }
   }
 }

@@ -15,7 +15,7 @@ public static class ThemeMarkup
     public const string Effects = "clr-namespace:CategoryBar.Theming;assembly=CategoryBar";
     private static readonly HashSet<string> Types = new(("ResourceDictionary Style Setter Trigger MultiTrigger DataTrigger MultiDataTrigger Condition EventTrigger " +
         "ControlTemplate DataTemplate ItemsPanelTemplate FrameworkElement Grid Border StackPanel WrapPanel DockPanel Canvas UniformGrid Viewbox ContentPresenter ContentControl " +
-        "ScrollViewer TextBlock Run Span Bold Italic Underline Button ToggleButton CheckBox RadioButton TextBox ComboBox ComboBoxItem ListBox ListBoxItem ItemsControl " +
+        "ScrollViewer TextBlock Run Span Bold Italic Underline Button ToggleButton CheckBox RadioButton TextBox ComboBox ComboBoxItem ListBox ListBoxItem ItemsControl Thumb " +
         "Rectangle Ellipse Path Polygon Polyline Line GeometryGroup PathGeometry PathFigure LineSegment PolyLineSegment BezierSegment PolyBezierSegment QuadraticBezierSegment ArcSegment RectangleGeometry EllipseGeometry CombinedGeometry " +
         "SolidColorBrush LinearGradientBrush RadialGradientBrush GradientStop DrawingBrush DrawingGroup GeometryDrawing Pen VisualBrush " +
         "ScaleTransform TranslateTransform RotateTransform SkewTransform TransformGroup MatrixTransform DropShadowEffect BlurEffect " +
@@ -47,7 +47,7 @@ public static class ThemeMarkup
                 var type = element.Name.LocalName.Split('.')[0];
                 var member = element.Name.LocalName.Split('.').Last();
                 if (member is "Source" or "UriSource" or "SourceUri" or "Command" or "DataContext" or "Converter") throw new InvalidDataException("Unsupported theme property: " + member);
-                if (!(element.Name.NamespaceName == Presentation && Types.Contains(type)) && !(element.Name.NamespaceName == Effects && type is "ThemeShaderEffect" or "ThemeSurface" or "ThemeVisual")) throw new InvalidDataException("Unsupported theme type: " + element.Name);
+                if (!(element.Name.NamespaceName == Presentation && Types.Contains(type)) && !(element.Name.NamespaceName == Effects && type is "ThemeShaderEffect" or "ThemeSurface" or "ThemeVisual" or "ThemeTransform")) throw new InvalidDataException("Unsupported theme type: " + element.Name);
                 foreach (var attribute in element.Attributes())
                 {
                     var name = attribute.Name.LocalName;

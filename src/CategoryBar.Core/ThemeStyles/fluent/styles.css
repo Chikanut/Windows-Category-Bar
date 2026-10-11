@@ -1,0 +1,14 @@
+/* Fluent: quiet Windows surfaces, a docked bar and an underline for the open category. */
+.bar { height: 40px; padding: 4px; gap: 3px; border-radius: 10px; offset: var(--p-bar-offset); }
+.tab { height: 32px; padding: 0px 14px; border-radius: 8px; font-size: 13px; font-weight: semibold; indicator: var(--p-tab-indicator); stagger: 18ms; }
+.menu { width: var(--p-menu-width); padding: 10px; gap: 2px; border-radius: 14px; offset: 8px; box-shadow: 0px 6px 24px rgba(0,0,0,0.2); }
+.menu-item { height: var(--p-row-height); padding: 0px 12px; border-radius: 8px; icon-size: 22px; }
+.button { min-height: 34px; padding: 5px 14px; border-radius: 8px; font-size: 13px; font-weight: semibold; }
+.input { min-height: 34px; padding: 5px 12px; border-radius: 8px; }
+.card { padding: 18px 20px; gap: 8px; border-radius: 12px; box-shadow: 0px 1px 4px rgba(0,0,0,0.06); }
+.sidebar { width: var(--p-navigation-width); }
+.sidebar-item { height: 38px; padding: 0px 14px; margin: 2px 0px; border-radius: 8px; }
+.sidebar-item:selected { background: var(--accent-soft); }
+.window { border-radius: 8px; border-width: 1px; }
+.titlebar { height: 40px; }
+.toast { border-radius: 12px; border-width: 1px; }

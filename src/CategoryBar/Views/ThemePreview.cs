@@ -1,49 +1,55 @@
 namespace CategoryBar.Views;
 
-/// <summary>Uses the theme's real templates and stylesheet in an isolated resource scope.</summary>
+/// <summary>
+/// A small live sample of a theme: its bar with tabs and a card with a button, drawn by the theme's real
+/// templates, stylesheet and parameters inside a resource scope of its own.
+/// </summary>
 internal static class ThemePreview
 {
     internal static FrameworkElement Create(ThemeDefinition theme, bool dark, Settings? settings = null)
     {
-        var css = ThemeStyleSheet.Parse(theme.StyleSheet);
-        if (settings is not null && settings.ThemeColors.TryGetValue(theme.Id, out var colors))
-            css = ThemeStyleSheet.Parse(css.WithSurfaceColors(colors.Keys.Where(key => key.StartsWith(dark ? "Dark:" : "Light:", StringComparison.Ordinal)).Select(key => key[(key.IndexOf(':') + 1)..])));
-        var palette = settings is null ? (dark ? theme.Dark : theme.Light) : Theme.Palette(settings, theme, dark);
+        // The selected theme is shown as tuned; any other one as it would look right after choosing it.
+        var applied = new Settings();
+        if (settings is not null) { applied.ThemeColors = settings.ThemeColors; applied.ThemeParameters = settings.ThemeParameters; applied.AccentColor = settings.AccentColor; }
+        if (settings is not null && settings.ThemeId == theme.Id)
+        {
+            applied.AccentMode = settings.AccentMode; applied.TintSurfaces = settings.TintSurfaces;
+            applied.CornerRadius = settings.CornerRadius; applied.SurfaceOpacity = settings.SurfaceOpacity; applied.FontName = settings.FontName;
+        }
+        else Theme.Select(applied, theme);
+
         var scope = new StackPanel { Width = 270 };
-        scope.Resources["Font"] = new FontFamily(theme.FontName);
-        System.Windows.Documents.TextElement.SetFontFamily(scope, (FontFamily)scope.Resources["Font"]);
-        var shared = new ResourceDictionary { Source = new Uri("/CategoryBar;component/Themes/ThemeSurfaces.xaml", UriKind.Relative) };
-        scope.Resources.MergedDictionaries.Add(shared);
-        scope.Resources.MergedDictionaries.Add(ThemeStyleResources.Templates(css.Skin));
+        // The shared templates first, so another theme's replacements at application level cannot leak in.
+        foreach (var file in new[] { "ThemeControls", "ThemeSurfaces" })
+            scope.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/CategoryBar;component/Themes/" + file + ".xaml", UriKind.Relative) });
         scope.Resources.MergedDictionaries.Add(Theming.ThemeResourceLoader.Load(theme));
-        foreach (var (key, value) in palette) scope.Resources[key] = new SolidColorBrush(Theme.Parse(value));
-        var active = settings is not null && theme.Id == settings.ThemeId;
-        var accent = active ? Theme.Accent : Theme.Parse(palette["Accent"]);
-        scope.Resources["Accent"] = new SolidColorBrush(accent);
-        scope.Resources["Accent.Soft"] = new SolidColorBrush(Color.FromArgb(46, accent.R, accent.G, accent.B));
-        scope.Resources["Hover"] = Brushes.Transparent;
-        scope.Resources["Accent.Text"] = active ? Application.Current.Resources["Accent.Text"] : dark ? Brushes.Black : Brushes.White;
-        scope.Resources["Glass.Rim"] = new SolidColorBrush(Colors.White) { Opacity = .4 };
-        scope.Resources["Glass.Sheen"] = new LinearGradientBrush(Color.FromArgb(45, 255, 255, 255), Colors.Transparent, 90);
-        ThemeStyleResources.Apply(scope.Resources, css);
-        Theming.ThemeParameterResources.Apply(scope.Resources, theme, settings ?? new Settings());
-        scope.Resources["Theme.ControlMaterialTemplate"] = theme.Material == "Glass" ? Application.Current.Resources["Theme.FlatMaterialTemplate"] : scope.Resources["Theme.MaterialTemplate"];
+        var sheet = Theme.Fill(scope.Resources, theme, applied, dark).Sheet;
+        scope.Resources["Font"] = new FontFamily(applied.FontName + ", Segoe UI Variable Text, Segoe UI");
+        System.Windows.Documents.TextElement.SetFontFamily(scope, (FontFamily)scope.Resources["Font"]);
+
         var tabs = new StackPanel { Orientation = Orientation.Horizontal };
         for (var i = 0; i < 3; i++)
         {
-            var label = new TextBlock { Text = i == 0 ? "Aa" : "•••", FontSize = css.Number("tab", "font-size", 13), VerticalAlignment = VerticalAlignment.Center };
-            label.SetResourceReference(TextBlock.ForegroundProperty, i == 0 ? "Accent" : "Text.Muted");
+            var label = new TextBlock { Text = i == 0 ? "Aa" : "•••", VerticalAlignment = VerticalAlignment.Center }
+                .Res(TextBlock.FontSizeProperty, "tab.FontSize").Res(TextBlock.FontWeightProperty, "tab.FontWeight");
             var tab = new ContentControl { Content = label }.Res(FrameworkElement.StyleProperty, "Theme.Tab")
                 .Res(FrameworkElement.HeightProperty, "tab.Height").Res(FrameworkElement.MarginProperty, "tab.Margin");
             Theming.ThemeVisual.SetIsSelected(tab, i == 0);
             tabs.Children.Add(tab);
         }
-        scope.Children.Add(new ContentControl { Content = tabs }.Res(FrameworkElement.StyleProperty, "Theme.Bar"));
-        var button = Ui.Button("Aa", () => { }, "Button.Primary"); button.IsHitTestVisible = false;
+        var bar = new ContentControl { Content = tabs, Height = sheet.Number("bar", "height", 40), HorizontalAlignment = HorizontalAlignment.Left }.Res(FrameworkElement.StyleProperty, "Theme.Bar");
+        scope.Children.Add(new Border { Padding = new Thickness(6, 6, 6, 10), Child = bar });
+        var button = Ui.Button("Aa", () => { }, "Button.Primary"); button.IsHitTestVisible = false; button.Focusable = false;
         button.HorizontalAlignment = HorizontalAlignment.Left; button.MinWidth = 72;
         var row = new DockPanel(); DockPanel.SetDock(button, Dock.Right); row.Children.Add(button);
         row.Children.Add(new TextBlock { Text = "Aa", VerticalAlignment = VerticalAlignment.Center }.Res(TextBlock.ForegroundProperty, "Text"));
-        var card = new ContentControl { Content = row, Margin = new Thickness(0, 8, 0, 0) }.Res(FrameworkElement.StyleProperty, "Theme.Card"); scope.Children.Add(card);
-        return new Viewbox { Child = scope, Stretch = Stretch.Uniform, Height = 90, HorizontalAlignment = HorizontalAlignment.Left, IsHitTestVisible = false };
+        scope.Children.Add(new Border { Padding = new Thickness(6, 0, 6, 8), Child = new ContentControl { Content = row, Margin = new Thickness(0) }.Res(FrameworkElement.StyleProperty, "Theme.Card") });
+        // The sample sits on the theme's own window colour, whatever theme the settings window currently wears.
+        return new Border
+        {
+            Width = 300, Height = 116, HorizontalAlignment = HorizontalAlignment.Left, IsHitTestVisible = false, CornerRadius = new CornerRadius(8),
+            Background = new SolidColorBrush(Theme.Parse(Theme.Palette(applied, theme, dark)["Window.Bg"])),
+            Child = new Viewbox { Child = scope, Stretch = Stretch.Uniform, Margin = new Thickness(8), HorizontalAlignment = HorizontalAlignment.Left }
+        };
     }
 }

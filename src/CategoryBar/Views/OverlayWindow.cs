@@ -27,6 +27,93 @@ internal abstract class OverlayWindow : Window
         ApplyTextMode();
         Theme.Changed += ApplyTextMode;
         Closed += (_, _) => Theme.Changed -= ApplyTextMode;
+        // No overlay of this application may appear in the picture another overlay shows behind itself.
+        ScreenBackdrop.Exclude(Handle, true);
+        Closed += (_, _) => ScreenBackdrop.Exclude(Handle, false);
+    }
+
+    // ---- Live backdrop ---------------------------------------------------------------------------
+    // A theme may ask (".bar { backdrop: live }") for the picture of the screen behind a surface. The window
+    // then publishes it as its own "Theme.Backdrop" brush, which the theme's material shader bends and tints.
+
+    private readonly System.Windows.Threading.DispatcherTimer backdropClock = new() { Interval = TimeSpan.FromMilliseconds(33) };
+    private ScreenBackdrop.Target? backdrop;
+    private FrameworkElement? glass;
+    private string glassSelector = "";
+    private System.Windows.Media.Imaging.WriteableBitmap? picture;
+    private double? bleed;
+
+    /// <summary>Names the surface that may show the screen behind it and the stylesheet selector that decides.</summary>
+    protected void UseBackdrop(FrameworkElement surface, string selector)
+    {
+        glass = surface; glassSelector = selector;
+        backdropClock.Tick += (_, _) => TrackBackdrop();
+        IsVisibleChanged += (_, _) => SyncBackdrop();
+        Theme.Changed += SyncBackdrop;
+        Closed += (_, _) => { Theme.Changed -= SyncBackdrop; StopBackdrop(); };
+    }
+
+    /// <summary>For windows that rebuild their surface: the new element takes over the backdrop.</summary>
+    protected void MoveBackdrop(FrameworkElement surface) { glass = surface; bleed = null; }
+
+    private void SyncBackdrop()
+    {
+        bleed = null;
+        var wanted = IsVisible && Theme.TransparencyEnabled && ScreenBackdrop.Available && TryFindResource(glassSelector + ".Backdrop") is true;
+        if (!wanted) { StopBackdrop(); return; }
+        if (backdrop is not null) return;
+        backdrop = ScreenBackdrop.Attach(ShowBackdrop);
+        backdropClock.Start();
+        TrackBackdrop();
+    }
+
+    private void StopBackdrop()
+    {
+        backdropClock.Stop();
+        if (backdrop is null) return;
+        ScreenBackdrop.Detach(backdrop);
+        backdrop = null; picture = null;
+        Resources.Remove("Theme.Backdrop"); Resources.Remove("Theme.Backdrop.Enabled");
+    }
+
+    /// <summary>Keeps the pictured area on the surface as it moves, grows or plays a transition.</summary>
+    private void TrackBackdrop()
+    {
+        if (backdrop is null || glass is null) return;
+        if (!ScreenBackdrop.Available) { StopBackdrop(); return; }
+        if (!glass.IsVisible || glass.ActualWidth < 1 || PresentationSource.FromVisual(glass) is null) { backdrop.Area = default; return; }
+        // The shader works on the surface plus the transparent rim its effect adds around it.
+        bleed ??= Effects(glass, 5).OfType<Theming.ThemeShaderEffect>().FirstOrDefault()?.Bleed ?? 0;
+        var rim = (int)Math.Round(bleed.Value * Dpi * Theme.Scale);
+        var area = ScreenRect(glass);
+        backdrop.Blur = TryFindResource(glassSelector + ".BackdropBlur") is double blur ? blur * Dpi * Theme.Scale : 0;
+        backdrop.Area = new(area.Left - rim, area.Top - rim, area.Right + rim, area.Bottom + rim);
+    }
+
+    private static IEnumerable<System.Windows.Media.Effects.Effect> Effects(DependencyObject root, int depth)
+    {
+        if (root is UIElement { Effect: { } effect }) yield return effect;
+        if (depth == 0) yield break;
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+            foreach (var nested in Effects(VisualTreeHelper.GetChild(root, i), depth - 1)) yield return nested;
+    }
+
+    /// <summary>Called on the capture thread with a new frame.</summary>
+    private void ShowBackdrop(byte[] pixels, int width, int height)
+    {
+        var target = backdrop;
+        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Render, () =>
+        {
+            if (backdrop is null || backdrop != target) return;
+            if (picture is null || picture.PixelWidth != width || picture.PixelHeight != height)
+            {
+                picture = new System.Windows.Media.Imaging.WriteableBitmap(width, height, 96, 96, PixelFormats.Bgr32, null);
+                Resources["Theme.Backdrop"] = new ImageBrush(picture) { Stretch = Stretch.Fill };
+            }
+            picture.WritePixels(new Int32Rect(0, 0, width, height), pixels, width * 4, 0);
+            // Changing a resource re-evaluates the whole window, so it is only done when the picture first arrives.
+            if (Resources["Theme.Backdrop.Enabled"] is not 1d) Resources["Theme.Backdrop.Enabled"] = 1d;
+        });
     }
 
     private void ApplyTextMode() =>

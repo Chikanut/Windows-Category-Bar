@@ -8,6 +8,8 @@ public sealed class ThemeParameter
     public string Id { get; set; } = "";
     public string Label { get; set; } = "";
     public string Description { get; set; } = "";
+    /// <summary>Optional heading that gathers related parameters in the settings.</summary>
+    public string Group { get; set; } = "";
     public string Type { get; set; } = "Number";
     public string Default { get; set; } = "0";
     public double Minimum { get; set; }
@@ -15,9 +17,11 @@ public sealed class ThemeParameter
     public double Step { get; set; } = .05;
     public Dictionary<string, string> Options { get; set; } = [];
 
+    public const int MaximumCount = 40;
+
     public void Validate()
     {
-        if (!ThemeDefinition.IsValidId(Id) || string.IsNullOrWhiteSpace(Label) || Label.Length > 80
+        if (!ThemeDefinition.IsValidId(Id) || Group is null || Group.Length > 60 || string.IsNullOrWhiteSpace(Label) || Label.Length > 80
             || Description is null || Description.Length > 300 || Options is null || Options.Count > 16
             || Options.Any(p => !ThemeDefinition.IsValidId(p.Key) || string.IsNullOrWhiteSpace(p.Value) || p.Value.Length > 80)
             || Type is not ("Number" or "Toggle" or "Color" or "Choice")
@@ -34,6 +38,15 @@ public sealed class ThemeParameter
         "Color" => Settings.IsHexColor(value),
         "Choice" => Options.ContainsKey(value),
         _ => false
+    };
+
+    /// <summary>Every value at an end of the parameter's range, used to check whatever depends on it.</summary>
+    public IEnumerable<string> Extremes() => Type switch
+    {
+        "Number" => [Minimum.ToString("R", CultureInfo.InvariantCulture), Maximum.ToString("R", CultureInfo.InvariantCulture)],
+        "Choice" => Options.Keys,
+        "Toggle" => ["true", "false"],
+        _ => [Default]
     };
 
     public string Resolve(Settings settings, string themeId) => settings.ThemeParameters.TryGetValue(themeId, out var values)

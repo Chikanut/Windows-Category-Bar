@@ -1,78 +1,129 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <ControlTemplate x:Key="Button.IconTemplate" TargetType="Button">
-    <Border x:Name="face" Background="{TemplateBinding Background}" CornerRadius="{DynamicResource button.Radius}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
-    <ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="face" Property="Background" Value="{DynamicResource Hover}"/></Trigger></ControlTemplate.Triggers>
-  </ControlTemplate>
-  <ControlTemplate x:Key="Navigation.Template" TargetType="Button">
-    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{DynamicResource sidebar-item.Radius}">
-      <Grid><Border x:Name="hover" Background="{DynamicResource Hover}" CornerRadius="{DynamicResource sidebar-item.Radius}" Opacity="0"/><ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Left" VerticalAlignment="Center"/></Grid>
-    </Border>
-    <ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="hover" Property="Background" Value="{DynamicResource sidebar-item:hover.Background}"/><Setter TargetName="hover" Property="Opacity" Value="1"/></Trigger></ControlTemplate.Triggers>
-  </ControlTemplate>
-  <Style x:Key="Theme.Button" TargetType="Button" BasedOn="{StaticResource Button.Base}">
-    <Setter Property="Background" Value="{DynamicResource button.Background}"/><Setter Property="Foreground" Value="{DynamicResource button.Foreground}"/><Setter Property="BorderBrush" Value="{DynamicResource button.BorderBrush}"/>
-    <Setter Property="Opacity" Value="{DynamicResource button.Opacity}"/>
-    <Setter Property="Template" Value="{DynamicResource Theme.ButtonTemplate}"/>
-    <Setter Property="MinHeight" Value="{DynamicResource button.MinHeight}"/>
-    <Setter Property="Padding" Value="{DynamicResource button.Padding}"/>
-    <Setter Property="BorderThickness" Value="{DynamicResource button.Border}"/>
-    <Setter Property="FontSize" Value="{DynamicResource button.FontSize}"/>
-    <Setter Property="FontWeight" Value="{DynamicResource button.FontWeight}"/>
-  </Style>
-  <Style TargetType="Button" BasedOn="{StaticResource Theme.Button}"/>
-  <Style x:Key="Button.Secondary" TargetType="Button" BasedOn="{StaticResource Theme.Button}">
-    <Setter Property="Background" Value="{DynamicResource button.Background}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource button.BorderBrush}"/>
-  </Style>
-  <Style x:Key="Button.Primary" TargetType="Button" BasedOn="{StaticResource Theme.Button}">
-    <Setter Property="Template" Value="{DynamicResource Theme.PrimaryButtonTemplate}"/>
-    <Setter Property="Background" Value="{DynamicResource button-primary.Background}"/>
-    <Setter Property="Foreground" Value="{DynamicResource button-primary.Foreground}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource button-primary.BorderBrush}"/>
-    <Setter Property="FontWeight" Value="{DynamicResource button-primary.FontWeight}"/>
-    <Setter Property="FontSize" Value="{DynamicResource button-primary.FontSize}"/><Setter Property="Padding" Value="{DynamicResource button-primary.Padding}"/>
-    <Setter Property="BorderThickness" Value="{DynamicResource button-primary.Border}"/>
-  </Style>
-  <Style x:Key="Button.Danger" TargetType="Button" BasedOn="{StaticResource Theme.Button}">
-    <Setter Property="Background" Value="{DynamicResource Danger}"/>
-    <Setter Property="Foreground" Value="White"/>
-  </Style>
-  <Style x:Key="Button.Icon" TargetType="Button" BasedOn="{StaticResource Theme.Button}">
-    <Setter Property="Template" Value="{DynamicResource Button.IconTemplate}"/>
-    <Setter Property="Padding" Value="0"/><Setter Property="Width" Value="28"/><Setter Property="Height" Value="28"/><Setter Property="MinHeight" Value="28"/>
-    <Setter Property="Focusable" Value="False"/><Setter Property="BorderThickness" Value="0"/>
-  </Style>
-  <Style x:Key="Navigation.Item" TargetType="Button" BasedOn="{StaticResource Theme.Button}">
-    <Setter Property="Template" Value="{DynamicResource Navigation.Template}"/>
-    <Setter Property="Height" Value="{DynamicResource sidebar-item.Height}"/>
-    <Setter Property="MinHeight" Value="0"/><Setter Property="Padding" Value="{DynamicResource sidebar-item.Padding}"/>
-    <Setter Property="Margin" Value="{DynamicResource sidebar-item.Margin}"/>
-    <Setter Property="FontWeight" Value="{DynamicResource sidebar-item.FontWeight}"/>
-    <Setter Property="HorizontalContentAlignment" Value="Left"/><Setter Property="BorderThickness" Value="0"/>
-    <Setter Property="Background" Value="{DynamicResource sidebar-item.Background}"/>
-    <Setter Property="BorderBrush" Value="{DynamicResource sidebar-item.BorderBrush}"/>
-    <Style.Triggers><Trigger Property="Tag" Value="selected"><Setter Property="Background" Value="{DynamicResource sidebar-item:selected.Background}"/><Setter Property="BorderBrush" Value="{DynamicResource sidebar-item:selected.BorderBrush}"/></Trigger></Style.Triggers>
-  </Style>
-  <Style x:Key="Theme.Card" TargetType="ContentControl">
-    <Setter Property="Template" Value="{DynamicResource Theme.CardTemplate}"/>
-    <Setter Property="Background" Value="{DynamicResource card.Background}"/><Setter Property="BorderBrush" Value="{DynamicResource card.BorderBrush}"/>
-    <Setter Property="Opacity" Value="{DynamicResource card.Opacity}"/>
-    <Setter Property="BorderThickness" Value="{DynamicResource card.Border}"/><Setter Property="Padding" Value="{DynamicResource card.Padding}"/>
-    <Setter Property="Margin" Value="{DynamicResource card.Margin}"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-    <Setter Property="MinHeight" Value="56"/>
-  </Style>
-  <Style TargetType="TextBox" BasedOn="{StaticResource Input.Base}">
-    <Setter Property="FontSize" Value="{DynamicResource input.FontSize}"/><Setter Property="FontWeight" Value="{DynamicResource input.FontWeight}"/>
-    <Setter Property="Opacity" Value="{DynamicResource input.Opacity}"/>
-    <Setter Property="Background" Value="{DynamicResource input.Background}"/><Setter Property="Foreground" Value="{DynamicResource input.Foreground}"/><Setter Property="BorderBrush" Value="{DynamicResource input.BorderBrush}"/>
-    <Setter Property="Template" Value="{DynamicResource Theme.InputTemplate}"/>
-    <Setter Property="MinHeight" Value="{DynamicResource input.MinHeight}"/><Setter Property="Padding" Value="{DynamicResource input.Padding}"/>
-    <Setter Property="BorderThickness" Value="{DynamicResource input.Border}"/>
-  </Style>
-<Style x:Key="Theme.Text.Caption" TargetType="TextBlock"><Setter Property="FontWeight" Value="Normal"/><Setter Property="FontSize" Value="11"/></Style>
-<Style x:Key="Theme.Text.Small" TargetType="TextBlock"><Setter Property="FontWeight" Value="Normal"/><Setter Property="FontSize" Value="12"/></Style>
-<Style x:Key="Theme.Text.Body" TargetType="TextBlock"><Setter Property="FontWeight" Value="Normal"/><Setter Property="FontSize" Value="13"/></Style>
-<Style x:Key="Theme.Text.Title" TargetType="TextBlock"><Setter Property="FontWeight" Value="Normal"/><Setter Property="FontSize" Value="14"/></Style>
-<Style x:Key="Theme.Text.Heading" TargetType="TextBlock"><Setter Property="FontWeight" Value="Normal"/><Setter Property="FontSize" Value="22"/></Style>
-<Style x:Key="Theme.Text.Display" TargetType="TextBlock"><Setter Property="FontWeight" Value="Normal"/><Setter Property="FontSize" Value="32"/></Style>
+<!-- Buttons, inputs, cards, navigation and text roles drawn from the theme's stylesheet. -->
+<ControlTemplate x:Key="Theme.ButtonTemplate" TargetType="Button"><Grid Background="Transparent">
+  <ContentControl x:Name="face" Focusable="False" IsHitTestVisible="False" Template="{DynamicResource Theme.ControlMaterialTemplate}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Tag="{DynamicResource button.Radius}" Effect="{DynamicResource button.Shadow}"/>
+  <Border Background="{DynamicResource button.Overlay}" CornerRadius="{DynamicResource button.Radius}" IsHitTestVisible="False"/>
+  <Border BorderBrush="{DynamicResource button.Rim}" BorderThickness="{DynamicResource button.RimWidth}" CornerRadius="{DynamicResource button.Radius}" Margin="1" IsHitTestVisible="False"/>
+  <Border x:Name="state" Background="Transparent" CornerRadius="{DynamicResource button.Radius}" IsHitTestVisible="False"/>
+  <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+</Grid>
+<ControlTemplate.Triggers>
+  <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="state" Property="Background" Value="{DynamicResource button:hover.Background}"/><Setter TargetName="face" Property="BorderBrush" Value="{DynamicResource button:hover.BorderBrush}"/><Setter Property="Foreground" Value="{DynamicResource button:hover.Foreground}"/><Setter TargetName="face" Property="Effect" Value="{DynamicResource button:hover.Shadow}"/></Trigger>
+  <Trigger Property="IsPressed" Value="True"><Setter TargetName="state" Property="Background" Value="{DynamicResource button:pressed.Background}"/><Setter TargetName="face" Property="BorderBrush" Value="{DynamicResource button:pressed.BorderBrush}"/><Setter Property="Foreground" Value="{DynamicResource button:pressed.Foreground}"/><Setter TargetName="face" Property="Effect" Value="{DynamicResource button:pressed.Shadow}"/></Trigger>
+  <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="face" Property="BorderBrush" Value="{DynamicResource button:focus.BorderBrush}"/></Trigger>
+  <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="{DynamicResource button:disabled.Opacity}"/></Trigger>
+</ControlTemplate.Triggers></ControlTemplate>
+<ControlTemplate x:Key="Theme.PrimaryButtonTemplate" TargetType="Button"><Grid Background="Transparent">
+  <ContentControl x:Name="face" Focusable="False" IsHitTestVisible="False" Template="{DynamicResource Theme.ControlMaterialTemplate}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Tag="{DynamicResource button-primary.Radius}" Effect="{DynamicResource button-primary.Shadow}"/>
+  <Border Background="{DynamicResource button-primary.Overlay}" CornerRadius="{DynamicResource button-primary.Radius}" IsHitTestVisible="False"/>
+  <Border BorderBrush="{DynamicResource button-primary.Rim}" BorderThickness="{DynamicResource button-primary.RimWidth}" CornerRadius="{DynamicResource button-primary.Radius}" Margin="1" IsHitTestVisible="False"/>
+  <Border x:Name="state" Background="Transparent" CornerRadius="{DynamicResource button-primary.Radius}" IsHitTestVisible="False"/>
+  <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+</Grid>
+<ControlTemplate.Triggers>
+  <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="state" Property="Background" Value="{DynamicResource button-primary:hover.Background}"/><Setter TargetName="face" Property="BorderBrush" Value="{DynamicResource button-primary:hover.BorderBrush}"/><Setter Property="Foreground" Value="{DynamicResource button-primary:hover.Foreground}"/><Setter TargetName="face" Property="Effect" Value="{DynamicResource button-primary:hover.Shadow}"/></Trigger>
+  <Trigger Property="IsPressed" Value="True"><Setter TargetName="state" Property="Background" Value="{DynamicResource button-primary:pressed.Background}"/><Setter TargetName="face" Property="BorderBrush" Value="{DynamicResource button-primary:pressed.BorderBrush}"/><Setter Property="Foreground" Value="{DynamicResource button-primary:pressed.Foreground}"/><Setter TargetName="face" Property="Effect" Value="{DynamicResource button-primary:pressed.Shadow}"/></Trigger>
+  <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="face" Property="BorderBrush" Value="{DynamicResource button-primary:focus.BorderBrush}"/></Trigger>
+  <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="{DynamicResource button-primary:disabled.Opacity}"/></Trigger>
+</ControlTemplate.Triggers></ControlTemplate>
+<ControlTemplate x:Key="Theme.CardTemplate" TargetType="ContentControl"><Grid Background="Transparent">
+  <ContentControl x:Name="face" Focusable="False" IsHitTestVisible="False" Template="{DynamicResource Theme.MaterialTemplate}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Tag="{DynamicResource card.Radius}" Effect="{DynamicResource card.Shadow}"/>
+  <Border Background="{DynamicResource card.Overlay}" CornerRadius="{DynamicResource card.Radius}" IsHitTestVisible="False"/>
+  <Border BorderBrush="{DynamicResource card.Rim}" BorderThickness="{DynamicResource card.RimWidth}" CornerRadius="{DynamicResource card.Radius}" Margin="1" IsHitTestVisible="False"/>
+  <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+</Grid></ControlTemplate>
+<ControlTemplate x:Key="Theme.InputTemplate" TargetType="TextBox"><Grid Background="Transparent">
+  <ContentControl x:Name="face" Focusable="False" IsHitTestVisible="False" Template="{DynamicResource Theme.ControlMaterialTemplate}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Tag="{DynamicResource input.Radius}" Effect="{DynamicResource input.Shadow}"/>
+  <Border Background="{DynamicResource input.Overlay}" CornerRadius="{DynamicResource input.Radius}" IsHitTestVisible="False"/>
+  <Border BorderBrush="{DynamicResource input.Rim}" BorderThickness="{DynamicResource input.RimWidth}" CornerRadius="{DynamicResource input.Radius}" Margin="1" IsHitTestVisible="False"/>
+  <Border x:Name="state" Background="Transparent" CornerRadius="{DynamicResource input.Radius}" IsHitTestVisible="False"/>
+  <TextBlock x:Name="hint" Text="{TemplateBinding Tag}" Foreground="{DynamicResource Text.Faint}" Margin="{TemplateBinding Padding}" Padding="2,0" VerticalAlignment="Center" IsHitTestVisible="False" Visibility="Collapsed"/>
+  <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" Focusable="False" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+</Grid>
+<ControlTemplate.Triggers>
+  <Trigger Property="Text" Value=""><Setter TargetName="hint" Property="Visibility" Value="Visible"/></Trigger>
+  <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="state" Property="Background" Value="{DynamicResource input:hover.Background}"/></Trigger>
+  <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="face" Property="BorderBrush" Value="{DynamicResource input:focus.BorderBrush}"/><Setter TargetName="state" Property="BorderBrush" Value="{DynamicResource input:focus.BorderBrush}"/><Setter TargetName="state" Property="BorderThickness" Value="1.5"/></Trigger>
+  <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="{DynamicResource input:disabled.Opacity}"/></Trigger>
+</ControlTemplate.Triggers></ControlTemplate>
+<ControlTemplate x:Key="Button.IconTemplate" TargetType="Button">
+  <Border x:Name="face" Background="{TemplateBinding Background}" CornerRadius="{DynamicResource Radius.Small}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+  <ControlTemplate.Triggers>
+    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="face" Property="Background" Value="{DynamicResource Hover}"/></Trigger>
+    <Trigger Property="IsPressed" Value="True"><Setter TargetName="face" Property="Background" Value="{DynamicResource Pressed}"/></Trigger>
+  </ControlTemplate.Triggers>
+</ControlTemplate>
+<!-- Navigation entries report the current page through Tag="selected". -->
+<ControlTemplate x:Key="Navigation.Template" TargetType="Button"><Grid Background="Transparent">
+  <ContentControl x:Name="face" Focusable="False" IsHitTestVisible="False" Template="{DynamicResource Theme.ControlMaterialTemplate}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Tag="{DynamicResource sidebar-item.Radius}" Effect="{DynamicResource sidebar-item.Shadow}"/>
+  <Border Background="{DynamicResource sidebar-item.Overlay}" CornerRadius="{DynamicResource sidebar-item.Radius}" IsHitTestVisible="False"/>
+  <Border BorderBrush="{DynamicResource sidebar-item.Rim}" BorderThickness="{DynamicResource sidebar-item.RimWidth}" CornerRadius="{DynamicResource sidebar-item.Radius}" Margin="1" IsHitTestVisible="False"/>
+  <Border x:Name="state" Background="Transparent" CornerRadius="{DynamicResource sidebar-item.Radius}" IsHitTestVisible="False"/>
+  <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center"/>
+</Grid>
+<ControlTemplate.Triggers>
+  <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="state" Property="Background" Value="{DynamicResource sidebar-item:hover.Background}"/></Trigger>
+  <Trigger Property="Tag" Value="selected"><Setter TargetName="face" Property="Effect" Value="{DynamicResource sidebar-item:selected.Shadow}"/><Setter TargetName="state" Property="Background" Value="Transparent"/></Trigger>
+  <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="face" Property="BorderBrush" Value="{DynamicResource sidebar-item:focus.BorderBrush}"/></Trigger>
+</ControlTemplate.Triggers></ControlTemplate>
+<Style x:Key="Theme.Button" TargetType="Button" BasedOn="{StaticResource Button.Base}">
+  <Setter Property="Template" Value="{DynamicResource Theme.ButtonTemplate}"/>
+  <Setter Property="Background" Value="{DynamicResource button.Background}"/><Setter Property="Foreground" Value="{DynamicResource button.Foreground}"/><Setter Property="BorderBrush" Value="{DynamicResource button.BorderBrush}"/>
+  <Setter Property="Opacity" Value="{DynamicResource button.Opacity}"/>
+  <Setter Property="MinHeight" Value="{DynamicResource button.MinHeight}"/><Setter Property="Padding" Value="{DynamicResource button.Padding}"/>
+  <Setter Property="BorderThickness" Value="{DynamicResource button.Border}"/>
+  <Setter Property="FontSize" Value="{DynamicResource button.FontSize}"/><Setter Property="FontWeight" Value="{DynamicResource button.FontWeight}"/>
+</Style>
+<Style TargetType="Button" BasedOn="{StaticResource Theme.Button}"/>
+<Style x:Key="Button.Secondary" TargetType="Button" BasedOn="{StaticResource Theme.Button}"/>
+<Style x:Key="Button.Primary" TargetType="Button" BasedOn="{StaticResource Theme.Button}">
+  <Setter Property="Template" Value="{DynamicResource Theme.PrimaryButtonTemplate}"/>
+  <Setter Property="Background" Value="{DynamicResource button-primary.Background}"/><Setter Property="Foreground" Value="{DynamicResource button-primary.Foreground}"/><Setter Property="BorderBrush" Value="{DynamicResource button-primary.BorderBrush}"/>
+  <Setter Property="FontWeight" Value="{DynamicResource button-primary.FontWeight}"/><Setter Property="FontSize" Value="{DynamicResource button-primary.FontSize}"/>
+  <Setter Property="Padding" Value="{DynamicResource button-primary.Padding}"/><Setter Property="BorderThickness" Value="{DynamicResource button-primary.Border}"/>
+</Style>
+<Style x:Key="Button.Danger" TargetType="Button" BasedOn="{StaticResource Button.Primary}">
+  <Setter Property="Background" Value="{DynamicResource Danger}"/><Setter Property="Foreground" Value="White"/>
+</Style>
+<Style x:Key="Button.Icon" TargetType="Button" BasedOn="{StaticResource Button.Base}">
+  <Setter Property="Template" Value="{DynamicResource Button.IconTemplate}"/>
+  <Setter Property="Padding" Value="0"/><Setter Property="Width" Value="28"/><Setter Property="Height" Value="28"/><Setter Property="MinHeight" Value="28"/>
+  <Setter Property="Focusable" Value="False"/><Setter Property="BorderThickness" Value="0"/>
+</Style>
+<Style x:Key="Navigation.Item" TargetType="Button" BasedOn="{StaticResource Button.Base}">
+  <Setter Property="Template" Value="{DynamicResource Navigation.Template}"/>
+  <Setter Property="Height" Value="{DynamicResource sidebar-item.Height}"/><Setter Property="MinHeight" Value="0"/>
+  <Setter Property="Padding" Value="{DynamicResource sidebar-item.Padding}"/><Setter Property="Margin" Value="{DynamicResource sidebar-item.Margin}"/>
+  <Setter Property="FontSize" Value="{DynamicResource sidebar-item.FontSize}"/><Setter Property="FontWeight" Value="{DynamicResource sidebar-item.FontWeight}"/>
+  <Setter Property="HorizontalContentAlignment" Value="Left"/><Setter Property="BorderThickness" Value="{DynamicResource sidebar-item.Border}"/>
+  <Setter Property="Background" Value="{DynamicResource sidebar-item.Background}"/><Setter Property="Foreground" Value="{DynamicResource sidebar-item.Foreground}"/>
+  <Setter Property="BorderBrush" Value="{DynamicResource sidebar-item.BorderBrush}"/>
+  <Style.Triggers><Trigger Property="Tag" Value="selected">
+    <Setter Property="Background" Value="{DynamicResource sidebar-item:selected.Background}"/><Setter Property="Foreground" Value="{DynamicResource sidebar-item:selected.Foreground}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource sidebar-item:selected.BorderBrush}"/>
+  </Trigger></Style.Triggers>
+</Style>
+<Style x:Key="Theme.Card" TargetType="ContentControl">
+  <Setter Property="Template" Value="{DynamicResource Theme.CardTemplate}"/>
+  <Setter Property="Background" Value="{DynamicResource card.Background}"/><Setter Property="BorderBrush" Value="{DynamicResource card.BorderBrush}"/>
+  <Setter Property="Opacity" Value="{DynamicResource card.Opacity}"/>
+  <Setter Property="BorderThickness" Value="{DynamicResource card.Border}"/><Setter Property="Padding" Value="{DynamicResource card.Padding}"/>
+  <Setter Property="Margin" Value="{DynamicResource card.Margin}"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+  <Setter Property="MinHeight" Value="56"/><Setter Property="Focusable" Value="False"/>
+</Style>
+<Style TargetType="TextBox" BasedOn="{StaticResource Input.Base}">
+  <Setter Property="Template" Value="{DynamicResource Theme.InputTemplate}"/>
+  <Setter Property="FontSize" Value="{DynamicResource input.FontSize}"/><Setter Property="FontWeight" Value="{DynamicResource input.FontWeight}"/>
+  <Setter Property="Opacity" Value="{DynamicResource input.Opacity}"/>
+  <Setter Property="Background" Value="{DynamicResource input.Background}"/><Setter Property="Foreground" Value="{DynamicResource input.Foreground}"/><Setter Property="BorderBrush" Value="{DynamicResource input.BorderBrush}"/>
+  <Setter Property="CaretBrush" Value="{DynamicResource input.Foreground}"/>
+  <Setter Property="MinHeight" Value="{DynamicResource input.MinHeight}"/><Setter Property="Padding" Value="{DynamicResource input.Padding}"/>
+  <Setter Property="BorderThickness" Value="{DynamicResource input.Border}"/>
+</Style>
+<Style x:Key="Theme.Text.Caption" TargetType="TextBlock"><Setter Property="FontSize" Value="11"/></Style>
+<Style x:Key="Theme.Text.Small" TargetType="TextBlock"><Setter Property="FontSize" Value="12"/></Style>
+<Style x:Key="Theme.Text.Body" TargetType="TextBlock"><Setter Property="FontSize" Value="13"/></Style>
+<Style x:Key="Theme.Text.Title" TargetType="TextBlock"><Setter Property="FontSize" Value="14"/></Style>
+<Style x:Key="Theme.Text.Heading" TargetType="TextBlock"><Setter Property="FontSize" Value="22"/></Style>
+<Style x:Key="Theme.Text.Display" TargetType="TextBlock"><Setter Property="FontSize" Value="32"/></Style>
 </ResourceDictionary>

@@ -1,0 +1,24 @@
+{
+  "Version": 1,
+  "Id": "expressive",
+  "Name": "Expressive",
+  "Description": "Material Expressive: насичені тональні поверхні, форми, що змінюються під курсором, і пружні анімації.",
+  "CornerRadius": 16,
+  "SurfaceOpacity": 1,
+  "Dark": { "Bar.Bg": "#2B2535", "Menu.Bg": "#2B2535", "Popup.Bg": "#342C40", "Window.Bg": "#16121C", "Sidebar.Bg": "#211B29", "Card.Bg": "#231D2C", "Control.Bg": "#342C40", "Text": "#EDE4F7", "Text.Muted": "#CBC0D8", "Text.Faint": "#A99DB8", "Surface.Border": "#4C4259", "Accent": "#D3BBFF" },
+  "Light": { "Bar.Bg": "#F3EDF9", "Menu.Bg": "#F3EDF9", "Popup.Bg": "#FFFFFF", "Window.Bg": "#FDF8FF", "Sidebar.Bg": "#F3EDF9", "Card.Bg": "#F7F1FB", "Control.Bg": "#FFFFFF", "Text": "#1D1826", "Text.Muted": "#4B4358", "Text.Faint": "#6B627A", "Surface.Border": "#CDC2DB", "Accent": "#6B3FD4" },
+  "StyleSheetFile": "styles.css",
+  "StyleResourcesFile": "styles.xaml",
+  "Parameters": [
+    { "Id": "navigation", "Group": "Вікна", "Label": "Розташування навігації", "Type": "Choice", "Default": "top", "Options": { "top": "Згори", "left": "Ліворуч" } },
+    { "Id": "corner", "Group": "Форма", "Label": "Округлість карток", "Type": "Number", "Default": "28", "Minimum": 8, "Maximum": 36, "Step": 2 },
+    { "Id": "tonal", "Group": "Колір", "Label": "Тонування поверхонь акцентом", "Type": "Number", "Default": "0.08", "Minimum": 0, "Maximum": 0.3, "Step": 0.01, "Description": "Скільки акцентного кольору домішується до панелі, меню й карток." },
+    { "Id": "bar-height", "Group": "Панель", "Label": "Висота панелі", "Type": "Number", "Default": "56", "Minimum": 48, "Maximum": 68, "Step": 2 },
+    { "Id": "float", "Group": "Панель", "Label": "Відстань панелі від панелі завдань", "Type": "Number", "Default": "8", "Minimum": 0, "Maximum": 20, "Step": 1 },
+    { "Id": "row-height", "Group": "Меню", "Label": "Висота рядка меню", "Type": "Number", "Default": "52", "Minimum": 40, "Maximum": 60, "Step": 2 },
+    { "Id": "motion", "Group": "Анімація", "Label": "Анімації появи", "Type": "Toggle", "Default": "true" },
+    { "Id": "motion-style", "Group": "Анімація", "Label": "Характер руху", "Type": "Choice", "Default": "bouncy", "Options": { "bouncy": "Пружний", "smooth": "Плавний" } },
+    { "Id": "stagger", "Group": "Анімація", "Label": "Затримка між елементами", "Type": "Number", "Default": "34", "Minimum": 0, "Maximum": 90, "Step": 2, "Description": "Вкладки, рядки меню й картки з’являються одна за одною." },
+    { "Id": "motion-speed", "Group": "Анімація", "Label": "Швидкість анімацій", "Type": "Number", "Default": "1", "Minimum": 0.5, "Maximum": 2, "Step": 0.25, "Description": "1 — звичайний темп; більше — швидше." }
+  ]
+}

@@ -119,7 +119,7 @@ public sealed class Settings
                 .Take(ThemeDefinition.Tokens.Length * 2).ToDictionary(v => v.Key, v => v.Value.ToUpperInvariant()));
         ThemeParameters ??= [];
         ThemeParameters = ThemeParameters.Where(p => ThemeDefinition.IsValidId(p.Key) && p.Value is not null).Take(64)
-            .ToDictionary(p => p.Key, p => p.Value.Where(v => ThemeDefinition.IsValidId(v.Key) && v.Value is { Length: <= 128 }).Take(24).ToDictionary(v => v.Key, v => v.Value));
+            .ToDictionary(p => p.Key, p => p.Value.Where(v => ThemeDefinition.IsValidId(v.Key) && v.Value is { Length: <= 128 }).Take(ThemeParameter.MaximumCount).ToDictionary(v => v.Key, v => v.Value));
         if (Alignment is not ("Windows" or "Left" or "Center" or "Right")) Alignment = "Windows";
         if (!IsHexColor(AccentColor)) AccentColor = "#8EA8FF";
         if (string.IsNullOrWhiteSpace(FontName)) FontName = DefaultFont;

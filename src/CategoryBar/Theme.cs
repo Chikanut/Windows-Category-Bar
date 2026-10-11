@@ -17,7 +17,6 @@ internal static class Theme
     internal static ThemeStore Library { get; private set; } = new(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WindowsCategoryBar", "Themes"));
     internal static ThemeDefinition Current { get; private set; } = BuiltInThemes.All[0];
     internal static ThemeStyleSheet StyleSheet { get; private set; } = ThemeStyleSheet.Parse("");
-    private static ResourceDictionary? templates;
     private static ResourceDictionary? authoredResources;
     private static readonly HashSet<object> authoredKeys = [];
     private static IReadOnlyList<string> parameterKeys = [];
@@ -30,6 +29,13 @@ internal static class Theme
             try { _ = Theming.ThemeResourceLoader.Load(theme); }
             catch (InvalidDataException ex) { Library.LoadErrors.Add(theme.Name + ": " + ex.Message); Library.Custom.Remove(theme); }
         }
+    }
+    // A shader sampler has to be an image; one clear pixel stands in until a window has a real picture.
+    private static readonly ImageBrush NoBackdrop = Blank();
+    private static ImageBrush Blank()
+    {
+        var brush = new ImageBrush(System.Windows.Media.Imaging.BitmapSource.Create(1, 1, 96, 96, PixelFormats.Bgra32, null, new byte[4], 4));
+        brush.Freeze(); return brush;
     }
     internal static event Action? Changed;
 
@@ -58,104 +64,97 @@ internal static class Theme
     internal static void Apply(Settings settings)
     {
         var requested = Library.Resolve(settings.ThemeId);
-        var authored = SystemParameters.HighContrast ? new ResourceDictionary() : Theming.ThemeResourceLoader.Load(requested);
+        var contrast = SystemParameters.HighContrast;
+        // High contrast keeps the plain composition and the system colours instead of authored decoration.
+        var authored = contrast ? new ResourceDictionary() : Theming.ThemeResourceLoader.Load(requested);
         Theming.ThemeMotion.FinishAll();
-        foreach (var key in authoredKeys) Application.Current.Resources.Remove(key);
+        var resources = Application.Current.Resources;
+        foreach (var key in authoredKeys) resources.Remove(key);
         authoredKeys.Clear();
+        foreach (var key in parameterKeys) resources.Remove(key);
         IsDark = settings.ThemeMode == "System" ? WindowsUsesDarkMode() : settings.ThemeMode == "Dark";
-        Current = Library.Resolve(settings.ThemeId);
-        StyleSheet = ThemeStyleSheet.Parse(SystemParameters.HighContrast ? BuiltInThemes.All[0].StyleSheet : Current.StyleSheet);
-        var palette = Palette(settings, Current, IsDark);
-        var raw = settings.AccentMode == "System" ? WindowsAccent() : Parse(settings.AccentMode == "Theme" ? palette["Accent"] : settings.AccentColor);
-        Accent = Readable(raw, IsDark);
+        Current = requested;
         Scale = settings.InterfaceScale;
+        using (var personalization = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"))
+            TransparencyEnabled = !contrast && personalization?.GetValue("EnableTransparency") is not 0;
+        (StyleSheet, Accent, WindowBaseColor, parameterKeys) = Fill(resources, Current, settings, IsDark);
 
-        var tint = settings.TintSurfaces ? (IsDark ? .12 : .08) : 0;
+        // Overlay windows replace these with a live picture of the screen behind them when the theme asks for one.
+        resources["Theme.Backdrop"] = NoBackdrop; resources["Theme.Backdrop.Enabled"] = 0d;
+        resources["Font"] = new FontFamily(settings.FontName + ", Segoe UI Variable Text, Segoe UI");
+        var scale = new ScaleTransform(settings.InterfaceScale, settings.InterfaceScale); scale.Freeze();
+        resources["Scale"] = scale;
+        if (authoredResources is not null) resources.MergedDictionaries.Remove(authoredResources);
+        authoredResources = authored;
+        resources.MergedDictionaries.Add(authoredResources);
+        foreach (var key in authoredResources.Keys.Cast<object>().ToArray()) { resources[key] = authoredResources[key]; authoredKeys.Add(key); }
+        Changed?.Invoke();
+    }
+
+    /// <summary>
+    /// Writes everything a theme's templates read into <paramref name="resources"/>: palette, accent, parameters and
+    /// the stylesheet's resources. The application uses it for itself, and the gallery for each isolated preview.
+    /// </summary>
+    internal static (ThemeStyleSheet Sheet, Color Accent, Color WindowBase, IReadOnlyList<string> ParameterKeys) Fill(ResourceDictionary resources, ThemeDefinition theme, Settings settings, bool dark)
+    {
+        var contrast = SystemParameters.HighContrast;
+        var overridden = settings.ThemeColors.TryGetValue(theme.Id, out var colors)
+            ? colors.Keys.Where(k => k.StartsWith(dark ? "Dark:" : "Light:", StringComparison.Ordinal)).Select(k => k[(k.IndexOf(':') + 1)..]).ToArray() : [];
+        var sheet = contrast ? BuiltInThemes.All[0].Sheet() : theme.Sheet(settings, ThemeStyleSheet.SurfaceColorRules(overridden));
+        var palette = Palette(settings, theme, dark);
+        var raw = settings.AccentMode == "System" ? WindowsAccent() : Parse(settings.AccentMode == "Theme" ? palette["Accent"] : settings.AccentColor);
+        var accent = Readable(raw, dark);
+
+        var tint = settings.TintSurfaces ? (dark ? .12 : .08) : 0;
         Color Surface(string key) => Mix(Parse(palette[key]), raw, tint);
-        WindowBaseColor = Surface("Window.Bg");
-        var ink = IsDark ? Colors.White : Colors.Black;
-        using var personalization = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
-        var transparency = !SystemParameters.HighContrast && personalization?.GetValue("EnableTransparency") is not 0;
-        TransparencyEnabled = transparency;
-        var translucent = (byte)Math.Round((transparency ? settings.SurfaceOpacity : 1) * 255);
+        var ink = dark ? Colors.White : Colors.Black;
+        var translucent = (byte)Math.Round((TransparencyEnabled ? settings.SurfaceOpacity : 1) * 255);
         Color Glass(Color c) => Color.FromArgb(translucent, c.R, c.G, c.B);
 
-        var resources = Application.Current.Resources;
-        foreach (var key in parameterKeys) resources.Remove(key);
-        parameterKeys = Theming.ThemeParameterResources.Apply(resources, Current, settings);
+        var parameters = Theming.ThemeParameterResources.Apply(resources, theme, settings);
         void Brush(string key, Color color) { var brush = new SolidColorBrush(color); brush.Freeze(); resources[key] = brush; }
 
         foreach (var key in ThemeDefinition.Tokens.Where(k => k != "Accent"))
             Brush(key, key.EndsWith(".Bg", StringComparison.Ordinal) ? Surface(key) : Parse(palette[key]));
+        // The bar and its menus are see-through overlays; ordinary windows only when a system backdrop shows behind them.
         Brush("Bar.Bg", Glass(Surface("Bar.Bg")));
         Brush("Menu.Bg", Glass(Surface("Menu.Bg")));
-        if (Current.Backdrop != "None" && transparency) Brush("Window.Bg", Glass(Surface("Window.Bg")));
-        if (Current.Material == "Glass" && transparency)
-        {
-            foreach (var key in new[] { "Window.Bg", "Sidebar.Bg", "Card.Bg", "Bar.Bg", "Menu.Bg" })
-            {
-                var color = Surface(key);
-                var top = Mix(color, Colors.White, IsDark ? .025 : .06);
-                var brush = new LinearGradientBrush(Glass(top), Glass(color), 90);
-                brush.Freeze(); resources[key] = brush;
-            }
-        }
-        Brush("Divider", Alpha(ink, IsDark ? .07 : .08));
-        Brush("Hover", Alpha(ink, IsDark ? .07 : .06));
-        Brush("Pressed", Alpha(ink, IsDark ? .12 : .10));
-        Brush("Selected", Alpha(ink, IsDark ? .09 : .07));
-        Brush("Accent", Accent);
-        Brush("Accent.Soft", Alpha(Accent, IsDark ? .20 : .16));
-        Brush("Accent.Text", Luminance(Accent) > .45 ? Parse("#14141A") : Colors.White);
-        Brush("Danger", Parse(IsDark ? "#F0616D" : "#C42B3A"));
-        Brush("Warning", Parse(IsDark ? "#F2A541" : "#B36B00"));
-        Brush("Success", Parse(IsDark ? "#5CC98A" : "#1F8A4C"));
-        Brush("Tooltip.Bg", Parse(IsDark ? "#F2F2F4" : "#2A2A30"));
-        Brush("Tooltip.Fg", Parse(IsDark ? "#1C1C1F" : "#F2F2F4"));
-        Brush("Glass.Rim", SystemParameters.HighContrast ? Colors.Transparent : Alpha(Colors.White, IsDark ? .18 : .65));
-        var sheen = new LinearGradientBrush(SystemParameters.HighContrast ? Colors.Transparent : Alpha(Colors.White, IsDark ? .025 : .06), Colors.Transparent, 90);
-        sheen.Freeze(); resources["Glass.Sheen"] = sheen;
-        if (SystemParameters.HighContrast)
+        if (theme.Backdrop != "None" && TransparencyEnabled) Brush("Window.Bg", Glass(Surface("Window.Bg")));
+        Brush("Divider", Alpha(ink, dark ? .07 : .08));
+        Brush("Hover", Alpha(ink, dark ? .07 : .06));
+        Brush("Pressed", Alpha(ink, dark ? .12 : .10));
+        Brush("Selected", Alpha(ink, dark ? .09 : .07));
+        Brush("Accent", accent);
+        Brush("Accent.Soft", Alpha(accent, dark ? .20 : .16));
+        Brush("Accent.Text", Luminance(accent) > .45 ? Parse("#14141A") : Colors.White);
+        // The accent exactly as chosen, for themes that fill shapes with it instead of colouring text.
+        Brush("Accent.Fill", raw);
+        Brush("Accent.FillText", Luminance(raw) > .45 ? Parse("#14141A") : Colors.White);
+        // Plain colours for gradient stops and glows, which cannot take a brush.
+        resources["Accent.Color"] = accent; resources["Accent.Fill.Color"] = raw;
+        resources["Text.Color"] = Parse(palette["Text"]); resources["Surface.Border.Color"] = Parse(palette["Surface.Border"]);
+        Brush("Danger", Parse(dark ? "#F0616D" : "#C42B3A"));
+        Brush("Warning", Parse(dark ? "#F2A541" : "#B36B00"));
+        Brush("Success", Parse(dark ? "#5CC98A" : "#1F8A4C"));
+        Brush("Tooltip.Bg", Parse(dark ? "#F2F2F4" : "#2A2A30"));
+        Brush("Tooltip.Fg", Parse(dark ? "#1C1C1F" : "#F2F2F4"));
+        if (contrast)
         {
             foreach (var key in ThemeDefinition.Tokens.Where(k => k.EndsWith(".Bg", StringComparison.Ordinal))) Brush(key, SystemColors.WindowColor);
             foreach (var key in new[] { "Text", "Text.Muted", "Text.Faint", "Surface.Border", "Divider" }) Brush(key, SystemColors.WindowTextColor);
-            foreach (var key in new[] { "Accent", "Accent.Soft", "Selected", "Hover", "Pressed" }) Brush(key, SystemColors.HighlightColor);
-            Brush("Accent.Text", SystemColors.HighlightTextColor);
+            foreach (var key in new[] { "Accent", "Accent.Soft", "Accent.Fill", "Selected", "Hover", "Pressed" }) Brush(key, SystemColors.HighlightColor);
+            Brush("Accent.Text", SystemColors.HighlightTextColor); Brush("Accent.FillText", SystemColors.HighlightTextColor);
         }
-
-        double radius = settings.CornerRadius;
-        resources["Radius"] = new CornerRadius(radius);
-        resources["Radius.Small"] = new CornerRadius(Math.Min(radius, radius >= 14 ? 12 : 6));
-        resources["Theme.BarBorderThickness"] = new Thickness(Current.BorderWidth, Current.BorderWidth, Current.BorderWidth, 0);
-        resources["Radius.Top"] = new CornerRadius(Math.Min(radius, 9), Math.Min(radius, 9), 0, 0);
-        resources["Theme.BorderThickness"] = new Thickness(Current.BorderWidth);
-        resources["Font"] = new FontFamily(settings.FontName + ", Segoe UI Variable Text, Segoe UI");
-        var scale = new ScaleTransform(settings.InterfaceScale, settings.InterfaceScale); scale.Freeze();
-        resources["Scale"] = scale;
-        var shadow = new DropShadowEffect { BlurRadius = 22, ShadowDepth = 5, Direction = 270, Color = Colors.Black, Opacity = IsDark ? .45 : .22 };
+        var shadow = new DropShadowEffect { BlurRadius = 22, ShadowDepth = 5, Direction = 270, Color = Colors.Black, Opacity = dark ? .45 : .22 };
         shadow.Freeze();
         resources["Shadow"] = shadow;
-        var surfacePaints = ThemeDefinition.Tokens.Where(k => k.EndsWith(".Bg", StringComparison.Ordinal)).ToDictionary(k => k, k => resources[k]);
-        ThemeStyleResources.Apply(resources, StyleSheet, Current.CornerRadius == 0 ? 1 : (double)settings.CornerRadius / Current.CornerRadius);
-        if (!SystemParameters.HighContrast && settings.ThemeColors.TryGetValue(Current.Id, out var colors))
-            foreach (var (token, selectors) in new[] { ("Window.Bg", new[] { "window" }), ("Sidebar.Bg", new[] { "sidebar", "titlebar" }),
-                ("Bar.Bg", new[] { "bar" }), ("Menu.Bg", new[] { "menu" }), ("Card.Bg", new[] { "card" }), ("Control.Bg", new[] { "button", "input" }) })
-                if (colors.ContainsKey((IsDark ? "Dark:" : "Light:") + token))
-                {
-                    resources[token] = surfacePaints[token];
-                    foreach (var selector in selectors) resources[selector + ".Background"] = surfacePaints[token];
-                }
-        // Each skin provides actual control templates, not just palette substitutions.
-        if (templates is not null) resources.MergedDictionaries.Remove(templates);
-        if (authoredResources is not null) resources.MergedDictionaries.Remove(authoredResources);
-        templates = ThemeStyleResources.Templates(StyleSheet.Skin);
-        resources.MergedDictionaries.Add(templates);
-        authoredResources = authored;
-        resources.MergedDictionaries.Add(authoredResources);
-        foreach (var key in authoredResources.Keys.Cast<object>().ToArray()) { resources[key] = authoredResources[key]; authoredKeys.Add(key); }
-        resources["Theme.ControlMaterialTemplate"] = resources[Current.Material == "Glass" ? "Theme.FlatMaterialTemplate" : "Theme.MaterialTemplate"];
-        Changed?.Invoke();
+        ThemeStyleResources.Apply(resources, sheet, RadiusScale(settings, theme));
+        return (sheet, accent, Surface("Window.Bg"), parameters);
     }
+
+    /// <summary>The user's corner setting relative to the theme's own, applied to every radius of its stylesheet.</summary>
+    internal static double RadiusScale(Settings settings, ThemeDefinition theme) =>
+        theme.RadiusScale * (theme.CornerRadius == 0 ? 1 : (double)settings.CornerRadius / theme.CornerRadius);
 
     internal static Dictionary<string, string> Palette(Settings settings, ThemeDefinition theme, bool dark)
     {
@@ -176,14 +175,16 @@ internal static class Theme
         settings.FontName = theme.FontName;
     }
 
+    /// <summary>The current theme with the user's tuning written in as its new defaults, ready to share.</summary>
     internal static ThemeDefinition Capture(Settings settings)
     {
         var copy = Current.Copy();
         foreach (var parameter in copy.Parameters) parameter.Default = parameter.Resolve(settings, Current.Id);
         copy.Id = "custom-" + Guid.NewGuid().ToString("N");
-        copy.StyleSheet = StyleSheet.WithGeometry(Current.CornerRadius == 0 ? 1 : (double)settings.CornerRadius / Current.CornerRadius);
-        if (settings.ThemeColors.TryGetValue(Current.Id, out var colors))
-            copy.StyleSheet = ThemeStyleSheet.Parse(copy.StyleSheet).WithSurfaceColors(colors.Keys.Select(key => key[(key.IndexOf(':') + 1)..]));
+        // The stylesheet keeps its parameters; overridden surface colours are appended as rules that win the cascade.
+        if (settings.ThemeColors.TryGetValue(Current.Id, out var colors) && ThemeStyleSheet.SurfaceColorRules(colors.Keys.Select(key => key[(key.IndexOf(':') + 1)..])) is { Length: > 0 } rules)
+            copy.StyleSheet += "\n" + rules;
+        copy.RadiusScale = Math.Clamp(RadiusScale(settings, Current), 0, 4);
         copy.CornerRadius = settings.CornerRadius; copy.SurfaceOpacity = settings.SurfaceOpacity; copy.FontName = settings.FontName;
         foreach (var (dark, palette) in new[] { (true, copy.Dark), (false, copy.Light) })
         {
