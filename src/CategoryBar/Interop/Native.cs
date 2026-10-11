@@ -109,6 +109,15 @@ internal static class Native
     }
 
     internal static Point Cursor() { GetCursorPos(out var p); return p; }
+    [DllImport("user32.dll")] private static extern IntPtr WindowFromPoint(Point point);
+    [DllImport("user32.dll")] private static extern IntPtr GetAncestor(IntPtr window, uint flags);
+
+    /// <summary>True when the window the pointer is over is a taskbar, and not something that covers it.</summary>
+    internal static bool TaskbarUnder(Point point)
+    {
+        var window = WindowFromPoint(point);
+        return window != IntPtr.Zero && ClassName(GetAncestor(window, 2)) is "Shell_TrayWnd" or "Shell_SecondaryTrayWnd"; // GA_ROOT
+    }
 
     /// <summary>The bounds of the monitor nearest to a screen point.</summary>
     internal static PixelRect MonitorAt(int x, int y)

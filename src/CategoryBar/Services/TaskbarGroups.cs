@@ -247,16 +247,14 @@ internal sealed class TaskbarGroups : IDisposable
         var pressed = (Native.GetAsyncKeyState(1) & 0x8000) != 0 || (Native.GetAsyncKeyState(2) & 0x8000) != 0;
         var current = buttons;
         var over = pressed ? null : current.FirstOrDefault(b => b.Bounds.Contains(cursor.X, cursor.Y)).AppId;
-        // The buttons keep their place on the screen while a fullscreen game or video covers the taskbar.
-        if (over is not null && !TaskbarShownAt(cursor.X, cursor.Y)) over = null;
+        // The buttons keep their place on the screen while a fullscreen game or video covers the taskbar; what
+        // counts is the window under the pointer, because the Windows key brings the taskbar up over a game.
+        if (over is not null && !Native.TaskbarUnder(cursor)) over = null;
         if (over != hovered) { hovered = over; hoverTicks = 0; return; }
         if (over is null || ++hoverTicks != Math.Max(1, session.Settings.OpenDelayMs / 100)) return;
         if (session.Config.Categories.FirstOrDefault(c => AppId(c) == over) is { } category)
             open(category, current.First(b => b.AppId == over && b.Bounds.Contains(cursor.X, cursor.Y)).Bounds);
     }
-
-    private static bool TaskbarShownAt(int x, int y) => Native.Taskbars().Any(taskbar =>
-        Native.GetWindowRect(taskbar, out var rect) && rect.Pixels.Contains(x, y) && VisibilityPolicy.ShouldShow(Native.Observe(taskbar)));
 
     // ---- Shortcuts, icons and Jump Lists ---------------------------------------------------------
 
