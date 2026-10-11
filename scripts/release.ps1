@@ -21,7 +21,9 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Could not inspect previous release.' }
         # The initial portable release has no Velopack feed to download.
         if ($latest.assets.name -contains 'releases.win.json') {
-            dotnet vpk download github --repoUrl https://github.com/Chikanut/Windows-Category-Bar --outputDir artifacts/releases
+            # Anonymous requests share the runner's address and run into GitHub's rate limit.
+            $token = if ($env:GH_TOKEN) { @('--token', $env:GH_TOKEN) } else { @() }
+            dotnet vpk download github --repoUrl https://github.com/Chikanut/Windows-Category-Bar --outputDir artifacts/releases @token
             if ($LASTEXITCODE -ne 0) { throw 'Previous package download failed.' }
         }
     }
