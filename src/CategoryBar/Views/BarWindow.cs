@@ -530,7 +530,7 @@ internal sealed class BarWindow : OverlayWindow
         context.Items.Add(Ui.Item(L.T("Налаштування…"), () => App.Instance.ShowSettings(), Icons.Sliders));
         context.Items.Add(new Separator());
         context.Items.Add(Ui.Item(L.T("Сховати панель до перезапуску"), App.Instance.HideBars, Icons.ChevronDown));
-        context.Items.Add(Ui.Item(L.T("Вийти"), App.Instance.Quit, Icons.Close));
+        context.Items.Add(Ui.Item(L.T("Вийти"), () => App.Instance.Quit(), Icons.Close));
         Popup(context);
     }
 

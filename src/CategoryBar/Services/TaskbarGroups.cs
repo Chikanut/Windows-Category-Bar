@@ -247,11 +247,16 @@ internal sealed class TaskbarGroups : IDisposable
         var pressed = (Native.GetAsyncKeyState(1) & 0x8000) != 0 || (Native.GetAsyncKeyState(2) & 0x8000) != 0;
         var current = buttons;
         var over = pressed ? null : current.FirstOrDefault(b => b.Bounds.Contains(cursor.X, cursor.Y)).AppId;
+        // The buttons keep their place on the screen while a fullscreen game or video covers the taskbar.
+        if (over is not null && !TaskbarShownAt(cursor.X, cursor.Y)) over = null;
         if (over != hovered) { hovered = over; hoverTicks = 0; return; }
         if (over is null || ++hoverTicks != Math.Max(1, session.Settings.OpenDelayMs / 100)) return;
         if (session.Config.Categories.FirstOrDefault(c => AppId(c) == over) is { } category)
             open(category, current.First(b => b.AppId == over && b.Bounds.Contains(cursor.X, cursor.Y)).Bounds);
     }
+
+    private static bool TaskbarShownAt(int x, int y) => Native.Taskbars().Any(taskbar =>
+        Native.GetWindowRect(taskbar, out var rect) && rect.Pixels.Contains(x, y) && VisibilityPolicy.ShouldShow(Native.Observe(taskbar)));
 
     // ---- Shortcuts, icons and Jump Lists ---------------------------------------------------------
 
@@ -478,9 +483,10 @@ internal sealed class TaskbarGroups : IDisposable
             if (add.Values.Any(file => !File.Exists(file)) && arrangeTries++ < 12) { arrange.Start(); return; }
             var order = categories.Select(AppId).ToList();
             if (divider) order.Add(DividerId);
-            var done = await ShellWorker.Run(() => TaskbarPins.Arrange(IdPrefix, order, add, DividerId));
+            var done = await ShellWorker.Run(() => enabled && TaskbarPins.Arrange(IdPrefix, order, add, DividerId));
             // Explorer drops an entry it does not accept, so the result is read back instead of assumed.
             await Task.Delay(1500);
+            if (!enabled) return;
             var pinned = TaskbarPins.Pinned(IdPrefix);
             Remember(list =>
             {
@@ -598,6 +604,20 @@ internal sealed class TaskbarGroups : IDisposable
         StateChanged?.Invoke();
         if (pinned.Count > 0)
             session.Toast(L.T("Відкріпіть значки категорій"), L.T("Windows не дала прибрати їх автоматично. Клацніть значок правою кнопкою → «Відкріпити від панелі завдань»."), ToastKind.Warning, true);
+    }
+
+    /// <summary>
+    /// The user closed the application: its icons leave the taskbar and are pinned again at the next start.
+    /// The icons the user unpinned by hand stay remembered, so they do not come back.
+    /// </summary>
+    internal void Release()
+    {
+        if (!enabled) return;
+        enabled = false; hover.Stop(); arrange.Stop(); buttons = [];
+        var pinned = TaskbarPins.Pinned(IdPrefix);
+        Remember(list => list.RemoveAll(id => pinned.Contains(id == DividerKey ? DividerId : IdPrefix + id.ToString("N"))));
+        TaskbarPins.Arrange(IdPrefix, [], new Dictionary<string, string>());
+        RemoveStrays(TaskbarPins.Pinned(IdPrefix));
     }
 
     public void Dispose()

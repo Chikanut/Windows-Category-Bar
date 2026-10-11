@@ -63,7 +63,7 @@ internal sealed class AppUpdates
             session.Store.Save(session.Config);
             manager.WaitExitThenApplyUpdates(update.TargetFullRelease, silent: false, restart: true,
                 restartArgs: App.Instance.UpdateRestartArguments);
-            App.Instance.Quit();
+            App.Instance.Quit(restarting: true);
         }
         catch (Exception ex)
         {

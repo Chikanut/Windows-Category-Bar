@@ -158,7 +158,7 @@ public partial class App : Application
         };
         menu.Items.Add(startup);
         menu.Items.Add(new Separator());
-        menu.Items.Add(Ui.Item(L.T("Вийти"), Quit, Icons.Close));
+        menu.Items.Add(Ui.Item(L.T("Вийти"), () => Quit(), Icons.Close));
         return menu;
     }
 
@@ -204,8 +204,10 @@ public partial class App : Application
         window.Surface();
     }
 
-    internal void Quit()
+    /// <summary>Closes the application. The category icons stay on the taskbar only when it is about to start again.</summary>
+    internal void Quit(bool restarting = false)
     {
+        if (!restarting) Groups?.Release();
         monitorTimer.Stop();
         updateTimer.Stop();
         foreach (var bar in bars.ToList()) bar.Close(); // Releases any reserved screen area.
@@ -233,7 +235,7 @@ public partial class App : Application
         instance?.Dispose();
         instance = null;
         System.Diagnostics.Process.Start(info)?.Dispose();
-        Quit();
+        Quit(restarting: true);
     }
 
     protected override void OnExit(ExitEventArgs e)
