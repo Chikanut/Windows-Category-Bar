@@ -26,6 +26,12 @@ Once the taskbar fills up with pinned icons, the one you need gets hard to find.
 
 <p align="center">
   <img src="Documentation/screenshots/taskbar-icons.png" width="760" alt="Category icons pinned to the Windows taskbar with the menu of one category open above them">
+  <br><em>Icons on the taskbar (Liquid Glass design)</em>
+</p>
+
+<p align="center">
+  <img src="Documentation/screenshots/bar-menu.png" width="760" alt="The bar of category tabs above the Windows taskbar with the menu of one category open">
+  <br><em>The bar of tabs above the taskbar (Neo-Brutal design)</em>
 </p>
 
 > The interface is available in English, Ukrainian, German, Spanish, French, Portuguese, Simplified Chinese and Japanese. The screenshots show the Ukrainian one.

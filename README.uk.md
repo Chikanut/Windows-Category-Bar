@@ -26,6 +26,12 @@
 
 <p align="center">
   <img src="Documentation/screenshots/taskbar-icons.png" width="760" alt="Значки категорій, закріплені на панелі завдань Windows, і відкрите над ними меню однієї категорії">
+  <br><em>Значки на панелі завдань (оформлення Liquid Glass)</em>
+</p>
+
+<p align="center">
+  <img src="Documentation/screenshots/bar-menu.png" width="760" alt="Панель із вкладками категорій над панеллю завдань Windows і відкрите меню однієї категорії">
+  <br><em>Панель із вкладками над панеллю завдань (оформлення Neo-Brutal)</em>
 </p>
 
 ## Чому це зручно
