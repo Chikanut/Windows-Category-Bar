@@ -4,7 +4,7 @@
 
 # Category Bar for Windows 11
 
-**Category tabs right above the taskbar: hover a tab and its apps open in a column.**
+**Your apps sorted into categories — as tabs right above the taskbar, or as icons on the taskbar itself. Hover one and its apps open in a column.**
 
 [![Release](https://img.shields.io/github/v/release/Chikanut/Windows-Category-Bar?label=release)](https://github.com/Chikanut/Windows-Category-Bar/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/Chikanut/Windows-Category-Bar/total?label=downloads)](https://github.com/Chikanut/Windows-Category-Bar/releases)
@@ -19,20 +19,23 @@
 
 ---
 
-Once the taskbar fills up with pinned icons, the one you need gets hard to find. Category Bar sorts your shortcuts into tabs — "Development", "Browsers", "Games" — and places them directly above the Windows taskbar. The taskbar itself keeps working as before.
+Once the taskbar fills up with pinned icons, the one you need gets hard to find. Category Bar sorts your shortcuts into categories — "Development", "Browsers", "Games" — and shows them in one of two ways:
 
-> The interface is available in English, Ukrainian, German, Spanish, French, Portuguese, Simplified Chinese and Japanese. The screenshots below show the Ukrainian one.
+- **A bar of tabs** directly above the Windows taskbar. The taskbar itself keeps working as before.
+- **Icons on the Windows taskbar.** Every category is one pinned icon; a dozen pinned apps become three or four.
 
 <p align="center">
-  <img src="Documentation/screenshots/onboarding-appearance.png" width="760" alt="First-run wizard with a live preview of the bar and a category menu">
+  <img src="Documentation/screenshots/taskbar-icons.png" width="760" alt="Category icons pinned to the Windows taskbar with the menu of one category open above them">
 </p>
+
+> The interface is available in English, Ukrainian, German, Spanish, French, Portuguese, Simplified Chinese and Japanese. The screenshots show the Ukrainian one.
 
 ## Why use it
 
-- **One move instead of a search.** Hover a tab and its apps appear in a column. A click starts the app.
+- **One move instead of a search.** Hover a tab or a category icon and its apps appear in a column. A click starts the app.
 - **Set up in a minute.** The wizard imports the apps pinned to your taskbar and sorts them by type.
 - **Behaves like part of Windows.** The bar shows and hides together with the taskbar and follows the system theme and accent colour.
-- **Or right on the taskbar.** Switch to icon mode and every category becomes an icon on the Windows taskbar, pinned for you. See [Documentation/taskbar-icons.md](Documentation/taskbar-icons.md) (in Ukrainian).
+- **Bar or taskbar icons.** One switch turns the tabs into icons on the Windows taskbar and back. The icons are pinned and unpinned for you.
 - **Nothing gets lost.** Every change can be undone, and settings are saved with five backup copies.
 - **Eight languages.** The app follows the Windows language, or you pick one in Settings → General.
 - **Easy installation and updates.** .NET is included; updates arrive through GitHub Releases.
@@ -59,7 +62,11 @@ A three-step wizard opens on first launch. Nothing is saved until you press "Don
 | --- | --- |
 | **1. Method** | Import the apps pinned to the taskbar, start with ready-made empty categories, or start with an empty bar. |
 | **2. Categories** | A board with columns: drag apps between categories and drag categories by their header. Rename, add and delete here too. |
-| **3. Appearance** | Theme, accent colour, start with Windows. |
+| **3. Appearance** | Theme, accent colour, start with Windows, and the choice between the bar and icons on the taskbar. |
+
+<p align="center">
+  <img src="Documentation/screenshots/onboarding-appearance.png" width="760" alt="First-run wizard with a live preview of the bar and a category menu">
+</p>
 
 <p align="center">
   <img src="Documentation/screenshots/onboarding-categories.png" width="760" alt="Wizard step two: the category board with apps">
@@ -81,6 +88,23 @@ The wizard can be reopened from Settings → General. Settings and Exit are in t
 - Search in large categories, a grid from 20 shortcuts up, extra tabs fold into "More N".
 - Web links and Steam games (`steam://…`) are added like any other shortcut.
 - Every change comes with an "Undo" button in its notification.
+
+### Icons on the taskbar
+
+Switch it on in **Settings → Bar and menus → Icons on the taskbar**, in the tray menu or on the last step of the wizard. The bar hides and every category becomes an icon on the Windows taskbar.
+
+<img align="right" src="Documentation/screenshots/taskbar-icon-picker.png" width="300" alt="Choosing a category's taskbar icon: an app's icon, letters, or a symbol on a coloured tile">
+
+- **Pinned for you.** The icons are pinned automatically and placed first on the taskbar, ahead of your own pins and running apps. No administrator rights, no Explorer restart. Switching the mode off removes them again.
+- **Hover or click** an icon to open the category's menu; everything the menu does on the bar works here too. **Right-click** lists the category's apps.
+- **Your icon.** Categories → ⋯ → "Taskbar icon…": the icon of any app in the category, one of 50 symbols on a coloured tile, or up to three letters on a tile in the theme's accent colour.
+- **Running indicator.** A green dot on the icon while an app of the category is running.
+- **Your order.** Drag the icons to reorder them; the order is kept. An icon you unpin yourself comes back only after "Pin all".
+- **Divider.** A thin line after the category icons separates them from the rest of the taskbar. Clicking it opens Settings; it can be switched off.
+
+How it works and its limits (in Ukrainian): [Documentation/taskbar-icons.md](Documentation/taskbar-icons.md).
+
+<br clear="right">
 
 ### App sets
 
@@ -152,6 +176,7 @@ Your categories and settings are stored locally. Update checks contact GitHub; y
 | Categories and settings | `%LOCALAPPDATA%\WindowsCategoryBar\config.json` |
 | Backups | `config.json.bak1` … `config.json.bak5` next to it |
 | Copies of added shortcuts | `%LOCALAPPDATA%\WindowsCategoryBar\ImportedShortcuts` |
+| Category shortcuts and icons for the taskbar | `%LOCALAPPDATA%\WindowsCategoryBar\TaskbarGroups` |
 | Error log | `errors.log` next to the configuration |
 
 Saving is atomic; if the main file is damaged, the app restores settings from the latest working copy. To use a separate configuration, run `CategoryBar.exe --config <path>`.
@@ -173,13 +198,13 @@ The app icon is a vector file: `src/CategoryBar/Assets/App.svg`. After editing i
 | `src/CategoryBar.Core` | Model, persistence, undo, visibility policy, classifier |
 | `src/CategoryBar/Session.cs` | Application state: changes, undo, notifications, launching |
 | `src/CategoryBar/Theme.cs`, `Themes/Controls.xaml` | Theme as dynamic resources and control styles |
-| `src/CategoryBar/Services` | Icons, shortcuts, app catalogue, status — all off the UI thread |
+| `src/CategoryBar/Services` | Icons, shortcuts, app catalogue, status, taskbar icons — all off the UI thread |
 | `src/CategoryBar/Views` | Bar, menus, notifications, settings, wizard, category board |
-| `src/CategoryBar/Interop` | Win32 and screen space reservation |
+| `src/CategoryBar/Interop` | Win32, screen space reservation, the taskbar pin list |
 | `tests/CategoryBar.Tests` | Core checks, run as part of the build |
 
 ## Known limits
 
-The main scenarios were checked on Windows 11 with a single 1920×1080 monitor at 100 % scale. Multiple monitors, an auto-hiding taskbar, full-screen games and space reservation have not been checked by hand in this version. Details (in Ukrainian): [Documentation/validation.md](Documentation/validation.md).
+The main scenarios were checked on Windows 11 with a single 1920×1080 monitor at 100 % scale. Multiple monitors, an auto-hiding taskbar, full-screen games and space reservation have not been checked by hand in this version. Icons on the taskbar rely on an undocumented Windows format, checked on Windows 11 build 26200; if Windows changes it, the app leaves the taskbar alone and asks you to pin the shortcuts yourself. Details (in Ukrainian): [Documentation/validation.md](Documentation/validation.md).
 
 Found a bug or have an idea? Open an [issue](https://github.com/Chikanut/Windows-Category-Bar/issues).
